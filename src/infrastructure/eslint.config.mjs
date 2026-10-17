@@ -1,3 +1,8 @@
+// ESLint flat config: typed typescript-eslint rules plus Pulumi-specific checks.
+//
+// ref: https://typescript-eslint.io/getting-started/typed-linting/
+//
+// pattern: Pulumi-specific rules carry a comment saying why
 import { defineConfig } from 'eslint/config';
 import eslintConfigPrettier from 'eslint-config-prettier/flat';
 import tseslint from 'typescript-eslint';

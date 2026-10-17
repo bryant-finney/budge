@@ -1,4 +1,8 @@
 // Runs the Pulumi program in-process against mocks: no Pulumi CLI, no engine, no AWS credentials.
+//
+// ref: https://www.pulumi.com/docs/iac/guides/testing/unit/
+//
+// pattern: install mocks before the first program import; import the program fresh per test
 import * as pulumi from '@pulumi/pulumi';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 

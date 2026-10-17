@@ -1,3 +1,8 @@
+// Typed, validated view of the stack's `budge:*` Pulumi config.
+//
+// ref: https://www.pulumi.com/docs/iac/concepts/config/
+//
+// pattern: keys use the spec's snake_case names; secrets are read with getSecret, never get
 import * as pulumi from '@pulumi/pulumi';
 
 /** Plaid environments the stack can point at (spec §11). */

@@ -55,7 +55,9 @@ stating exactly what they must change.
 - **Repository protection.** [`repo-protection.md`](repo-protection.md) is your spec to apply and
   maintain: branch and tag rulesets plus merge settings. The live GitHub settings must match it.
   Read and change those settings only through the
-  [`apply-repo-rules`](../../skills/apply-repo-rules/SKILL.md) skill. Change its `rules.md` and
+  [`apply-repo-rules`](../../skills/apply-repo-rules/SKILL.md) skill, which is preloaded for you. In
+  Claude Code, its `allowed-tools` pre-approve `check` and `apply`, so no `settings.json` allow
+  rules are needed. `apply-ref` always needs the user's approval. Change its `rules.md` and
   the spec in a PR, run `apply` once the user merges it, and run `check` before you claim the
   settings match.
 

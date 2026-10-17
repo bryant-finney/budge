@@ -1,0 +1,11 @@
+{
+  "name": "front-end",
+  "private": true,
+  "description": "budge's single-page app (SvelteKit + TypeScript)",
+  "scripts": {
+    "check": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "catalog:"
+  }
+}

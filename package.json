@@ -4,7 +4,7 @@
   "description": "Workspace root for budge's TypeScript packages (src/front-end, src/infrastructure)",
   "packageManager": "pnpm@12.14.0",
   "engines": {
-    "node": ">=24 <25"
+    "node": ">=24.15 <25"
   },
   "scripts": {
     "check": "pnpm -r --if-present run check",

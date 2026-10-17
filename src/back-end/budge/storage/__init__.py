@@ -8,3 +8,8 @@ material.
 Boundary: this package defines protocols only. The S3 and Secrets Manager implementations live in `budge.aws`;
 tests substitute in-memory fakes.
 """
+
+from budge.storage.repository import LeaseHeld, Repository
+from budge.storage.secrets import SecretStore
+
+__all__ = ['LeaseHeld', 'Repository', 'SecretStore']

@@ -7,3 +7,7 @@ It runs on an EventBridge Scheduler cadence and on async invokes from the API. T
 Boundary: ingestion reaches storage, secrets, and Plaid only through the `budge.storage` protocols and
 `budge.plaid_client`; it never imports `boto3`.
 """
+
+from budge.ingestion.trigger import IngestionTrigger
+
+__all__ = ['IngestionTrigger']

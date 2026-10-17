@@ -5,4 +5,25 @@ is a recurring outflow.
 
 Boundary: pure logic with no I/O. It takes plain values and returns a verdict, so it is table-tested against every
 PFC v2 detailed category.
+
+Milestone 1 defines only the vocabulary below; `classify()` and the `PFC_RULES` table arrive in milestone 2.
+
+>>> from typing import get_args
+>>> get_args(ExcludedReason)[-1]
+'none'
+>>> COUNT, NO_PFC_CATEGORY
+('count', 'UNCATEGORIZED')
 """
+
+from typing import Final, Literal
+
+__all__ = ['COUNT', 'NO_PFC_CATEGORY', 'ExcludedReason']
+
+ExcludedReason = Literal['inflow', 'transfer', 'cc_payment', 'bill', 'bank_fee', 'medical', 'tax', 'recurring', 'none']
+"""Why a transaction is excluded from discretionary spend; `'none'` means it counts (spec §6, §9)."""
+
+COUNT: Final = 'count'
+"""`PFC_RULES` sentinel: ends the PFC lookup as spend; the recurring check still applies (spec §9)."""
+
+NO_PFC_CATEGORY: Final = 'UNCATEGORIZED'
+"""Chart key for a transaction with no Plaid category; it can't collide with Plaid's `OTHER` primary (Appendix A)."""

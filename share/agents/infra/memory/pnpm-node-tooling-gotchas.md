@@ -62,6 +62,17 @@ Found while building the root pnpm workspace (#12, 2026-10-17).
 - **`pnpm -r run` stops at the first failing package and kills the others** (SIGKILL), so root
   `pnpm run check` reports only one package's errors. To see every failure (e.g. when proving
   negative probes), run `pnpm -C <pkg> run check` per package, or pass `--no-bail`.
+- **The root `verbatimModuleSyntax` conflicts with CommonJS output.** `src/infrastructure` is
+  CommonJS (`module: nodenext`, no `"type": "module"`) for Pulumi's runtime. TS then rejects ESM
+  syntax (TS1295/TS1287), so that package sets `verbatimModuleSyntax: false` and
+  `isolatedModules: true` and relies on eslint `consistent-type-imports`. Dynamic `import()` still
+  needs the `.js` extension in a CJS file under nodenext. Name the Vitest config `.mts`, or Vite
+  warns about ESM syntax in a CJS-loaded file.
+- **pnpm 12's release-age gate edits `pnpm-workspace.yaml` during install.** A dependency version
+  younger than `minimumReleaseAge` makes `pnpm install` append it to `minimumReleaseAgeExclude`
+  without asking. Revert that and pin a version that clears the gate (#13 used `@pulumi/pulumi`
+  3.269.0, not 3.270.0, which was less than a day old). New build scripts (e.g. `protobufjs`) need
+  an explicit `allowBuilds` entry, or install fails with `ERR_PNPM_IGNORED_BUILDS`.
 - **Agent sessions:** the worktree guard rejects Bash commands that mention the scratchpad path,
   because the path contains `github`. Run pnpm through `npx --yes pnpm@<ver>` instead of a
   scratchpad install. zsh doesn't word-split `P="npx --yes pnpm@<ver>"; $P ...`, so put a

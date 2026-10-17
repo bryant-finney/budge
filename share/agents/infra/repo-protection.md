@@ -24,88 +24,15 @@ sections, and agents should follow [Desired state](#desired-state) and
 
 ## Desired state
 
-Agents compare the live repo against exactly these three items.
+The tables in [`rules.md`](../../skills/apply-repo-rules/rules.md) are the desired state, and the
+[`apply-repo-rules`](../../skills/apply-repo-rules/SKILL.md) script reads them. They define three
+items:
 
-### Ruleset `main`
-
-The payload for `POST /repos/bryant-finney/budge/rulesets`:
-
-```json
-{
-  "name": "main",
-  "target": "branch",
-  "enforcement": "active",
-  "conditions": {
-    "ref_name": {
-      "include": ["~DEFAULT_BRANCH", "refs/heads/main"],
-      "exclude": []
-    }
-  },
-  "bypass_actors": [],
-  "rules": [
-    { "type": "deletion" },
-    { "type": "non_fast_forward" },
-    { "type": "required_signatures" },
-    {
-      "type": "pull_request",
-      "parameters": {
-        "allowed_merge_methods": ["merge"],
-        "dismiss_stale_reviews_on_push": false,
-        "require_code_owner_review": false,
-        "require_last_push_approval": false,
-        "required_approving_review_count": 0,
-        "required_review_thread_resolution": true
-      }
-    }
-  ]
-}
-```
-
-### Ruleset `release-tags`
-
-The payload for `POST /repos/bryant-finney/budge/rulesets`:
-
-```json
-{
-  "name": "release-tags",
-  "target": "tag",
-  "enforcement": "active",
-  "conditions": {
-    "ref_name": {
-      "include": ["refs/tags/v*"],
-      "exclude": []
-    }
-  },
-  "bypass_actors": [],
-  "rules": [
-    { "type": "deletion" },
-    { "type": "non_fast_forward" },
-    {
-      "type": "update",
-      "parameters": { "update_allows_fetch_and_merge": false }
-    }
-  ]
-}
-```
-
-### Repository merge settings
-
-```sh
-gh api -X PATCH repos/bryant-finney/budge \
-  -F allow_merge_commit=true -F allow_squash_merge=false -F allow_rebase_merge=false \
-  -F allow_update_branch=true
-```
-
-The resulting fields:
-
-```json
-{
-  "allow_merge_commit": true,
-  "allow_squash_merge": false,
-  "allow_rebase_merge": false,
-  "allow_update_branch": true
-}
-```
+- **Ruleset `main`** (branch: `~DEFAULT_BRANCH` and `refs/heads/main`): `deletion`,
+  `non_fast_forward`, `required_signatures`, and `pull_request` with merge commits only, 0
+  approvals, and thread resolution required.
+- **Ruleset `release-tags`** (tag: `refs/tags/v*`): `deletion`, `non_fast_forward`, and `update`.
+- **Repository merge settings**: merge commits on, squash and rebase off, "Update branch" on.
 
 Nothing else is protected. In particular, feature branches and tags that don't start with `v`
 have no rules.
@@ -171,47 +98,44 @@ left out because signing is already enforced at the only point that matters, the
 
 - **Merging.** Merge a PR only when the user asks in the current session, and then only with
   `gh pr merge <n> --merge`. Never use `--admin`, `--squash`, or `--rebase`.
-- **Settings.** Never create, edit, disable, or delete a ruleset, and never `PATCH` repo
-  settings, without the user's explicit approval in the current session. That includes the
-  [emergency path](#emergency-path).
+- **Settings.** Change rulesets and repo settings only through
+  [`apply-repo-rules`](../../skills/apply-repo-rules/SKILL.md). Its `apply` subcommand applies
+  `rules.md` from `origin/main` and needs no further approval, because the user's merge is the
+  approval. Applying from any other ref (`apply-ref`) needs the user's explicit approval in the
+  current session, and so does every other ruleset or repo-setting change, including the
+  [emergency path](#emergency-path) and [roll back](#roll-back).
 - **Updating a PR branch from its base.** Prefer the "Update with merge commit" button, or a local
   signed rebase (`git rebase` with `commit.gpgsign` on) followed by a force-push of the feature
   branch. Avoid "Update with rebase". It hasn't been verified, but its rebased commits may be
   unsigned, and `required_signatures` would then block the stack's eventual merge into `main`.
 - **Pushing.** Never push to `main`. Never force-push, move, or delete a `v*` tag. Sign every
   commit (`--gpg-sign`).
-- **Keeping this file current.** Change this spec in a PR first, and apply only after the user
-  merges it and approves the apply.
+- **Keeping this file current.** Change `rules.md` and this spec together in a PR, and apply
+  after the user merges it.
 
 ## Procedures
 
-All of these use `gh` authenticated as the owner. Every mutating call needs the user's approval
-(see [Rules for agents](#rules-for-agents)). Claude Code's auto-mode permission classifier may
-block these `gh api` mutations even after approval. If it does, stop, report the blocked command,
-and let the user run it. Don't work around the block.
+All of these use `gh` authenticated as the owner. The user allowlists the
+[`apply-repo-rules`](../../skills/apply-repo-rules/SKILL.md) commands in the agent host, and its
+Host setup section lists the rules. Agents run nothing else against these settings without the
+user's approval (see [Rules for agents](#rules-for-agents)). If the host denies a command, stop,
+report it, and let the user decide. Don't work around the denial.
 
 ### Apply
 
-Save the two payloads from [Desired state](#desired-state) as `main.json` and
-`release-tags.json`, then run:
+From the repository root:
 
 ```sh
-gh api --method POST -H "Accept: application/vnd.github+json" \
-  repos/bryant-finney/budge/rulesets --input main.json --jq '{id, name, enforcement}'
-gh api --method POST -H "Accept: application/vnd.github+json" \
-  repos/bryant-finney/budge/rulesets --input release-tags.json --jq '{id, name, enforcement}'
-gh api -X PATCH repos/bryant-finney/budge \
-  -F allow_merge_commit=true -F allow_squash_merge=false -F allow_rebase_merge=false \
-  -F allow_update_branch=true \
-  --jq '{allow_merge_commit, allow_squash_merge, allow_rebase_merge, allow_update_branch}'
+share/skills/apply-repo-rules/apply-repo-rules.sh apply
 ```
 
-To change a ruleset that already exists, send the full payload with
-`gh api --method PUT repos/bryant-finney/budge/rulesets/<id> --input <file>` instead of a
-`POST`. A `POST` with a name that's already taken creates a duplicate or fails.
+It fetches `origin/main` and reads `rules.md` there. Then it creates missing rulesets, `PUT`s
+any that differ (looked up by name, since a `POST` with a taken name creates a duplicate or
+fails), `PATCH`es merge settings that differ, and runs the [drift check](#check-for-drift). It
+never deletes a ruleset. `apply-ref <ref>` does the same from another ref, and needs the user's
+approval every time.
 
-After applying, run the [drift check](#check-for-drift). Then confirm that open PRs targeting
-`main` are still mergeable:
+After applying, confirm that open PRs targeting `main` are still mergeable:
 
 ```sh
 gh pr list --base main --state open --json number \
@@ -220,31 +144,21 @@ gh pr list --base main --state open --json number \
 
 ### Check for drift
 
-This is read-only, so agents may run it at any time. A `GET` adds server fields (`id`, `node_id`,
-`source`, `source_type`, `_links`, `created_at`, `updated_at`, `current_user_can_bypass`). Project
-both sides onto the desired keys and sort them before diffing. Look rulesets up by name, because
-IDs aren't fixed.
+This is read-only, so agents may run it at any time:
 
 ```sh
-keys='{name, target, enforcement, bypass_actors, conditions, rules}'
-for name in main release-tags; do
-  id=$(gh api repos/bryant-finney/budge/rulesets --jq ".[] | select(.name == \"$name\") | .id")
-  if [ -z "$id" ]; then echo "FAIL $name: ruleset missing"; continue; fi
-  diff <(jq -S "$keys" "$name.json") \
-       <(gh api "repos/bryant-finney/budge/rulesets/$id" | jq -S "$keys") \
-    && echo "OK   $name" || echo "FAIL $name: differs (see diff above)"
-done
-gh api repos/bryant-finney/budge \
-  --jq '{allow_merge_commit, allow_squash_merge, allow_rebase_merge, allow_update_branch}'
-# want: {"allow_merge_commit":true,"allow_squash_merge":false,"allow_rebase_merge":false,
-#        "allow_update_branch":true}
-gh api repos/bryant-finney/budge/rulesets --jq '.[].name'
-# want exactly: main, release-tags (anything else is drift, unless this spec lists it)
+share/skills/apply-repo-rules/apply-repo-rules.sh check        # against rules.md on origin/main
+share/skills/apply-repo-rules/apply-repo-rules.sh check HEAD   # against a PR branch's rules.md
 ```
 
+It prints `OK` or `FAIL` for each ruleset and for the repo settings, with a diff for each
+`FAIL`, and exits 1 on drift. It compares only the keys a payload sets, because a `GET` adds
+server fields such as `id` and `_links`. It looks rulesets up by name, because IDs aren't fixed.
+A live ruleset that `rules.md` doesn't list is drift too.
+
 The live API can return extra fields inside a rule. For example, a `pull_request` rule can gain
-newer parameters with default values. If the only differences are new defaulted fields, record
-them in this spec rather than treating them as drift.
+newer parameters with default values. If the only differences are new defaulted fields, add them
+to `rules.md` rather than treating them as drift.
 
 ### Emergency path
 
@@ -258,7 +172,8 @@ a bad tag. It needs the user's go-ahead every time.
 3. Do the one thing that needed it.
 4. Turn it back on:
    `gh api --method PUT repos/bryant-finney/budge/rulesets/<id> -f enforcement=active`.
-5. Run the [drift check](#check-for-drift) and confirm everything is `OK`.
+5. Run the [drift check](#check-for-drift) and confirm everything is `OK`. If you skip step 4,
+   the next `apply` turns enforcement back on.
 
 ### Roll back
 
@@ -267,7 +182,8 @@ To remove a ruleset entirely, run
 use step 2 of the [emergency path](#emergency-path) and leave it disabled. To restore the old
 merge settings, run
 `gh api -X PATCH repos/bryant-finney/budge -F allow_squash_merge=true -F allow_rebase_merge=true -F allow_update_branch=false`.
-Update this spec in the same change.
+Update `rules.md` and this spec in the same change, or the next `apply` reverts the rollback (it
+never deletes a ruleset, but it re-enables a disabled one and restores merge settings).
 
 ## Limits
 
@@ -327,18 +243,13 @@ on:
 ```
 
 **Rule (desired state once CI exists).** Once `ci-ok` has reported at least once on a PR, add
-this rule to the `main` payload above. Update this spec first, then `PUT` the full ruleset.
+these rows to the `main` Rule table in `rules.md`, merge the PR, and run [Apply](#apply).
 
-```json
-{
-  "type": "required_status_checks",
-  "parameters": {
-    "strict_required_status_checks_policy": true,
-    "do_not_enforce_on_create": false,
-    "required_status_checks": [{ "context": "ci-ok", "integration_id": 15368 }]
-  }
-}
-```
+| Rule                     | Parameter                              | Value                                             |
+| ------------------------ | -------------------------------------- | ------------------------------------------------- |
+| `required_status_checks` | `strict_required_status_checks_policy` | `true`                                            |
+| `required_status_checks` | `do_not_enforce_on_create`             | `false`                                           |
+| `required_status_checks` | `required_status_checks`               | `[{"context": "ci-ok", "integration_id": 15368}]` |
 
 - `context` must exactly match the job's check-run name, as reported by
   `gh api repos/bryant-finney/budge/commits/<sha>/check-runs --jq '.check_runs[].name'`.
@@ -367,7 +278,6 @@ decisions overrode #17's original text, which is why they're recorded here:
 | `required_linear_history` | on           | off (conflicts with merge commits) |
 
 The rest of #17 is out of scope here: CODEOWNERS, Actions permissions, security settings, labels,
-and the `repo-settings.sh` verification script. When that script lands, it should read its
-desired-state JSON from one place. Either move the payloads above into files the script reads
-and link them from here, or have the script read this file. Don't keep two copies that can drift
-apart.
+and the `repo-settings.sh` verification script. When that script lands, it should read rulesets
+and merge settings from `rules.md` (through `parse-rules.jq`) rather than keep a second copy that
+can drift apart.

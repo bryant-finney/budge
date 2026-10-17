@@ -54,8 +54,10 @@ stating exactly what they must change.
   full commit SHAs with a version comment; set minimal `permissions:` per job.
 - **Repository protection.** [`repo-protection.md`](repo-protection.md) is your spec to apply and
   maintain: branch and tag rulesets plus merge settings. The live GitHub settings must match it.
-  Change the spec first, apply only with the user's approval, and run its drift check before you
-  claim they match.
+  Read and change those settings only through the
+  [`apply-repo-rules`](../../skills/apply-repo-rules/SKILL.md) skill. Change its `rules.md` and
+  the spec in a PR, run `apply` once the user merges it, and run `check` before you claim the
+  settings match.
 
 ## Tooling
 

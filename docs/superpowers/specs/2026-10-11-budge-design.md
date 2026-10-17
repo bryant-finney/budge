@@ -62,7 +62,7 @@ duplicate can slip through.
   the SPA, exchanged once for a **signed session cookie** issued by the API, with
   a "remember me" option (§8). Two-identity allowlist enforced in the API. No
   Cognito, no PKCE, no server-side session store.
-- **Frontend:** SvelteKit (`adapter-static`, SPA, **hash router**) +
+- **Frontend:** SvelteKit 3 (`adapter-static`, SPA, **hash router**) +
   TypeScript; **Layerchart** for the chart.
 - **Hosting:** S3 + CloudFront (HTTPS) on a **custom domain** — Route 53 hosted
   zone + ACM certificate (us-east-1), all managed by Pulumi.
@@ -75,8 +75,7 @@ duplicate can slip through.
 ### Components
 
 - **Frontend SPA** — SvelteKit built static, served from S3 + CloudFront over
-  HTTPS. Uses SvelteKit's hash router (`kit.router.type = 'hash'`, SvelteKit ≥
-  2.14), so every view is served by the single `index.html` (`#/`,
+  HTTPS. Uses SvelteKit's hash router (`router: { type: 'hash' }`), so every view is served by the single `index.html` (`#/`,
   `#/connections`) and CloudFront needs no SPA rewrites, fallback page, or
   custom error responses. Authenticates with Google, then relies on the API's
   session cookie.
@@ -641,6 +640,10 @@ One envelope for **every** error, including FastAPI's request-validation errors
 - **SvelteKit** with `adapter-static` (SPA, `ssr = false`) and the **hash
   router** → pure static files to S3 + CloudFront. All in-app links start with
   `#/`. TypeScript throughout.
+- **Configuration (SvelteKit 3):** SvelteKit 3 no longer reads
+  `svelte.config.js`; the options formerly under `config.kit` are passed
+  directly to the `sveltekit()` Vite plugin in `vite.config.ts`, e.g.
+  `sveltekit({ router: { type: 'hash' }, adapter: adapter({ fallback: 'index.html' }) })`.
 - **Supported browsers (v1):** current Chrome, Edge, Firefox, and Safari on
   Windows/macOS; Chrome on Android. No iOS (§2).
 - **Views:** `#/` — the weekly chart + headline total; `#/connections` — list /
@@ -701,9 +704,9 @@ Versions and tools below are the *builder's call*; adjust at milestone 1.
 
 ```text
 src/
-  backend/  # uv project: budge package (api/, ingestion/, storage/, plaid_client/, classify/), tests/, Dockerfile
-  frontend/ # SvelteKit app (pnpm)
-  infra/    # Pulumi TypeScript program (pnpm)
+  back-end/       # uv project: budge package (api/, ingestion/, storage/, plaid_client/, classify/), tests/, Dockerfile
+  front-end/      # SvelteKit app (pnpm)
+  infrastructure/ # Pulumi TypeScript program (pnpm)
 docs/
 .github/workflows/
 ```
@@ -715,14 +718,15 @@ docs/
   version matrix. The Lambdas run on the **newest generally available Lambda
   Python runtime** (base image `public.ecr.aws/lambda/python:3.14` today;
   `python3.15` is in Lambda public preview only, not for production). Managed
-  with **uv**; **ruff** (lint + format), **mypy** (strict), **pytest** (+ moto,
-  coverage).
-- **TypeScript:** Node 24 LTS, **pnpm** workspace (`frontend`, `infra`);
+  with **uv**; **ruff** (lint + format), **mypy** (strict), **pyright** (strict),
+  **pytest** (+ moto, coverage).
+- **TypeScript:** Node 24 LTS, **pnpm** workspace (`front-end`, `infrastructure`);
   **eslint**, **prettier**, **svelte-check**, **Vitest** + Svelte Testing
   Library.
 - **pre-commit:** the existing generic, mdformat, markdownlint-cli2, gitleaks
-  (secret scanning), yamllint, and taplo hooks, plus ruff, mypy, eslint,
-  prettier, and svelte-check.
+  (secret scanning), yamllint, and taplo hooks, plus ruff, mypy, pyright,
+  eslint, prettier, and svelte-check. Every lint, format, and static-analysis
+  check that CI/CD runs has a local parallel, via `pre-commit` where possible.
 - **Local dev:** `.envrc` copies the template `etc/base.env` to `.env` on first
   use and loads it with direnv's `dotenv_if_exists`. `.env` (git-ignored) holds
   `PLAID_CLIENT_ID`, `PLAID_CLIENT_SECRET`, `PLAID_ENV` (Plaid Sandbox creds),
@@ -817,7 +821,7 @@ docs/
   (`pulumi stack init prod --secrets-provider "awskms://alias/budge-pulumi-secrets?region=us-east-1"`).
   The state bucket (versioning on, Block Public Access, SSE) and KMS key can't
   be managed by the stack whose state they hold, so a one-time, idempotent
-  `src/infra/bootstrap.sh` (AWS CLI) creates them, along with the GitHub OIDC
+  `src/infrastructure/bootstrap.sh` (AWS CLI) creates them, along with the GitHub OIDC
   provider and deploy role. Pulumi's S3 backend writes its own lock files, so
   concurrent `pulumi up` runs are refused.
 - **Config:** non-secret settings in Pulumi config — domain name,

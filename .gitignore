@@ -16,6 +16,7 @@ docs/*
 
 # Data
 *.csv*
+!src/back-end/budge/classify/pfc-taxonomy-v2.csv
 *.dat*
 *.md5
 *.out

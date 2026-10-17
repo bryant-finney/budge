@@ -1,7 +1,7 @@
 ---
 name: b-end
 description: >-
-  Back-end owner for budge. Use for any work under `src/backend/` — idiomatic Python, FastAPI routes and
+  Back-end owner for budge. Use for any work under `src/back-end/` — idiomatic Python, FastAPI routes and
   Pydantic models, the ingestion Lambda, the storage/secrets repository modules, the Plaid client, the
   exclusion classifier, the backend Dockerfile, and Python dependency versions/upgrades managed with
   `uv`. Also use to review Python changes for typing, linting, and test coverage.

@@ -1,0 +1,80 @@
+# Coverage.py
+htmlcov/
+reports/
+
+# documentation
+_readthedocs/
+docs/*
+!docs/superpowers/
+
+# Claude Code
+.claude/settings.local.json
+.claude/agent-memory-local/
+
+# cruft
+*.rej
+
+# Data
+*.csv*
+*.dat*
+*.md5
+*.out
+*.pickle*
+*.xls*
+*.zip*
+
+# environment config
+!.envrc
+!etc/base.env
+*.env*
+buildx.yml
+config.yml
+
+# Hypothesis
+.hypothesis/
+
+# Jupyter
+*.ipynb
+.ipynb_checkpoints/
+.local
+notebooks/
+
+# macOS
+.DS_Store
+
+# mypy
+.dmypy.json
+.mypy_cache/
+
+# Node.js
+node_modules/
+
+# Pulumi
+.pulumi/
+
+# SvelteKit
+.svelte-kit/
+build/
+node_modules/
+
+# Python
+*.py[cdo]
+.pytest_cache/
+.python-version
+.testmondata*
+.venv/
+__pycache__/
+dist/
+
+# PyCharm
+.idea/
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# misc
+*.bak
+.*.bak
+.cache
+.coverage

@@ -1,0 +1,2 @@
+config:
+  MD013: false  # line-length: mdformat preserves wrapping; long table rows and URLs are unavoidable

@@ -11,6 +11,6 @@
     "moduleResolution": "bundler"
   },
   "include": [
-    "src"
+    "lib"
   ]
 }

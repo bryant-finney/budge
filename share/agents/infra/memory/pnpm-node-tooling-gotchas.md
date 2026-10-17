@@ -48,6 +48,14 @@ Found while building the root pnpm workspace (#12, 2026-10-17).
   script (`tsc --noEmit`). The infrastructure tsconfig already carries #13's CommonJS options, so
   #13 only widens `include`. The front-end tsconfig sets `target`/`lib`/`module`/
   `moduleResolution` itself; #6 drops them when it switches to `$app/tsconfig`, which sets them.
+- **TS packages are flat, with no nested `src/`** (user decision, 2026-10-17), like
+  `src/back-end/budge/`: `src/front-end/lib/index.ts`, `src/infrastructure/config.ts`. SvelteKit
+  takes `sveltekit({ files: { src: '.' } })` (#6 must verify that dev/build/svelte-check/Vitest
+  don't scan `node_modules`, `build/` or `.svelte-kit/`; the fallback is a non-`src` dir such as
+  `src/front-end/app/`). Kit 3 dropped `$lib`, so `src/front-end/package.json` declares
+  `"imports": { "#lib": "./lib/index.ts", "#lib/*": "./lib/*" }`. The docs show a `.js` target
+  (`./src/lib/index.js`). Both resolve in tsc (bundler) and Vite 8, but only the `.ts` target
+  resolves in plain Node 24 (`ERR_MODULE_NOT_FOUND`), so the target names the real file.
 - **Proving coverage:** `prettier --check` lists only failing files. To count what it reaches,
   run `prettier --write .` on a clean tree: Prettier 3 logs every matched file as `(unchanged)`.
   For tsc, use `tsc --noEmit --listFilesOnly | grep -v node_modules`.

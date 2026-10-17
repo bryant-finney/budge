@@ -52,6 +52,10 @@ stating exactly what they must change.
 - **CI/CD.** GitHub Actions: pull requests run pre-commit, type checks, and both test suites; `main`
   builds the `linux/arm64` image, runs `pulumi up`, deploys the SPA, and smoke-tests. Pin actions to
   full commit SHAs with a version comment; set minimal `permissions:` per job.
+- **Repository protection.** [`repo-protection.md`](repo-protection.md) is your spec to apply and
+  maintain: branch and tag rulesets plus merge settings. The live GitHub settings must match it.
+  Change the spec first, apply only with the user's approval, and run its drift check before you
+  claim they match.
 
 ## Tooling
 

@@ -1,0 +1,360 @@
+# Repository protection spec
+
+This is the desired state for branch, tag, and merge protection on
+[`bryant-finney/budge`](https://github.com/bryant-finney/budge). **infra** owns it: infra applies
+it, keeps the live GitHub settings in line with it, and updates this file first whenever a rule
+changes. It is written for both the user and coding agents. People should read the rationale
+sections, and agents should follow [Desired state](#desired-state) and
+[Procedures](#procedures).
+
+## Context
+
+- The repo is public and owned by a user account on GitHub Free. Rulesets are available. The
+  `evaluate` (dry-run) enforcement mode is Enterprise-only, so every ruleset here is `active`.
+- There is one human, `bryant-finney` (repo admin). Coding agents (b-end, f-end, infra) run as
+  that same account and sign their commits with the same GPG key.
+- Agents open stacked PRs: one per issue, with branches named `<type>/<issue#>/<slug>`. Each PR
+  usually targets the previous issue's branch rather than `main`. When a parent PR merges, GitHub
+  retargets the child to `main`. `delete_branch_on_merge` is on.
+- PRs are merged with merge commits (the first was PR #18, merged as `a3a760f`). Local commits are
+  GPG-signed. Commits made through the web UI (merge button, applied review suggestions) are
+  signed by GitHub's web-flow key. That key isn't in the local keyring, so
+  `git log --format=%G?` shows `E` for those commits, but GitHub reports them `verified: true`.
+- Required status checks wait until CI workflows exist. See [Future CI](#future-ci).
+
+## Desired state
+
+Agents compare the live repo against exactly these three items.
+
+### Ruleset `main`
+
+The payload for `POST /repos/bryant-finney/budge/rulesets`:
+
+```json
+{
+  "name": "main",
+  "target": "branch",
+  "enforcement": "active",
+  "conditions": {
+    "ref_name": {
+      "include": ["~DEFAULT_BRANCH", "refs/heads/main"],
+      "exclude": []
+    }
+  },
+  "bypass_actors": [],
+  "rules": [
+    { "type": "deletion" },
+    { "type": "non_fast_forward" },
+    { "type": "required_signatures" },
+    {
+      "type": "pull_request",
+      "parameters": {
+        "allowed_merge_methods": ["merge"],
+        "dismiss_stale_reviews_on_push": false,
+        "require_code_owner_review": false,
+        "require_last_push_approval": false,
+        "required_approving_review_count": 0,
+        "required_review_thread_resolution": false
+      }
+    }
+  ]
+}
+```
+
+### Ruleset `release-tags`
+
+The payload for `POST /repos/bryant-finney/budge/rulesets`:
+
+```json
+{
+  "name": "release-tags",
+  "target": "tag",
+  "enforcement": "active",
+  "conditions": {
+    "ref_name": {
+      "include": ["refs/tags/v*"],
+      "exclude": []
+    }
+  },
+  "bypass_actors": [],
+  "rules": [
+    { "type": "deletion" },
+    { "type": "non_fast_forward" },
+    {
+      "type": "update",
+      "parameters": { "update_allows_fetch_and_merge": false }
+    }
+  ]
+}
+```
+
+### Repository merge settings
+
+```sh
+gh api -X PATCH repos/bryant-finney/budge \
+  -F allow_merge_commit=true -F allow_squash_merge=false -F allow_rebase_merge=false
+```
+
+The resulting fields:
+
+```json
+{ "allow_merge_commit": true, "allow_squash_merge": false, "allow_rebase_merge": false }
+```
+
+Nothing else is protected. In particular, feature branches and tags that don't start with `v`
+have no rules.
+
+## Rationale
+
+### `main`
+
+| Rule                                                          | Setting                                 | Why                                                                                                                                                                                                                                                                                                |
+| ------------------------------------------------------------- | --------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Target                                                        | `~DEFAULT_BRANCH` and `refs/heads/main` | Follows a rename of the default branch, and keeps `main` covered if the default ever changes.                                                                                                                                                                                                      |
+| `deletion`                                                    | on                                      | `main` can't be deleted.                                                                                                                                                                                                                                                                           |
+| `non_fast_forward`                                            | on                                      | No force-push or history rewrite.                                                                                                                                                                                                                                                                  |
+| `required_signatures`                                         | on                                      | Already 100% true in practice. It applies to every commit in a PR's head, not only the merge commit, so an unsigned commit anywhere in a stack blocks the final merge into `main`.                                                                                                                 |
+| `pull_request`                                                | on                                      | Every change reaches `main` through a PR, and direct pushes are refused. The PR is the user's merge gate.                                                                                                                                                                                          |
+| `required_approving_review_count`                             | `0`                                     | GitHub doesn't let an author approve their own PR. Agents push as the only human, so a value of 1 or more would make every PR unmergeable.                                                                                                                                                         |
+| Last-push approval, stale-review dismissal, code-owner review | off                                     | These only matter when approvals are required.                                                                                                                                                                                                                                                     |
+| `required_review_thread_resolution`                           | off                                     | Bot or Copilot review threads would otherwise block merges. Turn it on later if unresolved threads should block.                                                                                                                                                                                   |
+| `allowed_merge_methods`                                       | `["merge"]`                             | Matches how PRs are merged today. When a parent PR merges with a merge commit, the retargeted child's diff stays clean. Squash or rebase rewrites the parent's commits, so the child shows them again and conflicts. GitHub signs its own merge commits, so this works with `required_signatures`. |
+| `required_linear_history`                                     | absent                                  | It would forbid the merge commits chosen above.                                                                                                                                                                                                                                                    |
+| `required_status_checks`                                      | absent                                  | No CI exists yet. A required check that never reports blocks every PR forever. See [Future CI](#future-ci).                                                                                                                                                                                        |
+| `bypass_actors`                                               | `[]`                                    | The normal flow (0 approvals, no checks) never needs a bypass. Even a PR-only admin bypass is unsafe here. Agents act as the admin, so an agent could run `gh pr merge --admin --rebase` and land rebased commits on `main` that may be unsigned, skipping `required_signatures`.                  |
+
+Having no bypass can't lock the owner out. Editing, disabling, or deleting a ruleset is a
+repo-admin permission and doesn't depend on bypass. The escape hatch is the
+[emergency path](#emergency-path). The REST spec also allows a `User` bypass actor; it isn't used,
+for the same reason.
+
+### `release-tags`
+
+| Rule                                              | Why                                                                                                                                                                                                                                                                                                                                                                                     |
+| ------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `deletion`                                        | A published `v*` tag can't be removed.                                                                                                                                                                                                                                                                                                                                                  |
+| `update` (`update_allows_fetch_and_merge: false`) | A published `v*` tag can't be moved to another commit.                                                                                                                                                                                                                                                                                                                                  |
+| `non_fast_forward`                                | An extra guard against force-moving a tag. Harmless next to `update`.                                                                                                                                                                                                                                                                                                                   |
+| `creation` left open                              | Restricting creation only works with a bypass actor to create tags. Bypass covers the whole ruleset, not one rule, so a bypass actor could also delete and move tags. The owner and the agents are the same admin, so that would remove immutability for exactly the actors it guards against. Leaving creation open also lets a future release workflow on `GITHUB_TOKEN` create tags. |
+| `bypass_actors: []`                               | Tags are truly immutable. To fix a bad tag, use the [emergency path](#emergency-path).                                                                                                                                                                                                                                                                                                  |
+
+Only the `v*` pattern is used. No tags exist yet, and a narrower pattern such as
+`v[0-9]*` buys nothing until a release scheme exists.
+
+### Merge settings
+
+The `main` ruleset only governs merges into `main`. A child PR merged into its parent branch
+inside a stack isn't covered by any ruleset, because feature branches are deliberately
+unprotected. Turning squash and rebase off for the whole repo keeps those merges
+merge-commit-only too, so no rewritten or unsigned commits enter a stack through the merge
+button.
+
+### Feature branches: deliberately unprotected
+
+Agents force-push stacked branches after rebasing them onto an updated parent, and merged
+branches are deleted automatically. `non_fast_forward` or `deletion` on `feat/*` or `chore/*`
+would break that workflow. Requiring signatures on every branch was also considered. It was
+left out because signing is already enforced at the only point that matters, the merge into
+`main`.
+
+## Rules for agents
+
+- **Merging.** Merge a PR only when the user asks in the current session, and then only with
+  `gh pr merge <n> --merge`. Never use `--admin`, `--squash`, or `--rebase`.
+- **Settings.** Never create, edit, disable, or delete a ruleset, and never `PATCH` repo
+  settings, without the user's explicit approval in the current session. That includes the
+  [emergency path](#emergency-path).
+- **Updating a PR branch from its base.** Prefer the "Update with merge commit" button, or a local
+  signed rebase (`git rebase` with `commit.gpgsign` on) followed by a force-push of the feature
+  branch. Avoid "Update with rebase". It hasn't been verified, but its rebased commits may be
+  unsigned, and `required_signatures` would then block the stack's eventual merge into `main`.
+- **Pushing.** Never push to `main`. Never force-push, move, or delete a `v*` tag. Sign every
+  commit (`--gpg-sign`).
+- **Keeping this file current.** Change this spec in a PR first, and apply only after the user
+  merges it and approves the apply.
+
+## Procedures
+
+All of these use `gh` authenticated as the owner. Every mutating call needs the user's approval
+(see [Rules for agents](#rules-for-agents)). Claude Code's auto-mode permission classifier may
+block these `gh api` mutations even after approval. If it does, stop, report the blocked command,
+and let the user run it. Don't work around the block.
+
+### Apply
+
+Save the two payloads from [Desired state](#desired-state) as `main.json` and
+`release-tags.json`, then run:
+
+```sh
+gh api --method POST -H "Accept: application/vnd.github+json" \
+  repos/bryant-finney/budge/rulesets --input main.json --jq '{id, name, enforcement}'
+gh api --method POST -H "Accept: application/vnd.github+json" \
+  repos/bryant-finney/budge/rulesets --input release-tags.json --jq '{id, name, enforcement}'
+gh api -X PATCH repos/bryant-finney/budge \
+  -F allow_merge_commit=true -F allow_squash_merge=false -F allow_rebase_merge=false \
+  --jq '{allow_merge_commit, allow_squash_merge, allow_rebase_merge}'
+```
+
+To change a ruleset that already exists, send the full payload with
+`gh api --method PUT repos/bryant-finney/budge/rulesets/<id> --input <file>` instead of a
+`POST`. A `POST` with a name that's already taken creates a duplicate or fails.
+
+After applying, run the [drift check](#check-for-drift). Then confirm that open PRs targeting
+`main` are still mergeable:
+
+```sh
+gh pr list --base main --state open --json number \
+  --jq '.[].number' | xargs -I{} gh pr view {} --json number,mergeable,mergeStateStatus
+```
+
+### Check for drift
+
+This is read-only, so agents may run it at any time. A `GET` adds server fields (`id`, `node_id`,
+`source`, `source_type`, `_links`, `created_at`, `updated_at`, `current_user_can_bypass`). Project
+both sides onto the desired keys and sort them before diffing. Look rulesets up by name, because
+IDs aren't fixed.
+
+```sh
+keys='{name, target, enforcement, bypass_actors, conditions, rules}'
+for name in main release-tags; do
+  id=$(gh api repos/bryant-finney/budge/rulesets --jq ".[] | select(.name == \"$name\") | .id")
+  if [ -z "$id" ]; then echo "FAIL $name: ruleset missing"; continue; fi
+  diff <(jq -S "$keys" "$name.json") \
+       <(gh api "repos/bryant-finney/budge/rulesets/$id" | jq -S "$keys") \
+    && echo "OK   $name" || echo "FAIL $name: differs (see diff above)"
+done
+gh api repos/bryant-finney/budge \
+  --jq '{allow_merge_commit, allow_squash_merge, allow_rebase_merge}'
+# want: {"allow_merge_commit":true,"allow_squash_merge":false,"allow_rebase_merge":false}
+gh api repos/bryant-finney/budge/rulesets --jq '.[].name'
+# want exactly: main, release-tags (anything else is drift, unless this spec lists it)
+```
+
+The live API can return extra fields inside a rule. For example, a `pull_request` rule can gain
+newer parameters with default values. If the only differences are new defaulted fields, record
+them in this spec rather than treating them as drift.
+
+### Emergency path
+
+Use this for something no rule allows, such as a hotfix pushed directly to `main` or re-pointing
+a bad tag. It needs the user's go-ahead every time.
+
+1. Find the ruleset's id:
+   `gh api repos/bryant-finney/budge/rulesets --jq '.[] | {id, name}'`.
+2. Disable it:
+   `gh api --method PUT repos/bryant-finney/budge/rulesets/<id> -f enforcement=disabled`.
+3. Do the one thing that needed it.
+4. Turn it back on:
+   `gh api --method PUT repos/bryant-finney/budge/rulesets/<id> -f enforcement=active`.
+5. Run the [drift check](#check-for-drift) and confirm everything is `OK`.
+
+### Roll back
+
+To remove a ruleset entirely, run
+`gh api --method DELETE repos/bryant-finney/budge/rulesets/<id>`. To soften it without losing it,
+use step 2 of the [emergency path](#emergency-path) and leave it disabled. To restore the old
+merge settings, run
+`gh api -X PATCH repos/bryant-finney/budge -F allow_squash_merge=true -F allow_rebase_merge=true`.
+Update this spec in the same change.
+
+## Limits
+
+These rules stop **accidents**: a mistaken push to `main`, a force-push, a deleted branch or tag,
+or a squash or rebase merge that breaks a stack. They **don't stop a misbehaving agent**,
+because agents act as the admin:
+
+- Agents share the owner's admin identity and GPG key, so their commits are signed and verified
+  like the owner's.
+- With 0 approvals and no checks required, an agent can open a PR and merge it itself.
+- An agent holding admin credentials can `PUT` or `DELETE` the rulesets and `PATCH` repo
+  settings.
+
+The real controls sit outside GitHub.
+
+- **Agent permission deny-rules** (in Claude Code settings; only the user changes them). Narrow
+  each rule to `main` and tags where the matcher allows it, because a blanket force-push deny
+  would also block normal rebases of stacked feature branches.
+  - `Bash(gh pr merge:*)`: only the user merges, unless the user asks in the current session.
+  - `gh api` with `--method`/`-X` `POST`, `PUT`, `PATCH`, or `DELETE` on `repos/*/rulesets*`,
+    on `repos/bryant-finney/budge` itself (repo settings), and on `repos/*/git/refs*`.
+  - `Bash(git push origin main:*)`, `Bash(git push --tags:*)`, `Bash(git push origin v*:*)`,
+    `Bash(git push --delete:*)`, and `Bash(git tag -d:*)`.
+- **A separate non-admin agent identity** (longer term): a machine user with write access, or a
+  GitHub App. With that, `required_approving_review_count: 1` becomes workable, and agents can
+  no longer edit rulesets.
+
+### Public-repo access
+
+- Outside users get read access only. They can open PRs from forks, but they can't push here or
+  merge anything. Merging needs write access.
+- `required_approving_review_count: 0` only affects accounts with write access, which today means
+  only the owner. **When a write collaborator is added, raise it to 1** so nobody else can merge
+  their own PR unreviewed.
+- Audit GitHub Apps that have `contents: write`, because an app with write access can push past
+  anything a bypass list doesn't name. There is a `copilot` environment, so check what the
+  Copilot app is allowed to do. This read-only listing shows what's installed:
+  `gh api user/installations --jq '.installations[] | {app_slug, permissions}'`.
+- Workflows (once they exist): never use `pull_request_target` to check out or run fork code
+  with secrets. Set Actions to **require approval for all outside contributors** before workflows
+  run on their PRs.
+
+## Future CI
+
+When PR workflows land (issue #15), add the required checks to the `main` ruleset.
+
+**Trigger.** Don't put a `branches:` filter on `on.pull_request`. Stacked PRs target feature
+branches first and are retargeted to `main` when the parent merges. With `branches: [main]` the
+checks never run for those heads, so the required check never reports. Include `edited` so that
+a base change re-runs the checks:
+
+```yaml
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
+```
+
+**Rule.** Once the check has reported at least once on a PR, add this rule to the `main`
+payload above. Update this spec first, then `PUT` the full ruleset.
+
+```json
+{
+  "type": "required_status_checks",
+  "parameters": {
+    "strict_required_status_checks_policy": false,
+    "do_not_enforce_on_create": false,
+    "required_status_checks": [{ "context": "ci-ok", "integration_id": 15368 }]
+  }
+}
+```
+
+- `context` must exactly match the job's check-run name, as reported by
+  `gh api repos/bryant-finney/budge/commits/<sha>/check-runs --jq '.check_runs[].name'`.
+  Require one aggregating job (`ci-ok`) rather than each matrix leg, so adding a Python version
+  doesn't change the ruleset.
+- `integration_id: 15368` is the GitHub Actions app. It stops another app from reporting a
+  spoofed `ci-ok`.
+- `strict_required_status_checks_policy: false`: strict mode forces every open PR in a stack to be
+  updated each time anything lands on `main`, which is constant churn with stacked PRs.
+- **Never add the GitHub Actions app, or any workflow token, as a bypass actor.** Any workflow
+  run, including one triggered by a PR, could then push past the rules.
+
+## Relationship to issue #17
+
+Issue #17 (repo settings as code) was written while the repo was private, when rulesets returned
+403\. Sections 2 and 3 of it conflict with this spec. The user has to choose: either update #17 to
+match this spec, or overrule this spec and change it here first.
+
+| Topic                               | #17 says                       | This spec says                                      | Why this spec differs                                                                |
+| ----------------------------------- | ------------------------------ | --------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| Merge method                        | squash only                    | merge commit only                                   | Stacked-PR retargeting stays clean. GitHub signs merge commits. Matches PR #18.      |
+| `required_linear_history`           | on                             | off                                                 | Linear history forbids merge commits.                                                |
+| `required_review_thread_resolution` | `true`                         | `false`                                             | Bot or Copilot threads would block merges. Easy to turn on later.                    |
+| `required_status_checks`            | `ci-ok`, `strict: true`        | none until CI exists; then `ci-ok`, `strict: false` | A check that never reports blocks every PR. Strict mode causes churn on stacked PRs. |
+| `squash_merge_commit_*`             | `PR_TITLE` / `COMMIT_MESSAGES` | not applicable                                      | Squash merging is off.                                                               |
+| Bypass                              | none                           | none                                                | Agreed.                                                                              |
+
+The rest of #17 is out of scope here and unchanged: CODEOWNERS, Actions permissions, security
+settings, labels, and the `repo-settings.sh` verification script. When that script lands, it
+should read its desired-state JSON from one place. Either move the payloads above into files the
+script reads and link them from here, or have the script read this file. Don't keep two copies
+that can drift apart.

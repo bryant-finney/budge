@@ -245,11 +245,11 @@ on:
 **Rule (desired state once CI exists).** Once `ci-ok` has reported at least once on a PR, add
 these rows to the `main` Rule table in `rules.md`, merge the PR, and run [Apply](#apply).
 
-| Rule                     | Parameter                              | Value                                             |
-| ------------------------ | -------------------------------------- | ------------------------------------------------- |
-| `required_status_checks` | `strict_required_status_checks_policy` | `true`                                            |
-| `required_status_checks` | `do_not_enforce_on_create`             | `false`                                           |
-| `required_status_checks` | `required_status_checks`               | `[{"context": "ci-ok", "integration_id": 15368}]` |
+|     | Rule                     | Parameter                              | Value                                             |
+| --- | ------------------------ | -------------------------------------- | ------------------------------------------------- |
+| ✅  | `required_status_checks` | `strict_required_status_checks_policy` | `true`                                            |
+| ❌  | `required_status_checks` | `do_not_enforce_on_create`             | `false`                                           |
+|     | `required_status_checks` | `required_status_checks`               | `[{"context": "ci-ok", "integration_id": 15368}]` |
 
 - `context` must exactly match the job's check-run name, as reported by
   `gh api repos/bryant-finney/budge/commits/<sha>/check-runs --jq '.check_runs[].name'`.

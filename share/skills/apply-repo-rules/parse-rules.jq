@@ -13,7 +13,7 @@ def list: spans | map(parse);
 # index of the ruleset being filled
 def cur: (.rulesets | length) - 1;
 
-reduce (split("\n")[]) as $line ({rulesets: [], settings: {}, section: null, table: null};
+reduce (split("\n")[]) as $line ({rulesets: [], settings: {}, section: null, table: null, marks: false};
   if ($line | startswith("## ")) then
     ($line[3:] | unspan | strip) as $heading
     | .table = null
@@ -33,11 +33,22 @@ reduce (split("\n")[]) as $line ({rulesets: [], settings: {}, section: null, tab
   elif ($line | startswith("|") | not) then .table = null
   elif .section == null then .
   else
-    ($line | cells) as $c
-    | if ($c[0] | test("^:?-+:?$")) then .
-      # the first row of a table is its header, which names the table
-      elif .table == null then .table = ($c[0] | ascii_downcase)
-      elif .section == "settings" then .settings[$c[0] | unspan] = ($c[1] | value)
+    ($line | cells) as $raw
+    | if ($raw[0] | test("^:?-+:?$")) then .
+      # the first row of a table is its header, which names the table; an unlabeled first
+      # column holds ✅/❌ marks for boolean values
+      elif .table == null then
+        .marks = ($raw[0] == "")
+        | .table = ((if .marks then $raw[1] else $raw[0] end) | ascii_downcase)
+      else
+        (if .marks then $raw[1:] else $raw end) as $c
+        | ($c[-1] | value) as $v
+        | (if $v == true then "✅" elif $v == false then "❌" else "" end) as $want
+        | if .marks and $raw[0] != $want then
+            error("row \"\($c | join(" | "))\": mark \"\($raw[0])\" should be \"\($want)\"")
+          else .
+          end
+        | if .section == "settings" then .settings[$c[0] | unspan] = ($c[1] | value)
       elif .table == "setting" then
         ($c[0] | unspan) as $key
         | if $key == "target" or $key == "enforcement" then
@@ -59,6 +70,7 @@ reduce (split("\n")[]) as $line ({rulesets: [], settings: {}, section: null, tab
           else .rulesets[cur].rules[$i].parameters[$param] = ($c[2] | value)
           end
       else error("unknown table \"\(.table)\" in ruleset \(.rulesets[cur].name)")
+      end
       end
   end)
 | {rulesets, settings}

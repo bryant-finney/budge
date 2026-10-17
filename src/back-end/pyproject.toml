@@ -1,0 +1,61 @@
+[project]
+name = "budge"
+version = "0.1.0"
+description = "Trailing-7-day discretionary spend tracker: FastAPI API and Plaid ingestion Lambdas."
+requires-python = ">=3.11"
+# compatible-release pins: `~=MAJOR.MINOR` for stable (>=1.0) packages, `~=0.MINOR.PATCH` for 0.x packages
+dependencies = ["fastapi~=0.143.3", "mangum~=0.22.0", "pydantic~=2.14"]
+
+[dependency-groups]
+dev = [
+  "httpx~=0.28.1",
+  "pytest-clarity~=1.0",
+  "pytest-cov~=7.1",
+  "pytest-mock~=3.17",
+  "pytest~=9.1",
+]
+
+[build-system]
+build-backend = "uv_build"
+requires = ["uv_build>=0.13.1,<0.14"]
+
+[tool.coverage.report]
+exclude_also = [
+  'if TYPE_CHECKING:',
+  '^\s*\.\.\.\s*$',
+  'raise NotImplementedError',
+]
+fail_under = 90
+show_missing = true
+
+[tool.coverage.run]
+branch = true
+# coverage defaults to the `sysmon` core on Python >= 3.14, which can't record the per-test dynamic contexts that
+# `--cov-context=test` switches at runtime (CoverageWarning `no-sysmon-context`, fatal under `filterwarnings = error`)
+core = "ctrace"
+source = ["budge"]
+
+[tool.pytest.ini_options]
+addopts = [
+  "--strict-markers",
+  "--strict-config",
+  "--doctest-modules",
+  "--cov",
+  "--cov-context=test",
+  "--cov-report=term-missing",
+  "-m",
+  "not integration",
+]
+filterwarnings = ["error"]
+markers = [
+  "integration: needs real Plaid Sandbox or a container; excluded by default",
+]
+testpaths = ["budge", "tests"]
+xfail_strict = true
+
+[tool.uv]
+required-version = ">=0.13,<0.14"
+
+[tool.uv.build-backend]
+module-name = "budge"
+module-root = ""

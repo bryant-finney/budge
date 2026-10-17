@@ -13,7 +13,10 @@ coordinator. The denied calls were `gh api --method POST .../rulesets`,
 `gh api -X PATCH repos/bryant-finney/budge`, and the spec's read-only drift check. The mutations were refused as
 "Account & Standing-Rule Changes". Once that refusal was in context, plain `GET`s of rulesets and
 repo settings were refused too. Writing the skill that replaced those calls was also denied once
-as "Auto-Mode Bypass", until the user directed the work in the session.
+as "Auto-Mode Bypass", until the user directed the work in the session. Without the skill's Host
+setup rules in place, `apply-repo-rules.sh apply-ref <ref>` was denied the same way (2026-10-17),
+even with the user's approval relayed. After that, the read-only `gh pr list`/`gh pr view`
+mergeability check was denied too.
 
 **Why:** the classifier treats GitHub ruleset and repo-setting changes as standing-rule changes,
 and approval relayed by another agent isn't the user's own consent. Allow rules that the user

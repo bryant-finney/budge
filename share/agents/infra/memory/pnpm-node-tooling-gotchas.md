@@ -1,6 +1,6 @@
 ---
 name: pnpm-node-tooling-gotchas
-description: pnpm 12 lockfile vs check-yaml, nodenv vs major-only .node-version, global gitignore hiding .node-version
+description: pnpm 12 lockfile vs check-yaml, nodenv vs major-only .node-version, global gitignore hiding .node-version, skeleton packages, proving tool coverage
 metadata:
   type: project
 ---
@@ -44,9 +44,20 @@ Found while building the root pnpm workspace (#12, 2026-10-17).
   file, so Prettier doesn't skip them. `.prettierignore` lists `.claude/worktrees/`.
 - **`prettier-plugin-svelte` peers `svelte`.** pnpm's `autoInstallPeers` puts it in the root
   lockfile, which is expected, and the version changes once `front-end` declares `svelte`.
+- **Skeleton packages (PR #18 review):** both packages exist from #12 on, with only a `check`
+  script (`tsc --noEmit`). The infrastructure tsconfig already carries #13's CommonJS options, so
+  #13 only widens `include`. The front-end tsconfig sets `target`/`lib`/`module`/
+  `moduleResolution` itself; #6 drops them when it switches to `$app/tsconfig`, which sets them.
+- **Proving coverage:** `prettier --check` lists only failing files. To count what it reaches,
+  run `prettier --write .` on a clean tree: Prettier 3 logs every matched file as `(unchanged)`.
+  For tsc, use `tsc --noEmit --listFilesOnly | grep -v node_modules`.
+- **`pnpm -r run` stops at the first failing package and kills the others** (SIGKILL), so root
+  `pnpm run check` reports only one package's errors. To see every failure (e.g. when proving
+  negative probes), run `pnpm -C <pkg> run check` per package, or pass `--no-bail`.
 - **Agent sessions:** the worktree guard rejects Bash commands that mention the scratchpad path,
   because the path contains `github`. Run pnpm through `npx --yes pnpm@<ver>` instead of a
-  scratchpad install.
+  scratchpad install. zsh doesn't word-split `P="npx --yes pnpm@<ver>"; $P ...`, so put a
+  git-ignored `.cache/bin/pnpm` shim (`exec npx --yes pnpm@<ver> "$@"`) on `PATH` instead.
 
 **Why:** these are the steps of #12 that took more than one try.
 **How to apply:** check these first when changing root tooling, hooks or the Node pin. See also

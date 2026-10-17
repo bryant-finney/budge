@@ -10,6 +10,7 @@ docs/*
 # Claude Code
 .claude/settings.local.json
 .claude/agent-memory-local/
+.claude/worktrees/
 
 # cruft
 *.rej

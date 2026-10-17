@@ -20,6 +20,10 @@ repos:
         args: [--fix=lf]
       - id: pretty-format-json
         args: [--autofix, --no-sort-keys]
+      - id: check-executables-have-shebangs
+      - id: check-shebang-scripts-are-executable
+        # direnv sources .envrc; its shebang only tells shellcheck the dialect
+        exclude: ^\.envrc$
 
   - repo: https://github.com/hukkin/mdformat
     rev: 0.7.22
@@ -51,3 +55,39 @@ repos:
     rev: v0.9.3
     hooks:
       - id: taplo-format
+
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.11.0.1-1
+    hooks:
+      - id: shellcheck
+        # explicit, so .envrc is checked however identify tags it
+        files: (^\.envrc$|\.sh$)
+
+  - repo: https://github.com/rhysd/actionlint
+    rev: v1.7.12
+    hooks:
+      - id: actionlint
+
+  # infra (src/infrastructure) plus the shared Prettier hook for both TS packages.
+  # language: system: needs Node 24 + pnpm on PATH and `pnpm install --frozen-lockfile` first.
+  # Hook ids are a CI contract: CI's pre-commit job SKIPs infrastructure-eslint/-tsc (#15).
+  - repo: local
+    hooks:
+      - id: prettier
+        name: prettier (src/front-end, src/infrastructure)
+        language: system
+        entry: pnpm exec prettier --write --ignore-unknown
+        # by extension: identify doesn't tag .mts/.cts as ts
+        files: ^src/(front-end|infrastructure)/.*\.(ts|mts|cts|js|mjs|cjs|svelte|css|html)$
+      - id: infrastructure-eslint
+        name: eslint (src/infrastructure)
+        language: system
+        entry: pnpm -C src/infrastructure run lint
+        files: ^src/infrastructure/.*\.(ts|mts|cts|js|mjs|cjs)$
+        pass_filenames: false
+      - id: infrastructure-tsc
+        name: tsc (src/infrastructure)
+        language: system
+        entry: pnpm -C src/infrastructure run check
+        files: ^(src/infrastructure/(.*\.(ts|mts|cts)|tsconfig.*\.json)|tsconfig\.base\.json)$
+        pass_filenames: false

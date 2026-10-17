@@ -36,14 +36,14 @@ reduce (split("\n")[]) as $line ({rulesets: [], settings: {}, section: null, tab
     ($line | cells) as $raw
     | if ($raw[0] | test("^:?-+:?$")) then .
       # the first row of a table is its header, which names the table; an unlabeled first
-      # column holds ✅/❌ marks for boolean values
+      # column holds ✅/❌ marks for boolean values and ✅ for `active`
       elif .table == null then
         .marks = ($raw[0] == "")
         | .table = ((if .marks then $raw[1] else $raw[0] end) | ascii_downcase)
       else
         (if .marks then $raw[1:] else $raw end) as $c
         | ($c[-1] | value) as $v
-        | (if $v == true then "✅" elif $v == false then "❌" else "" end) as $want
+        | (if $v == true or $v == "active" then "✅" elif $v == false then "❌" else "" end) as $want
         | if .marks and $raw[0] != $want then
             error("row \"\($c | join(" | "))\": mark \"\($raw[0])\" should be \"\($want)\"")
           else .

@@ -8,10 +8,14 @@ file and the spec's rationale together, in one PR.
 ## Format
 
 - `## Ruleset <name>` starts a ruleset. Its **Setting** table sets `target` (`branch` or `tag`),
-  `enforcement`, the `include` and `exclude` ref patterns, and `bypass_actors`. A list is a
-  comma-separated run of code spans, and `none` means an empty list.
+  `enforcement`, and the `include` and `exclude` ref patterns. A list is a comma-separated run of
+  code spans, and `none` means an empty list.
 - Its **Rule** table has one row per rule parameter. A rule with no parameters gets one row with
   empty Parameter and Value cells.
+- Its optional **Bypass** table has one row per bypass actor: the actor type, the actor ID, and
+  the bypass mode (`always`, `pull_request`, or `exempt`). `RepositoryRole` `5` is the repository
+  admin role, which on this personal-account repo means the owner. Without the table, nobody can
+  bypass the ruleset.
 - `## Repository settings` lists repo fields set with `PATCH /repos/{owner}/{repo}`.
 - A value is a code span. It is read as JSON when it parses (`0`, `false`, `["merge"]`), and as a
   string otherwise.
@@ -21,13 +25,12 @@ file and the spec's rationale together, in one PR.
 
 ## Ruleset `main`
 
-|     | Setting         | Value                                |
-| --- | --------------- | ------------------------------------ |
-|     | `target`        | `branch`                             |
-| ✅  | `enforcement`   | `active`                             |
-|     | `include`       | `~DEFAULT_BRANCH`, `refs/heads/main` |
-|     | `exclude`       | none                                 |
-|     | `bypass_actors` | none                                 |
+|     | Setting       | Value                                |
+| --- | ------------- | ------------------------------------ |
+|     | `target`      | `branch`                             |
+| ✅  | `enforcement` | `active`                             |
+|     | `include`     | `~DEFAULT_BRANCH`, `refs/heads/main` |
+|     | `exclude`     | none                                 |
 
 |     | Rule                  | Parameter                           | Value       |
 | --- | --------------------- | ----------------------------------- | ----------- |
@@ -41,21 +44,28 @@ file and the spec's rationale together, in one PR.
 |     | `pull_request`        | `required_approving_review_count`   | `0`         |
 | ✅  | `pull_request`        | `required_review_thread_resolution` | `true`      |
 
+|     | Bypass           | Actor ID | Mode     |
+| --- | ---------------- | -------- | -------- |
+|     | `RepositoryRole` | `5`      | `always` |
+
 ## Ruleset `release-tags`
 
-|     | Setting         | Value          |
-| --- | --------------- | -------------- |
-|     | `target`        | `tag`          |
-| ✅  | `enforcement`   | `active`       |
-|     | `include`       | `refs/tags/v*` |
-|     | `exclude`       | none           |
-|     | `bypass_actors` | none           |
+|     | Setting       | Value          |
+| --- | ------------- | -------------- |
+|     | `target`      | `tag`          |
+| ✅  | `enforcement` | `active`       |
+|     | `include`     | `refs/tags/v*` |
+|     | `exclude`     | none           |
 
 |     | Rule               | Parameter                       | Value   |
 | --- | ------------------ | ------------------------------- | ------- |
 |     | `deletion`         |                                 |         |
 |     | `non_fast_forward` |                                 |         |
 | ❌  | `update`           | `update_allows_fetch_and_merge` | `false` |
+
+|     | Bypass           | Actor ID | Mode     |
+| --- | ---------------- | -------- | -------- |
+|     | `RepositoryRole` | `5`      | `always` |
 
 ## Repository settings
 

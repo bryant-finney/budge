@@ -55,9 +55,14 @@ reduce (split("\n")[]) as $line ({rulesets: [], settings: {}, section: null, tab
             .rulesets[cur][$key] = ($c[1] | value)
           elif $key == "include" or $key == "exclude" then
             .rulesets[cur].conditions.ref_name[$key] = ($c[1] | list)
-          elif $key == "bypass_actors" then .rulesets[cur].bypass_actors = ($c[1] | list)
           else error("ruleset \(.rulesets[cur].name): unknown setting \($key)")
           end
+        elif .table == "bypass" then
+          .rulesets[cur].bypass_actors += [{
+            actor_id: ($c[1] | value),
+            actor_type: ($c[0] | unspan),
+            bypass_mode: ($c[2] | value)
+          }]
       elif .table == "rule" then
         ($c[0] | unspan) as $type
         | ($c[1] | unspan) as $param

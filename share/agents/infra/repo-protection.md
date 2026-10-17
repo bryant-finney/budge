@@ -34,6 +34,9 @@ items:
 - **Ruleset `release-tags`** (tag: `refs/tags/v*`): `deletion`, `non_fast_forward`, and `update`.
 - **Repository merge settings**: merge commits on, squash and rebase off, "Update branch" on.
 
+Repository admins can always bypass both rulesets. On this personal-account repo, the only admin
+is the owner.
+
 Nothing else is protected. In particular, feature branches and tags that don't start with `v`
 have no rules.
 
@@ -41,37 +44,36 @@ have no rules.
 
 ### `main`
 
-| Rule                                | Setting                                                  | Why                                                                                                                                                                                                                                                                                                                                       |
-| ----------------------------------- | -------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Target                              | `~DEFAULT_BRANCH` and `refs/heads/main`                  | Follows a rename of the default branch, and keeps `main` covered if the default ever changes.                                                                                                                                                                                                                                             |
-| `deletion`                          | on                                                       | `main` can't be deleted.                                                                                                                                                                                                                                                                                                                  |
-| `non_fast_forward`                  | on                                                       | No force-push or history rewrite.                                                                                                                                                                                                                                                                                                         |
-| `required_signatures`               | on                                                       | Already 100% true in practice. It applies to every commit in a PR's head, not only the merge commit, so an unsigned commit anywhere in a stack blocks the final merge into `main`.                                                                                                                                                        |
-| `pull_request`                      | on                                                       | Every change reaches `main` through a PR, and direct pushes are refused. The PR is the user's merge gate.                                                                                                                                                                                                                                 |
-| `required_approving_review_count`   | `0`                                                      | GitHub doesn't let an author approve their own PR. Agents push as the only human, so a value of 1 or more would make every PR unmergeable.                                                                                                                                                                                                |
-| `require_code_owner_review`         | on                                                       | A PR that touches a path listed in CODEOWNERS needs a code owner's approval. No CODEOWNERS file exists yet, so today this has no effect. GitHub doesn't let an author approve their own PR, and agents push as the only human. So a CODEOWNERS file that names only `bryant-finney` would block every PR that touches the paths it lists. |
-| `require_last_push_approval`        | on                                                       | Someone other than the pusher must approve the most recent push. GitHub doesn't document how this behaves with 0 required approvals. If it does require an approval, every PR is blocked, because the only human pushes every commit. After applying, confirm that open PRs are still mergeable (see [Apply](#apply)).                    |
-| `dismiss_stale_reviews_on_push`     | off                                                      | This only matters when approvals are required.                                                                                                                                                                                                                                                                                            |
-| `required_review_thread_resolution` | on                                                       | Unresolved review threads block the merge, so every comment is answered or resolved first. That includes bot and Copilot threads, which the user resolves deliberately.                                                                                                                                                                   |
-| `allowed_merge_methods`             | `["merge"]`                                              | Matches how PRs are merged today. When a parent PR merges with a merge commit, the retargeted child's diff stays clean. Squash or rebase rewrites the parent's commits, so the child shows them again and conflicts. GitHub signs its own merge commits, so this works with `required_signatures`.                                        |
-| `required_linear_history`           | absent, **deliberately**                                 | Linear history forbids merge commits, and merge commits are the only allowed method. The user first asked for linear history, then dropped it once this conflict came up. **Don't add it.** Merge commits are what keep stacked PRs working.                                                                                              |
-| `required_status_checks`            | absent until CI exists, then `ci-ok` with `strict: true` | A required check that never reports blocks every PR forever, so the rule is added only once `ci-ok` reports. Its desired form, including the up-to-date requirement, is in [Future CI](#future-ci).                                                                                                                                       |
-| `bypass_actors`                     | `[]`                                                     | The normal flow (0 approvals, no checks) never needs a bypass. Even a PR-only admin bypass is unsafe here. Agents act as the admin, so an agent could run `gh pr merge --admin --rebase` and land rebased commits on `main` that may be unsigned, skipping `required_signatures`.                                                         |
+| Rule                                | Setting                                                  | Why                                                                                                                                                                                                                                                                                                                                                                    |
+| ----------------------------------- | -------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Target                              | `~DEFAULT_BRANCH` and `refs/heads/main`                  | Follows a rename of the default branch, and keeps `main` covered if the default ever changes.                                                                                                                                                                                                                                                                          |
+| `deletion`                          | on                                                       | `main` can't be deleted.                                                                                                                                                                                                                                                                                                                                               |
+| `non_fast_forward`                  | on                                                       | No force-push or history rewrite.                                                                                                                                                                                                                                                                                                                                      |
+| `required_signatures`               | on                                                       | Already 100% true in practice. It applies to every commit in a PR's head, not only the merge commit, so an unsigned commit anywhere in a stack blocks the final merge into `main`.                                                                                                                                                                                     |
+| `pull_request`                      | on                                                       | Every change reaches `main` through a PR, and direct pushes are refused. The PR is the user's merge gate.                                                                                                                                                                                                                                                              |
+| `required_approving_review_count`   | `0`                                                      | GitHub doesn't let an author approve their own PR. Agents push as the only human, so a value of 1 or more would make every PR unmergeable.                                                                                                                                                                                                                             |
+| `require_code_owner_review`         | on                                                       | A PR that touches a path listed in CODEOWNERS needs a code owner's approval. No CODEOWNERS file exists yet, so today this has no effect. GitHub doesn't let an author approve their own PR, and agents push as the only human. So a CODEOWNERS file that names only `bryant-finney` would block every PR that touches the paths it lists.                              |
+| `require_last_push_approval`        | on                                                       | Someone other than the pusher must approve the most recent push. GitHub doesn't document how this behaves with 0 required approvals. If it does require an approval, every PR is blocked, because the only human pushes every commit. After applying, confirm that open PRs are still mergeable (see [Apply](#apply)).                                                 |
+| `dismiss_stale_reviews_on_push`     | off                                                      | This only matters when approvals are required.                                                                                                                                                                                                                                                                                                                         |
+| `required_review_thread_resolution` | on                                                       | Unresolved review threads block the merge, so every comment is answered or resolved first. That includes bot and Copilot threads, which the user resolves deliberately.                                                                                                                                                                                                |
+| `allowed_merge_methods`             | `["merge"]`                                              | Matches how PRs are merged today. When a parent PR merges with a merge commit, the retargeted child's diff stays clean. Squash or rebase rewrites the parent's commits, so the child shows them again and conflicts. GitHub signs its own merge commits, so this works with `required_signatures`.                                                                     |
+| `required_linear_history`           | absent, **deliberately**                                 | Linear history forbids merge commits, and merge commits are the only allowed method. The user first asked for linear history, then dropped it once this conflict came up. **Don't add it.** Merge commits are what keep stacked PRs working.                                                                                                                           |
+| `required_status_checks`            | absent until CI exists, then `ci-ok` with `strict: true` | A required check that never reports blocks every PR forever, so the rule is added only once `ci-ok` reports. Its desired form, including the up-to-date requirement, is in [Future CI](#future-ci).                                                                                                                                                                    |
+| `bypass_actors`                     | repository admin, `always`                               | The owner can push, merge, or fix things past the rules without disabling a ruleset first. The cost: agents act as the same admin, so GitHub lets them bypass too. For example, `gh pr merge --admin --rebase` could land rebased, possibly unsigned commits on `main`. Only the [Rules for agents](#rules-for-agents) and the [Limits](#limits) deny-rules stop that. |
 
-Having no bypass can't lock the owner out. Editing, disabling, or deleting a ruleset is a
-repo-admin permission and doesn't depend on bypass. The escape hatch is the
-[emergency path](#emergency-path). The REST spec also allows a `User` bypass actor; it isn't used,
-for the same reason.
+The bypass uses the `RepositoryRole` admin actor (id `5`) rather than a `User` actor. On a
+personal-account repo the owner is always the admin, and the admin role is the actor GitHub's UI
+offers.
 
 ### `release-tags`
 
-| Rule                                              | Why                                                                                                                                                                                                                                                                                                                                                                                     |
-| ------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `deletion`                                        | A published `v*` tag can't be removed.                                                                                                                                                                                                                                                                                                                                                  |
-| `update` (`update_allows_fetch_and_merge: false`) | A published `v*` tag can't be moved to another commit.                                                                                                                                                                                                                                                                                                                                  |
-| `non_fast_forward`                                | An extra guard against force-moving a tag. Harmless next to `update`.                                                                                                                                                                                                                                                                                                                   |
-| `creation` left open                              | Restricting creation only works with a bypass actor to create tags. Bypass covers the whole ruleset, not one rule, so a bypass actor could also delete and move tags. The owner and the agents are the same admin, so that would remove immutability for exactly the actors it guards against. Leaving creation open also lets a future release workflow on `GITHUB_TOKEN` create tags. |
-| `bypass_actors: []`                               | Tags are truly immutable. To fix a bad tag, use the [emergency path](#emergency-path).                                                                                                                                                                                                                                                                                                  |
+| Rule                                              | Why                                                                                                                                                                                                  |
+| ------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `deletion`                                        | A published `v*` tag can't be removed.                                                                                                                                                               |
+| `update` (`update_allows_fetch_and_merge: false`) | A published `v*` tag can't be moved to another commit.                                                                                                                                               |
+| `non_fast_forward`                                | An extra guard against force-moving a tag. Harmless next to `update`.                                                                                                                                |
+| `creation` left open                              | Restricting creation would leave only the bypassing admin able to create tags, and would block a future release workflow on `GITHUB_TOKEN`.                                                          |
+| `bypass_actors`: repository admin, `always`       | The owner can delete or re-point a bad tag directly. Tags are immutable for everyone else. Agents act as the same admin, so the [Rules for agents](#rules-for-agents) forbid them to use the bypass. |
 
 Only the `v*` pattern is used. No tags exist yet, and a narrower pattern such as
 `v[0-9]*` buys nothing until a release scheme exists.
@@ -112,6 +114,9 @@ left out because signing is already enforced at the only point that matters, the
   unsigned, and `required_signatures` would then block the stack's eventual merge into `main`.
 - **Pushing.** Never push to `main`. Never force-push, move, or delete a `v*` tag. Sign every
   commit (`--gpg-sign`).
+- **Bypass.** The admin bypass is the user's alone. Agents run as the same account, so GitHub
+  can't tell them apart from the user and won't stop them. Never do anything that only works
+  because of the bypass, even when GitHub allows it.
 - **Keeping this file current.** Change `rules.md` and this spec together in a PR, and apply
   after the user merges it.
 
@@ -164,8 +169,9 @@ to `rules.md` rather than treating them as drift.
 
 ### Emergency path
 
-Use this for something no rule allows, such as a hotfix pushed directly to `main` or re-pointing
-a bad tag. It needs the user's go-ahead every time.
+The owner's bypass covers most cases no rule allows, such as a hotfix pushed directly to `main`
+or re-pointing a bad tag: the owner just does it. Use the steps below only when a ruleset has to
+be off for everyone. They need the user's go-ahead every time.
 
 1. Find the ruleset's id:
    `gh api repos/bryant-finney/budge/rulesets --jq '.[] | {id, name}'`.
@@ -199,6 +205,8 @@ because agents act as the admin:
   and merge it itself.
 - An agent holding admin credentials can `PUT` or `DELETE` the rulesets and `PATCH` repo
   settings.
+- The admin bypass applies to agents too, so GitHub lets an agent push to `main`, move a tag, or
+  merge with `--admin`.
 
 The real controls sit outside GitHub.
 
@@ -206,6 +214,7 @@ The real controls sit outside GitHub.
   each rule to `main` and tags where the matcher allows it, because a blanket force-push deny
   would also block normal rebases of stacked feature branches.
   - `Bash(gh pr merge:*)`: only the user merges, unless the user asks in the current session.
+    With the admin bypass, this is the only thing that stops `gh pr merge --admin`.
   - `gh api` with `--method`/`-X` `POST`, `PUT`, `PATCH`, or `DELETE` on `repos/*/rulesets*`,
     on `repos/bryant-finney/budge` itself (repo settings), and on `repos/*/git/refs*`.
   - `Bash(git push origin main:*)`, `Bash(git push --tags:*)`, `Bash(git push origin v*:*)`,

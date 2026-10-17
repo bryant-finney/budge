@@ -17,18 +17,9 @@ export default defineConfig(
       // Pulumi: an un-awaited promise can drop errors or race the engine.
       '@typescript-eslint/no-floating-promises': 'error',
       // Pulumi: an Output in a template or `+` stringifies to a warning, not its value;
-      // use pulumi.interpolate / pulumi.concat / .apply instead.
-      '@typescript-eslint/restrict-template-expressions': [
-        'error',
-        {
-          allow: [],
-          allowAny: false,
-          allowBoolean: true,
-          allowNullish: false,
-          allowNumber: true,
-          allowRegExp: false,
-        },
-      ],
+      // use pulumi.interpolate / pulumi.concat / .apply instead. Severity only, so the
+      // strictTypeChecked options (every allow* false) are kept.
+      '@typescript-eslint/restrict-template-expressions': 'error',
       '@typescript-eslint/restrict-plus-operands': 'error',
       '@typescript-eslint/no-base-to-string': 'error',
       // Stand-in for verbatimModuleSyntax, which tsconfig.json turns off for CommonJS output.

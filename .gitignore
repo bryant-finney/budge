@@ -49,7 +49,7 @@ notebooks/
 
 # Node.js
 # re-include: often listed in global gitignores, but CI's setup-node reads it
-!.node-version
+/.node-version
 .pnpm-store/
 coverage/
 node_modules/

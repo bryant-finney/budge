@@ -3,12 +3,12 @@ packages:
   - src/front-end
   - src/infrastructure
 
-# Refuse to install under a Node version outside the root `engines.node` range.
+# Refuse to install under a Node version outside the root `engines.node` range. Only fresh and
+# --frozen-lockfile installs are gated; an up-to-date node_modules short-circuits the check.
 engineStrict: true
 
 # Dependency build scripts are denied unless approved here (strictDepBuilds defaults to true).
-allowBuilds:
-  esbuild: true
+# Add `allowBuilds:` entries only when an install reports "Ignored build scripts".
 
 # Shared tool versions; packages reference these with "catalog:".
 catalog:

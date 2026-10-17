@@ -21,3 +21,6 @@ build/
 .svelte-kit/
 dist/
 coverage/
+
+# Other Claude Code agent worktrees (full repo copies)
+.claude/worktrees/

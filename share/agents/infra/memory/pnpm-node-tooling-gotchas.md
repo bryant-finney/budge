@@ -76,6 +76,12 @@ Found while building the root pnpm workspace (#12, 2026-10-17).
   without asking. Revert that and pin a version that clears the gate (#13 used `@pulumi/pulumi`
   3.269.0, not 3.270.0, which was less than a day old). New build scripts (e.g. `protobufjs`) need
   an explicit `allowBuilds` entry, or install fails with `ERR_PNPM_IGNORED_BUILDS`.
+- **pre-commit file selection (#14):** identify tags `.mjs` as `javascript` but gives `.mts`/`.cts`
+  no `ts` tag, so the shared `prettier` hook selects by extension (`files:`) instead of `types_or`.
+  `.envrc` has a bash shebang (for shellcheck's dialect) but must not be executable, so it is
+  excluded from `check-shebang-scripts-are-executable`. The `repo: local` hooks are
+  `language: system` and need `pnpm` on `PATH`; on a machine without global pnpm, use a
+  git-ignored `.cache/bin/pnpm` shim that runs `npx --yes pnpm@<ver>` (`.cache` is in `.gitignore`).
 - **Agent sessions:** the worktree guard rejects Bash commands that mention the scratchpad path,
   because the path contains `github`. Run pnpm through `npx --yes pnpm@<ver>` instead of a
   scratchpad install. zsh doesn't word-split `P="npx --yes pnpm@<ver>"; $P ...`, so put a

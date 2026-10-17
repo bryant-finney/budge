@@ -8,7 +8,7 @@
 // own module beside this file (flat layout, no nested src/)
 import * as pulumi from '@pulumi/pulumi';
 
-import { loadConfig } from './src/config';
+import { loadConfig } from './config';
 
 const config = loadConfig();
 

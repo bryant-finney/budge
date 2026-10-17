@@ -297,7 +297,12 @@ during a concurrent write — retry). `DeleteObject` supports `If-Match` too
 
 A Python `Repository` protocol the rest of the app depends on; an S3
 implementation now, a DynamoDB implementation later satisfying the same
-interface. No module outside `storage/` imports `boto3`.
+interface. The protocols live in `storage/`; every AWS-backed implementation
+lives in the `budge.aws` adapter package (`aws/`): the S3 `Repository`, the
+Secrets Manager `SecretStore`, and the Lambda async-invoke
+`IngestionTrigger` the API uses to start ingestion (§7, §12; protocol in
+`ingestion/`). No module outside `aws/` imports `boto3`, and the rest of the
+app depends only on the protocols, so tests substitute fakes.
 
 - `list_connections()`, `get_connection(id)`, `save_connection(c)`,
   `delete_connection(id)` (metadata + transactions)
@@ -704,7 +709,7 @@ Versions and tools below are the *builder's call*; adjust at milestone 1.
 
 ```text
 src/
-  back-end/       # uv project: budge package (api/, ingestion/, storage/, plaid_client/, classify/), tests/, Dockerfile
+  back-end/       # uv project: budge package (api/, aws/, ingestion/, storage/, plaid_client/, classify/), tests/, Dockerfile
   front-end/      # SvelteKit app (pnpm)
   infrastructure/ # Pulumi TypeScript program (pnpm)
 docs/

@@ -10,17 +10,38 @@ metadata:
 Found while building the root pnpm workspace (#12, 2026-10-17).
 
 - **pnpm 12 writes `pnpm-lock.yaml` as two YAML documents** (the first pins pnpm itself under
-  `packageManagerDependencies`). The `check-yaml` hook fails on it unless it runs with
-  `--allow-multiple-documents`. yamllint skips the lockfile through `ignore:` in `.yamllint.yaml`,
+  `packageManagerDependencies`). `check-yaml` is split in two: the main entry excludes the lockfile,
+  and a second entry runs `--allow-multiple-documents` on the lockfile only. Applying the flag
+  globally would let a stray `---` through in workflow files. yamllint skips the lockfile through
+  `ignore:` in `.yamllint.yaml`,
   which still applies when pre-commit passes the file by name.
 - **`.node-version` pins a full patch version (e.g. `24.22.0`), not `24`.** nodenv 1.6 cannot
   resolve a major-only version (`nodenv: version '24' is not installed`). On 2026-10-17 the user
-  chose a full pin over local aliases. After a bump, run `nodenv install <version>` locally;
-  until then `NODENV_VERSION=<installed 24.x>` only works for frozen installs: with `engineStrict`,
-  `pnpm add`/`pnpm update` also enforce each dependency's `engines.node` (jsdom@30 needs `^24.15.0`).
+  chose a full pin over local aliases. **Don't set `NODENV_VERSION`** (user, PR #18 review): nodenv
+  on the maintainer's machine provides the version `.node-version` names, so run everything under
+  that exact pin.
   Dependabot doesn't bump `.node-version`; the bump mechanism is tracked in #15.
+- **`engineStrict` checks every dependency's `engines.node`, not just the root's.** On `pnpm add`
+  and `pnpm update` (not on frozen installs), it fails with `ERR_PNPM_UNSUPPORTED_ENGINE` when a
+  dependency has a higher floor. jsdom@30 needs `^24.15.0`, so the root range is `>=24.15 <25`.
+  Raise the root floor when a dependency raises its own. An up-to-date `node_modules`
+  short-circuits a plain `pnpm install`, so the gate only holds for fresh and `--frozen-lockfile`
+  installs.
+- **pnpm 12 copies `packageManager` into `pnpm-lock.yaml` (`packageManagerDependencies`).** A bump
+  to `package.json#packageManager` alone fails `pnpm install --frozen-lockfile`
+  (`ERR_PNPM_FROZEN_LOCKFILE_WITH_OUTDATED_LOCKFILE`), so the bump must also run `pnpm install`
+  and commit the lockfile (#15).
 - **The maintainer's global gitignore (`~/.config/git/ignore`) ignores `.node-version`.** The repo
-  `.gitignore` re-includes it with `!.node-version`, so check `git status` after adding dotfiles.
+  `.gitignore` re-includes only the root file with `!/.node-version` (anchored, so per-package
+  `nodenv local` pins stay ignored). Check `git status` after adding dotfiles.
+- **`tsconfig.base.json` is extended last by front-end**
+  (`"extends": ["$app/tsconfig", "../../tsconfig.base.json"]`; SvelteKit 3 has no
+  `.svelte-kit/tsconfig.json`), so its options override SvelteKit's. Never add `types`, `paths`,
+  `include`, `rootDirs` or `isolatedModules`, and never change `verbatimModuleSyntax` there, or the
+  front-end breaks. The tsconfigs must stay comment-free, so this constraint lives here, in #12 and
+  in PR #18.
+- **Prettier and `.claude/worktrees/`:** agent worktrees are full repo copies whose `.git` is a
+  file, so Prettier doesn't skip them. `.prettierignore` lists `.claude/worktrees/`.
 - **`prettier-plugin-svelte` peers `svelte`.** pnpm's `autoInstallPeers` puts it in the root
   lockfile, which is expected, and the version changes once `front-end` declares `svelte`.
 - **Agent sessions:** the worktree guard rejects Bash commands that mention the scratchpad path,

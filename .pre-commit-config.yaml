@@ -9,6 +9,8 @@ repos:
       - id: check-json
       - id: check-toml
       - id: check-yaml
+        # pnpm >= 11 writes pnpm-lock.yaml as two YAML documents
+        args: [--allow-multiple-documents]
       - id: check-merge-conflict
       - id: mixed-line-ending
         args: [--fix=lf]

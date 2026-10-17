@@ -80,8 +80,9 @@ Found while building the root pnpm workspace (#12, 2026-10-17).
   no `ts` tag, so the shared `prettier` hook selects by extension (`files:`) instead of `types_or`.
   `.envrc` has a bash shebang (for shellcheck's dialect) but must not be executable, so it is
   excluded from `check-shebang-scripts-are-executable`. The `repo: local` hooks are
-  `language: system` and need `pnpm` on `PATH`; on a machine without global pnpm, use a
-  git-ignored `.cache/bin/pnpm` shim that runs `npx --yes pnpm@<ver>` (`.cache` is in `.gitignore`).
+  `language: system` and need `pnpm` on `PATH`. On a machine without global pnpm, use the
+  `.cache/bin/pnpm` shim from the next bullet (`.cache` is in `.gitignore`). These hooks type-check
+  only `src/infrastructure`; front-end's `check` gets a hook in #10 (`front-end-svelte-check`).
 - **Agent sessions:** the worktree guard rejects Bash commands that mention the scratchpad path,
   because the path contains `github`. Run pnpm through `npx --yes pnpm@<ver>` instead of a
   scratchpad install. zsh doesn't word-split `P="npx --yes pnpm@<ver>"; $P ...`, so put a

@@ -1,7 +1,7 @@
 ---
 name: infra
 description: >-
-  Infrastructure and operations owner for budge. Use for any work under `infra/` (the Pulumi
+  Infrastructure and operations owner for budge. Use for any work under `src/infra/` (the Pulumi
   TypeScript program, `bootstrap.sh`), `.github/workflows/`, `docker compose` / local-stack wiring,
   AWS resources (CloudFront, API Gateway, Lambda, S3, Secrets Manager, KMS, Route 53, ACM,
   EventBridge Scheduler, ECR, IAM, CloudWatch/SNS), deployments, CI/CD, and operational

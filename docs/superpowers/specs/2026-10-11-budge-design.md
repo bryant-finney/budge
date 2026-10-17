@@ -700,9 +700,10 @@ real data, not a blocker for the build:
 Versions and tools below are the *builder's call*; adjust at milestone 1.
 
 ```text
-backend/    # uv project: budge package (api/, ingestion/, storage/, plaid_client/, classify/), tests/, Dockerfile
-frontend/   # SvelteKit app (pnpm)
-infra/      # Pulumi TypeScript program (pnpm)
+src/
+  backend/  # uv project: budge package (api/, ingestion/, storage/, plaid_client/, classify/), tests/, Dockerfile
+  frontend/ # SvelteKit app (pnpm)
+  infra/    # Pulumi TypeScript program (pnpm)
 docs/
 .github/workflows/
 ```
@@ -816,7 +817,7 @@ docs/
   (`pulumi stack init prod --secrets-provider "awskms://alias/budge-pulumi-secrets?region=us-east-1"`).
   The state bucket (versioning on, Block Public Access, SSE) and KMS key can't
   be managed by the stack whose state they hold, so a one-time, idempotent
-  `infra/bootstrap.sh` (AWS CLI) creates them, along with the GitHub OIDC
+  `src/infra/bootstrap.sh` (AWS CLI) creates them, along with the GitHub OIDC
   provider and deploy role. Pulumi's S3 backend writes its own lock files, so
   concurrent `pulumi up` runs are refused.
 - **Config:** non-secret settings in Pulumi config — domain name,

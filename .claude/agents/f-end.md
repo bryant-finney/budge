@@ -1,7 +1,7 @@
 ---
 name: f-end
 description: >-
-  Front-end owner for budge and its UX lead. Use for any work under `frontend/` — the SvelteKit +
+  Front-end owner for budge and its UX lead. Use for any work under `src/frontend/` — the SvelteKit +
   TypeScript SPA, Layerchart weekly chart, Google sign-in and Plaid Link flows, HTML semantics,
   accessibility, responsive layout, UI states and copy — plus TypeScript linting, formatting, type
   checks, and Vitest tests. Also use to review UI/UX or TypeScript changes.

@@ -1,0 +1,15 @@
+{
+  "name": "front-end",
+  "private": true,
+  "description": "budge's single-page app (SvelteKit + TypeScript)",
+  "imports": {
+    "#lib": "./lib/index.ts",
+    "#lib/*": "./lib/*"
+  },
+  "scripts": {
+    "check": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "catalog:"
+  }
+}

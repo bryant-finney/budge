@@ -1,0 +1,12 @@
+{
+  "name": "infrastructure",
+  "private": true,
+  "description": "Pulumi TypeScript program for budge's AWS infrastructure",
+  "scripts": {
+    "check": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "typescript": "catalog:"
+  }
+}

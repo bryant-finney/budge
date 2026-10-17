@@ -1,0 +1,26 @@
+# Prettier also reads .gitignore (node_modules/, .pulumi/, ...).
+# Prettier reads this file from the cwd only: run it from the repo root (`pnpm run format:check`),
+# or pass `--ignore-path ../../.prettierignore --ignore-path ../../.gitignore` from a package.
+
+# Formatted by other pre-commit hooks
+**/*.md
+**/*.json
+**/*.yaml
+**/*.yml
+**/*.toml
+pnpm-lock.yaml
+
+# Python package (ruff)
+src/back-end/
+
+# Documentation
+docs/
+
+# Build outputs
+build/
+.svelte-kit/
+dist/
+coverage/
+
+# Other Claude Code agent worktrees (full repo copies)
+.claude/worktrees/

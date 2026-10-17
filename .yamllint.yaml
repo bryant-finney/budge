@@ -1,4 +1,6 @@
 extends: default
+# generated; integrity hashes exceed the line-length limit
+ignore: pnpm-lock.yaml
 rules:
   document-start: disable
   line-length:

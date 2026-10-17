@@ -1,0 +1,21 @@
+# pnpm >= 11 reads only auth/registry settings from .npmrc; every other setting lives here.
+packages:
+  - src/front-end
+  - src/infrastructure
+
+# Refuse to install under a Node version outside the root `engines.node` range. Only fresh and
+# --frozen-lockfile installs are gated; an up-to-date node_modules short-circuits the check.
+engineStrict: true
+
+# Dependency build scripts are denied unless approved here (strictDepBuilds defaults to true).
+# Add `allowBuilds:` entries only when an install reports "Ignored build scripts".
+
+# Shared tool versions; packages reference these with "catalog:".
+catalog:
+  '@types/node': ^24
+  eslint: ^10.13.0
+  eslint-config-prettier: ^10.1.8
+  # ~6.0: @sveltejs/kit@3 peers ^6, typescript-eslint@8.71 peers <6.1, @pulumi/pulumi peers <7
+  typescript: ~6.0.3
+  typescript-eslint: ^8.71.2
+  vitest: ^5

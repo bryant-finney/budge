@@ -25,9 +25,9 @@ docs/*
 *.zip*
 
 # environment config
+*.env*
 !.envrc
 !etc/base.env
-*.env*
 buildx.yml
 config.yml
 
@@ -48,6 +48,10 @@ notebooks/
 .mypy_cache/
 
 # Node.js
+# re-include the root pin only: often listed in global gitignores, but CI's setup-node reads it
+!/.node-version
+.pnpm-store/
+coverage/
 node_modules/
 
 # Pulumi

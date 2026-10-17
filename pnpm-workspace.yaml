@@ -9,6 +9,9 @@ engineStrict: true
 
 # Dependency build scripts are denied unless approved here (strictDepBuilds defaults to true).
 # Add `allowBuilds:` entries only when an install reports "Ignored build scripts".
+allowBuilds:
+  # @pulumi/pulumi dep; postinstall only prints version-compatibility notices
+  protobufjs: false
 
 # Shared tool versions; packages reference these with "catalog:".
 catalog:

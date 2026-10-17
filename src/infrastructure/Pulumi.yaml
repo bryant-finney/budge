@@ -1,0 +1,6 @@
+name: budge
+description: budge AWS infrastructure (static site, API, ingestion, storage, DNS)
+runtime:
+  name: nodejs
+  options:
+    packagemanager: pnpm

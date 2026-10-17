@@ -1,0 +1,7 @@
+# ruff settings for the test suite: inherit everything from the project config, then relax only what tests need
+extend = "../pyproject.toml"
+
+[lint]
+ignore = [
+  "S101", # pytest's assertion rewriting is built on bare `assert`
+]

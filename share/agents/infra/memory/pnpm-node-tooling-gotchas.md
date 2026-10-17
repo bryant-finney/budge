@@ -16,7 +16,8 @@ Found while building the root pnpm workspace (#12, 2026-10-17).
 - **`.node-version` pins a full patch version (e.g. `24.22.0`), not `24`.** nodenv 1.6 cannot
   resolve a major-only version (`nodenv: version '24' is not installed`). On 2026-10-17 the user
   chose a full pin over local aliases. After a bump, run `nodenv install <version>` locally;
-  until then `NODENV_VERSION=<installed 24.x>` works because `engines.node` is `>=24 <25`.
+  until then `NODENV_VERSION=<installed 24.x>` only works for frozen installs: with `engineStrict`,
+  `pnpm add`/`pnpm update` also enforce each dependency's `engines.node` (jsdom@30 needs `^24.15.0`).
   Dependabot doesn't bump `.node-version`; the bump mechanism is tracked in #15.
 - **The maintainer's global gitignore (`~/.config/git/ignore`) ignores `.node-version`.** The repo
   `.gitignore` re-includes it with `!.node-version`, so check `git status` after adding dotfiles.

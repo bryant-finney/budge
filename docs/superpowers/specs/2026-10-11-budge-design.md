@@ -642,13 +642,22 @@ One envelope for **every** error, including FastAPI's request-validation errors
 
 ## 10. Frontend
 
-- **SvelteKit** with `adapter-static` (SPA, `ssr = false`) and the **hash
-  router** → pure static files to S3 + CloudFront. All in-app links start with
-  `#/`. TypeScript throughout.
+- **SvelteKit** with `adapter-static` (SPA) and the **hash router** → pure
+  static files to S3 + CloudFront. The hash router renders entirely in the
+  browser, so page options (`ssr`, `prerender`, `trailingSlash`) are not set;
+  SvelteKit 3 rejects them (`router_hash_page_options`). All in-app links start
+  with `#/`. TypeScript throughout.
 - **Configuration (SvelteKit 3):** SvelteKit 3 no longer reads
   `svelte.config.js`; the options formerly under `config.kit` are passed
   directly to the `sveltekit()` Vite plugin in `vite.config.ts`, e.g.
-  `sveltekit({ router: { type: 'hash' }, adapter: adapter({ fallback: 'index.html' }) })`.
+  `sveltekit({ files: { src: '.' }, router: { type: 'hash' }, adapter: adapter({ fallback: 'index.html' }) })`.
+- **Layout (flat, no nested `src/`):** `files.src: '.'` puts `routes/`,
+  `app.html`, and `app.d.ts` directly under `src/front-end/`, mirroring the
+  back end's `src/back-end/budge/`. Shared code lives in `src/front-end/lib/`,
+  imported as `#lib` via the package's `imports` field (SvelteKit 3 removed
+  `$lib`). If `files.src: '.'` proves unworkable (e.g. the tooling scans
+  `node_modules/` or build output), fall back to a non-`src` directory such
+  as `src/front-end/app/`.
 - **Supported browsers (v1):** current Chrome, Edge, Firefox, and Safari on
   Windows/macOS; Chrome on Android. No iOS (§2).
 - **Views:** `#/` — the weekly chart + headline total; `#/connections` — list /

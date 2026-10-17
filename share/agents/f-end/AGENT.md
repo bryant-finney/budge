@@ -30,8 +30,11 @@ legible within a couple of seconds on a desktop browser or Chrome on Android.
   `exactOptionalPropertyTypes`, `noImplicitOverride`. No `any` (use `unknown` and narrow); no
   non-null assertions without a comment; no `@ts-ignore` (use `@ts-expect-error` with a reason).
   Type API responses from the OpenAPI contract rather than hand-written guesses.
-- **SvelteKit per the spec.** `adapter-static`, `ssr = false`, hash router
-  (`sveltekit({ router: { type: 'hash' } })` in `vite.config.ts`; SvelteKit 3 has no `svelte.config.js`); every in-app link starts with `#/`. Plaid Link from `cdn.plaid.com`,
+- **SvelteKit per the spec.** `adapter-static`, hash router
+  (`sveltekit({ files: { src: '.' }, router: { type: 'hash' } })` in `vite.config.ts`; SvelteKit 3 has no
+  `svelte.config.js`). No page options (`ssr`, `prerender`, `trailingSlash`): the hash router rejects them.
+  Flat layout, no nested `src/`: `routes/`, `app.html`, and `lib/` sit directly under `src/front-end/`;
+  import shared code as `#lib` (SvelteKit 3 removed `$lib`). Every in-app link starts with `#/`. Plaid Link from `cdn.plaid.com`,
   Google Identity Services popup mode, session via `HttpOnly` cookie — the SPA never stores
   credentials.
 - **HTML first.** Semantic elements (`main`, `nav`, `header`, `button`, `form`, `label`, `table`)

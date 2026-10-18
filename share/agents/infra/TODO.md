@@ -93,6 +93,11 @@ All four findings are fixed on `main` (`8ba6f0e`), so none needs a follow-up:
   rather than `owner/repo#14`). It doesn't notice an existing prefix, so pass only the subject:
   `GIT_SKIP_OWNER_NAME=1 git commit --signoff --gpg-sign -m "<subject>"`. Don't commit with an
   empty message; the hook fills one in from whatthecommit.com.
+- **`git commit --amend` runs the hook again.** `--amend --no-edit` without
+  `GIT_SKIP_OWNER_NAME=1` gave `chore(worktrees/pr-22#14): chore(#14): ...` (2026-10-18). Amend with
+  `GIT_SKIP_OWNER_NAME=1 git commit --amend --signoff --gpg-sign -F <file>`, where the file holds
+  the bare subject plus trailers, then check `git log -1 --format=%B` before pushing. Leaving out
+  `--signoff` on an amend drops the `Signed-off-by` trailer.
 - **`fatal: ref HEAD is not a symbolic ref` during a rebase is harmless.** The hook runs on the
   detached HEAD, can't read the branch, and adds no prefix, so each picked commit keeps its
   original message. Confirm with `git range-diff`.

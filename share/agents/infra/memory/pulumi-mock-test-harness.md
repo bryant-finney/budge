@@ -7,7 +7,7 @@ metadata:
 
 # Pulumi mock test harness (`src/infrastructure/tests/`)
 
-Found while reviewing PR #21 (#13), 2026-10-17.
+Found while reviewing PR #21 (#13), 2026-10-17. The fix is applied in `tests/program.test.ts`.
 
 - **Resource assertions race the mocks.** Resource registration is async. The mock's
   `newResource` runs only after the `register*` promise chain settles, which happens after
@@ -20,9 +20,9 @@ Found while reviewing PR #21 (#13), 2026-10-17.
   `disconnect()` waits for the RPC queue (`rpcDone`) to drain and then closes the connection, so the
   mocks must be installed again for each test. A bare `setImmediate` tick also exposed the
   resources, but only by timing, so don't rely on it.
-- **How it was verified** (in a scratch copy of the #21 tip): with the probe resources injected, the
-  drained test saw both resources and failed. A later test that registered resources after an
-  earlier `disconnect()` still passed. On the unmodified program, all tests passed.
+- **Applied in #21 (`d3a4c91`, 2026-10-18).** With a `CustomResource` and a `ComponentResource`
+  injected into `index.ts`, the old harness passed 6/6, and the drained one failed
+  `creates no resources` with both resources listed. On the unmodified program, it passed 6/6.
 - **The runtime loads the CommonJS entrypoint.** `@pulumi/pulumi@3.269.0` `cmd/run/run.js`, outside
   ESM mode, uses the project's TypeScript (pnpm links the optional peer, giving
   `@pulumi+pulumi@3.269.0_typescript@6.0.3`) with the vendored `ts-node@7.0.1`. An emulation of that

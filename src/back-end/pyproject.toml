@@ -11,12 +11,12 @@ dependencies = ["fastapi~=0.143.3", "mangum~=0.22.0", "pydantic~=2.14"]
 dev = [
   "httpx~=0.28.1",
   "mypy~=2.4",
-  "pyright~=1.1.414",
   "pytest-clarity~=1.0",
   "pytest-cov~=7.1",
   "pytest-mock~=3.17",
   "pytest~=9.1",
   "ruff~=0.17.1",
+  "ty~=0.0.89",
 ]
 
 [build-system]
@@ -59,17 +59,21 @@ init_forbid_extra = true
 init_typed = true
 warn_required_dynamic_aliases = true
 
-[tool.pyright]
-# pyright otherwise honours mypy's `# type: ignore[code]` as a blanket ignore of every pyright rule on that line;
-# suppress pyright findings with `# pyright: ignore[rule]` instead
-enableTypeIgnoreComments = false
+[tool.ty.analysis]
+# Keep mypy suppressions independent; ty findings must use `# ty: ignore[rule]`.
+respect-type-ignore-comments = false
+
+[tool.ty.environment]
+python-version = "3.11"
+
+[tool.ty.rules]
+# Every ty suppression must name a valid rule and remain necessary.
+blanket-ignore-comment = "error"
+invalid-ignore-comment = "error"
+unused-ignore-comment = "error"
+
+[tool.ty.src]
 include = ["budge", "tests"]
-pythonVersion = "3.11"
-# strict mode leaves stale `# pyright: ignore[...]` comments unreported (mypy's `warn_unused_ignores` covers mypy's)
-reportUnnecessaryTypeIgnoreComment = "error"
-typeCheckingMode = "strict"
-venv = ".venv"
-venvPath = "."
 
 [tool.pytest.ini_options]
 addopts = [

@@ -2,9 +2,10 @@
 //
 // ref: https://www.pulumi.com/docs/iac/guides/testing/unit/
 //
-// pattern: install mocks before the first program import; import the program fresh per test
+// pattern: install mocks before each program import; import the program fresh per test, then
+// drain the runtime with disconnect() so every resource registration has landed before asserting
 import * as pulumi from '@pulumi/pulumi';
-import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Type-only (erased): the program itself must be imported dynamically, after setMocks.
 import type * as Program from '../index.js';
@@ -23,15 +24,25 @@ function promiseOf<T>(output: pulumi.Output<T>): Promise<T> {
   });
 }
 
-/** Import the program fresh, so it re-reads whatever config the test just set. */
+/**
+ * Import the program fresh, so it re-reads whatever config the test just set, then drain it.
+ *
+ * Resource registration is async: the mock's `newResource` runs only after the `import()` has
+ * resolved. `disconnect()` waits for every outstanding RPC, so `registered` is complete when this
+ * returns. It also closes the mock connection, which is why `beforeEach` installs the mocks again.
+ */
 async function runProgram(config: Record<string, string>): Promise<typeof Program> {
   pulumi.runtime.setAllConfig(config);
   vi.resetModules();
-  return import('../index.js');
+  const program = await import('../index.js');
+  await pulumi.runtime.disconnect();
+  return program;
 }
 
-beforeAll(async () => {
-  // Mocks must be installed before the program module is first imported.
+beforeEach(async () => {
+  registered.length = 0;
+  // Mocks must be installed before the program module is imported, and again after each
+  // disconnect().
   await pulumi.runtime.setMocks(
     {
       newResource: (args) => {
@@ -43,10 +54,6 @@ beforeAll(async () => {
     'budge',
     'test',
   );
-});
-
-beforeEach(() => {
-  registered.length = 0;
 });
 
 describe('program outputs', () => {

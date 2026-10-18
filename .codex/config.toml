@@ -1,0 +1,8 @@
+# Project capabilities; model, permissions, and MCP servers follow the user's configuration.
+[features]
+multi_agent = true
+memories = true
+
+[memories]
+use_memories = true
+generate_memories = true

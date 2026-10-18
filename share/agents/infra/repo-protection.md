@@ -1,8 +1,9 @@
 # Repository protection spec
 
-This is the desired state for branch, tag, and merge protection on
-[`bryant-finney/budge`](https://github.com/bryant-finney/budge). **infra** owns it: infra applies
-it, keeps the live GitHub settings in line with it, and updates this file first whenever a rule
+This spec explains branch, tag, and merge protection on
+[`bryant-finney/budge`](https://github.com/bryant-finney/budge). The desired state itself is
+[`rules.md`](../../skills/apply-repo-rules/rules.md). **infra** owns both: infra applies
+`rules.md`, keeps the live GitHub settings in line with it, and updates both whenever a rule
 changes. It is written for both the user and coding agents. People should read the rationale
 sections, and agents should follow [Desired state](#desired-state) and
 [Procedures](#procedures).

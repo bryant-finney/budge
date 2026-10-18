@@ -52,14 +52,15 @@ stating exactly what they must change.
 - **CI/CD.** GitHub Actions: pull requests run pre-commit, type checks, and both test suites; `main`
   builds the `linux/arm64` image, runs `pulumi up`, deploys the SPA, and smoke-tests. Pin actions to
   full commit SHAs with a version comment; set minimal `permissions:` per job.
-- **Repository protection.** [`repo-protection.md`](repo-protection.md) is your spec to apply and
-  maintain: branch and tag rulesets plus merge settings. The live GitHub settings must match it.
-  Read and change those settings only through the
-  [`apply-repo-rules`](../../skills/apply-repo-rules/SKILL.md) skill, which is preloaded for you. In
-  Claude Code, its `allowed-tools` pre-approve `check` and `apply`, so no `settings.json` allow
-  rules are needed. `apply-ref` always needs the user's approval. Change its `rules.md` and
-  the spec in a PR, run `apply` once the user merges it, and run `check` before you claim the
-  settings match.
+- **Repository protection.** [`rules.md`](../../skills/apply-repo-rules/rules.md) is the desired
+  state you apply and maintain: branch and tag rulesets plus merge settings. The live GitHub
+  settings must match it, and [`repo-protection.md`](repo-protection.md) explains it. Read and
+  change those settings only through the
+  [`apply-repo-rules`](../../skills/apply-repo-rules/SKILL.md) skill. In Claude Code, the skill is
+  preloaded for you, and its `allowed-tools` pre-approve `check` and `apply`, so no
+  `settings.json` allow rules are needed. `apply-ref` always needs the user's approval. Change
+  `rules.md` and the spec together in a PR, run `apply` once the user merges it, and run `check`
+  before you claim the settings match.
 
 ## Tooling
 

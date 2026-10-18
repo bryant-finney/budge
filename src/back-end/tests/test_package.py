@@ -43,8 +43,10 @@ def test_generated_version_module_matches_distribution_metadata() -> None:
 
 
 def test_version_falls_back_without_generated_module(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Without the build-generated `budge/_version.py` (e.g. only `budge/` copied into an image), `__version__` is
-    `'0.0.0'`."""
+    """Without the build-generated `budge/_version.py`, `__version__` is `'0.0.0'`.
+
+    That's the case when only the committed `budge/` source is copied into an image.
+    """
     # a `None` entry in `sys.modules` makes `import budge._version` raise `ModuleNotFoundError`
     monkeypatch.setitem(sys.modules, 'budge._version', None)
     try:

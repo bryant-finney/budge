@@ -25,7 +25,6 @@ __version__: str
 """The version of the `budge` distribution this package was built as, or `'0.0.0'` if it was never built."""
 
 try:
-    # before the first build only `_version.pyi` exists, so pyright resolves the stub but warns that the source is missing
-    from budge._version import __version__  # pyright: ignore[reportMissingModuleSource]
+    from budge._version import __version__
 except ModuleNotFoundError:
     __version__ = '0.0.0'

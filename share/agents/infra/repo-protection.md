@@ -106,9 +106,10 @@ left out because signing is already enforced at the only point that matters, the
   run by the user. Never run `--admin`, `--squash`, or `--rebase` yourself.
 - **Settings.** Change rulesets and repo settings only through
   [`apply-repo-rules`](../../skills/apply-repo-rules/SKILL.md). Its `apply` subcommand applies
-  `rules.md` from `origin/main` and needs no further approval, because the user's merge is the
-  approval. Applying from any other ref (`apply-ref`) needs the user's explicit approval in the
-  current session, and so does every other ruleset or repo-setting change, including the
+  `rules.md` from `main` and needs no further approval, because the user's merge is the approval.
+  For the same reason, it runs only when the skill on disk matches that `main` commit. Applying
+  from any other ref (`apply-ref`) needs the user's explicit approval in the current session, and
+  so does every other ruleset or repo-setting change, including the
   [emergency path](#emergency-path) and [roll back](#roll-back).
 - **Updating a PR branch from its base.** Prefer the "Update with merge commit" button, or a local
   signed rebase (`git rebase` with `commit.gpgsign` on) followed by a force-push of the feature
@@ -141,11 +142,15 @@ From the repository root:
 share/skills/apply-repo-rules/apply-repo-rules.sh apply
 ```
 
-It fetches `origin/main` and reads `rules.md` there. Then it creates missing rulesets, `PUT`s
-any that differ (looked up by name, since a `POST` with a taken name creates a duplicate or
-fails), `PATCH`es merge settings that differ, and runs the [drift check](#check-for-drift). It
-never deletes a ruleset. `apply-ref <ref>` does the same from another ref, and needs the user's
-approval every time.
+It asks the API where `main` is on GitHub and fetches that commit from
+`https://github.com/bryant-finney/budge.git`, not through the `origin` remote, and it targets
+`bryant-finney/budge` whatever the local remotes say. It refuses to run (exit 4) unless the
+skill's directory on disk matches that commit, and reads both `rules.md` and `parse-rules.jq`
+from the commit. Then it creates missing rulesets, `PUT`s any that differ (looked up by name,
+since a `POST` with a taken name creates a duplicate or fails; two rulesets with one name stop
+it), `PATCH`es merge settings that differ, and runs the [drift check](#check-for-drift). It never
+deletes a ruleset. `apply-ref <ref>` does the same from another ref, without the directory
+check, and needs the user's approval every time.
 
 After applying, confirm that open PRs targeting `main` are still mergeable:
 
@@ -165,12 +170,18 @@ share/skills/apply-repo-rules/apply-repo-rules.sh check HEAD   # against a PR br
 
 It prints `OK` or `FAIL` for each ruleset and for the repo settings, with a diff for each
 `FAIL`, and exits 1 on drift. It compares only the keys a payload sets, because a `GET` adds
-server fields such as `id` and `_links`. It looks rulesets up by name, because IDs aren't fixed.
-A live ruleset that `rules.md` doesn't list is drift too.
+server fields such as `id` and `_links`. It looks rulesets up by name, because IDs aren't fixed,
+and ignores rulesets inherited from an organization. A live ruleset that `rules.md` doesn't list
+is drift too.
 
-The live API can return extra fields inside a rule. For example, a `pull_request` rule can gain
-newer parameters with default values. If the only differences are new defaulted fields, add them
-to `rules.md` rather than treating them as drift.
+Inside a rule, it compares only the parameters `rules.md` sets. A `GET` of a `pull_request` rule
+also returns parameters with server defaults, such as `required_reviewers`, so comparing whole
+rules would report drift after every `apply`. `check` lists those parameters on a `NOTE` line
+instead. To pin one, add it to `rules.md`.
+
+It fails closed. If a GitHub API call fails, it exits 5 rather than reporting `OK`. If `main`
+can't be fetched, it exits 3 rather than comparing against a cached copy. The skill lists every
+exit code.
 
 ### Emergency path
 
@@ -180,7 +191,7 @@ pushed directly to `main` or re-pointing a bad tag: the owner just does it. Use 
 only when a ruleset has to be off for everyone. They need the user's go-ahead every time.
 
 1. Find the ruleset's id:
-   `gh api repos/bryant-finney/budge/rulesets --jq '.[] | {id, name}'`.
+   `gh api 'repos/bryant-finney/budge/rulesets?includes_parents=false' --jq '.[] | {id, name}'`.
 2. Disable it:
    `gh api --method PUT repos/bryant-finney/budge/rulesets/<id> -f enforcement=disabled`.
 3. Do the one thing that needed it.
@@ -211,6 +222,9 @@ because agents act as the admin:
   and merge it itself.
 - An agent holding admin credentials can `PUT` or `DELETE` the rulesets and `PATCH` repo
   settings.
+- The pre-approved `apply` checks that the skill on disk matches `main` before it writes. That
+  stops an accidental run of unreviewed code, such as `apply` used to test a parser change. An
+  edited copy of the script can drop the check, though, so it doesn't stop a misbehaving agent.
 - The admin bypass applies to agents too, so GitHub lets an agent push to `main`, move a tag, or
   merge with `--admin`.
 

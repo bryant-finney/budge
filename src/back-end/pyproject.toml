@@ -127,6 +127,9 @@ select = [
   "G",
   "I",
   "N",
+  # blanket `# type: ignore` / `# noqa` only (not all of `PGH`): every suppression names its code
+  "PGH003",
+  "PGH004",
   "PL",
   "PT",
   "RET",

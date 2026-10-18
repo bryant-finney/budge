@@ -114,13 +114,13 @@ class FakeSecretStore:
 class FakeIngestionTrigger:
     """A `budge.ingestion.IngestionTrigger` that records each request instead of starting a run."""
 
-    calls: list[tuple[str, ...] | None]
-    """One entry per `trigger` call: the requested ids, or `None` for "all connections"."""
+    calls: list[str | None]
+    """One entry per `trigger` call: the requested id, or `None` for "all connections"."""
 
     def __init__(self) -> None:
         """Create a trigger with no recorded calls."""
         self.calls = []
 
-    def trigger(self, connection_ids: Sequence[str] | None = None) -> None:
+    def trigger(self, connection_id: str | None = None) -> None:
         """Record the request."""
-        self.calls.append(None if connection_ids is None else tuple(connection_ids))
+        self.calls.append(connection_id)

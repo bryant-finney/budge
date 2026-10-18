@@ -125,13 +125,13 @@ def test_secret_store_round_trip(secrets: SecretStore) -> None:
 
 
 def test_ingestion_trigger_records_requests() -> None:
-    """The fake records one entry per request: specific ids, or `None` for all connections."""
+    """The fake records one entry per request: one connection's id, or `None` for all connections."""
     trigger = FakeIngestionTrigger()
 
-    trigger.trigger(['item-1'])
+    trigger.trigger('item-1')
     trigger.trigger()
 
-    assert trigger.calls == [('item-1',), None]
+    assert trigger.calls == ['item-1', None]
 
 
 def _stub_calls() -> list[Callable[[], object]]:

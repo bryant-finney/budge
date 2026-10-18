@@ -4,8 +4,6 @@ Implemented in milestone 2. Locally the boto3 Lambda client reaches the ingestio
 Emulator through `AWS_ENDPOINT_URL_LAMBDA` (§12).
 """
 
-from collections.abc import Sequence
-
 __all__ = ['LambdaIngestionTrigger']
 
 _MILESTONE_2 = 'LambdaIngestionTrigger is implemented in milestone 2'
@@ -25,6 +23,6 @@ class LambdaIngestionTrigger:
         """
         self.function_name = function_name
 
-    def trigger(self, connection_ids: Sequence[str] | None = None) -> None:
+    def trigger(self, connection_id: str | None = None) -> None:
         """See `budge.ingestion.IngestionTrigger.trigger`."""
         raise NotImplementedError(_MILESTONE_2)

@@ -99,6 +99,8 @@
       "Bash(direnv exec . aws logs tail *)",
       "Bash(actionlint *)",
       "Bash(shellcheck *)",
+      "Bash(share/skills/apply-repo-rules/apply-repo-rules.sh check *)",
+      "Bash(share/skills/apply-repo-rules/apply-repo-rules.sh apply *)",
       "mcp__plugin_aws_aws-documentation__search_documentation",
       "mcp__plugin_aws_aws-documentation__read_documentation",
       "mcp__plugin_aws_aws-documentation__read_sections",

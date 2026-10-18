@@ -2,26 +2,24 @@
 
 from http import HTTPStatus
 
-import httpx
 import pytest
+from fastapi.testclient import TestClient
 
 from budge.api.app import app
 
-pytestmark = pytest.mark.anyio
 
-
-async def test_health_returns_ok(client: httpx.AsyncClient) -> None:
+def test_health_returns_ok(client: TestClient) -> None:
     """`GET /api/health` returns `200 {"ok": true}`."""
-    response = await client.get('/api/health')
+    response = client.get('/api/health')
 
     assert response.status_code == HTTPStatus.OK
     assert response.json() == {'ok': True}
 
 
 @pytest.mark.parametrize('path', ['/health', '/openapi.json', '/docs', '/docs/oauth2-redirect', '/redoc', '/api/redoc'])
-async def test_routes_are_only_served_under_the_api_prefix(client: httpx.AsyncClient, path: str) -> None:
+def test_routes_are_only_served_under_the_api_prefix(client: TestClient, path: str) -> None:
     """Without the `/api` prefix there is no route, and FastAPI's default doc paths are disabled."""
-    response = await client.get(path)
+    response = client.get(path)
 
     assert response.status_code == HTTPStatus.NOT_FOUND
 
@@ -42,9 +40,9 @@ def test_every_route_is_under_the_api_prefix() -> None:
         assert path.startswith('/api/'), path
 
 
-async def test_openapi_document_describes_health(client: httpx.AsyncClient) -> None:
+def test_openapi_document_describes_health(client: TestClient) -> None:
     """`/api/openapi.json` lists `/api/health` with the `HealthResponse` schema."""
-    response = await client.get('/api/openapi.json')
+    response = client.get('/api/openapi.json')
 
     assert response.status_code == HTTPStatus.OK
     document = response.json()
@@ -53,17 +51,17 @@ async def test_openapi_document_describes_health(client: httpx.AsyncClient) -> N
     assert document['components']['schemas']['HealthResponse']['properties']['ok']['const'] is True
 
 
-async def test_docs_are_served_under_the_api_prefix(client: httpx.AsyncClient) -> None:
+def test_docs_are_served_under_the_api_prefix(client: TestClient) -> None:
     """Swagger UI is served at `/api/docs` and loads the prefixed OpenAPI document."""
-    response = await client.get('/api/docs')
+    response = client.get('/api/docs')
 
     assert response.status_code == HTTPStatus.OK
     assert '/api/openapi.json' in response.text
     assert '/api/docs/oauth2-redirect' in response.text
 
 
-async def test_docs_oauth2_redirect_is_served_under_the_api_prefix(client: httpx.AsyncClient) -> None:
+def test_docs_oauth2_redirect_is_served_under_the_api_prefix(client: TestClient) -> None:
     """Swagger UI's OAuth2 redirect page is reachable through CloudFront's `/api/*` behavior."""
-    response = await client.get('/api/docs/oauth2-redirect')
+    response = client.get('/api/docs/oauth2-redirect')
 
     assert response.status_code == HTTPStatus.OK

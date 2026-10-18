@@ -25,6 +25,7 @@ metadata:
   through a session.** That broke `uvx pre-commit` and every `.venv` built on it. Homebrew 3.12/3.14 and uv's 3.11
   kept working, and the binary's files were unchanged since 2025-11. The cause is unknown (possibly the environment
   or sandbox). Workaround: `uvx --python 3.14 pre-commit ...`, and `UV_PYTHON=3.14` for gates on a `git archive`
-  export. Don't delete or reinstall the user's uv Pythons yourself; report it.
+  export. Don't delete or reinstall the user's uv Pythons yourself; report it. The user repaired it the same day.
+  Afterwards, rebuild each worktree `.venv` (`rm -rf .venv && uv sync --locked --all-groups`, with `VIRTUAL_ENV` unset).
 
 Related: [[coverage-sysmon-contexts]].

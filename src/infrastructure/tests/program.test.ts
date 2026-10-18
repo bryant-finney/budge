@@ -12,7 +12,10 @@ import type * as Program from '../index.js';
 
 const registered: pulumi.runtime.MockResourceArgs[] = [];
 
-const BASE_CONFIG = { 'budge:household_timezone': 'America/Chicago' } as const;
+const BASE_CONFIG = {
+  'aws:region': 'us-east-1',
+  'budge:household_timezone': 'America/New_York',
+} as const;
 
 /** Resolve an `Output` to its value. Only valid under mocks, where every value is known. */
 function promiseOf<T>(output: pulumi.Output<T>): Promise<T> {
@@ -66,7 +69,7 @@ describe('program outputs', () => {
 
     expect(await promiseOf(program.plaidEnv)).toBe('production');
     expect(await promiseOf(program.scheduleRate)).toBe('rate(1 hour)');
-    expect(await promiseOf(program.householdTimezone)).toBe('America/Chicago');
+    expect(await promiseOf(program.householdTimezone)).toBe('America/New_York');
   });
 
   it('defaults plaid_env to sandbox and schedule_rate to every 4 hours', async () => {

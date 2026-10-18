@@ -215,7 +215,8 @@ if [[ -z $ref ]]; then
   # Ask the API where main is, then fetch from an explicit URL rather than the `origin` remote. A
   # commit is named by its content, so once the object is here, its source doesn't matter. Never
   # fall back to a cached copy: apply could then reapply rules from before the latest merge.
-  src=$(api "repos/$repo/commits/main" --jq .sha)
+  src=$(gh api --hostname "$host" "repos/$repo/commits/main" --jq .sha) \
+    || die 3 "can't look up main on $host; not using a cached copy"
   git -C "$here" fetch --quiet --no-tags "https://$host/$repo.git" main \
     || die 3 "can't fetch main from https://$host/$repo.git; not using a cached copy"
   git -C "$here" cat-file -e "$src^{commit}" 2>/dev/null \

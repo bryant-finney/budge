@@ -52,6 +52,20 @@ stating exactly what they must change.
 - **CI/CD.** GitHub Actions: pull requests run pre-commit, type checks, and both test suites; `main`
   builds the `linux/arm64` image, runs `pulumi up`, deploys the SPA, and smoke-tests. Pin actions to
   full commit SHAs with a version comment; set minimal `permissions:` per job.
+- **Repository protection.** [`rules.md`](../../skills/apply-repo-rules/rules.md) is the desired
+  state you apply and maintain: branch and tag rulesets plus merge settings, with the reason for
+  each. The live GitHub settings must match it. Read and change those settings only through the
+  [`apply-repo-rules`](../../skills/apply-repo-rules/SKILL.md) skill. In Claude Code, the skill is
+  preloaded for you, and its `allowed-tools` pre-approve `check` and `apply`, so no
+  `settings.json` allow rules are needed. `apply-ref`, the emergency path, and any direct `gh api`
+  write need the user's approval in the current session; if the host denies one, stop and report
+  it. Change `rules.md` in a PR, run `apply` once the user merges it, and run `check` before you
+  claim the settings match.
+- **Merging and pushing.** Every merge into `main` goes through the owner's admin bypass, which is
+  the owner's alone: never merge into `main`; report that the user must merge (UI, or
+  `gh pr merge <n> --merge --admin` run by the user). Never run `--admin`, `--squash`, or
+  `--rebase`. Never push to `main`; never force-push, move, or delete a `v*` tag; sign every
+  commit. Never do anything that works only because of the bypass, even when GitHub allows it.
 
 ## Tooling
 

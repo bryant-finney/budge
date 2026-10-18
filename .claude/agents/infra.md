@@ -8,6 +8,7 @@ description: >-
   troubleshooting.
 memory: project
 color: orange
+skills: [apply-repo-rules]
 ---
 
 # infra

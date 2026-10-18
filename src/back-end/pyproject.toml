@@ -9,7 +9,7 @@ dependencies = ["fastapi~=0.143.3", "mangum~=0.22.0", "pydantic~=2.14"]
 
 [dependency-groups]
 dev = [
-  "httpx~=0.28.1",
+  "httpx2~=2.13",
   "mypy~=2.4",
   "pytest-clarity~=1.0",
   "pytest-cov~=7.1",
@@ -96,7 +96,12 @@ addopts = [
   "-m",
   "not integration",
 ]
-filterwarnings = ["error"]
+filterwarnings = [
+  "error",
+  # mangum 0.22's constructor probes `asyncio.get_event_loop()` and creates a loop if there is none; on Python
+  # 3.12-3.13 that probe warns when no loop is set yet (as when `budge.api.handler` is imported in a fresh process)
+  "ignore:There is no current event loop:DeprecationWarning:mangum.adapter",
+]
 markers = [
   "integration: needs real Plaid Sandbox or a container; excluded by default",
 ]

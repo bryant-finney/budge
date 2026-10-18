@@ -8,6 +8,7 @@ Boundary: ingestion reaches storage, secrets, and Plaid only through the `budge.
 `budge.plaid_client`; it never imports `boto3`.
 """
 
+from budge.ingestion.summary import Outcome, RunResult, RunSummary
 from budge.ingestion.trigger import IngestionTrigger
 
-__all__ = ['IngestionTrigger']
+__all__ = ['IngestionTrigger', 'Outcome', 'RunResult', 'RunSummary']

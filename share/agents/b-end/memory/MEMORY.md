@@ -12,3 +12,7 @@ Index of b-end agent memories, one line per entry.
 - [gh:commit skill forks](gh-commit-skill-forks.md) — skill commits in the background; wait, then verify signature/prefix
 - [GitHub stacked PRs](github-stacked-prs.md) — dependencies API rejects PRs; `Closes` links only once a PR targets `main`
 - [pyright gotchas](pyright-gotchas.md) — `@contextmanager` needs `Generator`; nodenv `.node-version` breaks the wrapper
+- [Starlette TestClient and httpx2](starlette-testclient-httpx2.md) — TestClient needs `httpx2` (dev group since 2026-10-18); FastAPI route listing
+- [Mangum event loop](mangum-event-loop.md) — conftest owns Mangum's import-time loop; async tests unset it; run the full matrix
+- [Pydantic model notes](pydantic-model-notes.md) — field docstrings become OpenAPI text; models.py stays a leaf; FiniteFloat; strict vs frozenset
+- [Lambda logging format](lambda-logging-format.md) — text prefix vs JSON `message`; §12 metric filter needs JSON format + `extra` fields

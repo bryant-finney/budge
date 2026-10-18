@@ -12,3 +12,5 @@ Index of b-end agent memories, one line per entry.
 - [gh:commit skill forks](gh-commit-skill-forks.md) — skill commits in the background; wait, then verify signature/prefix
 - [GitHub stacked PRs](github-stacked-prs.md) — dependencies API rejects PRs; `Closes` links only once a PR targets `main`
 - [pyright gotchas](pyright-gotchas.md) — `@contextmanager` needs `Generator`; nodenv `.node-version` breaks the wrapper
+- [Starlette TestClient and httpx2](starlette-testclient-httpx2.md) — TestClient warns without `httpx2`; tests use `httpx.ASGITransport`; FastAPI route listing
+- [Mangum event loop](mangum-event-loop.md) — conftest owns Mangum's import-time loop; async tests unset it; run the full matrix

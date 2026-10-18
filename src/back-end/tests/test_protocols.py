@@ -1,18 +1,24 @@
 """Tests for the boundary protocols: the fakes and the `budge.aws` stubs conform, and the fakes honor the contract."""
 
 import datetime as dt
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 
 import pytest
 
 from budge.aws import LambdaIngestionTrigger, S3Repository, SecretsManagerSecretStore
 from budge.ingestion import IngestionTrigger
+from budge.models import Transaction
 from budge.storage import LeaseHeld, Repository, SecretStore
 from tests.factories import TRANSACTION, make_connection, make_transaction
 from tests.fakes import FakeIngestionTrigger, FakeRepository, FakeSecretStore
 
 WINDOW_START = dt.date(2026, 10, 5)
 WINDOW_END = dt.date(2026, 10, 11)
+
+
+def by_id(rows: Iterable[Transaction]) -> list[Transaction]:
+    """Sort rows by `transaction_id`: `Repository.get_transactions` promises no order (and models aren't hashable)."""
+    return sorted(rows, key=lambda row: row.transaction_id)
 
 
 @pytest.fixture
@@ -70,8 +76,10 @@ def test_get_transactions_is_inclusive_on_effective_date(repo: Repository) -> No
     repo.save_connection(make_connection())
     repo.put_transaction_rows('item-1', [first, last, before, after, excluded])
 
-    assert repo.get_transactions(WINDOW_START, WINDOW_END) == [first, last]
-    assert repo.get_transactions(WINDOW_START, WINDOW_END, discretionary_only=False) == [first, last, excluded]
+    assert by_id(repo.get_transactions(WINDOW_START, WINDOW_END)) == by_id([first, last])
+    assert by_id(repo.get_transactions(WINDOW_START, WINDOW_END, discretionary_only=False)) == by_id(
+        [first, last, excluded]
+    )
 
 
 def test_delete_connection_removes_rows_and_is_idempotent(repo: Repository) -> None:

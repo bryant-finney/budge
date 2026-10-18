@@ -35,12 +35,11 @@ user to resolve.
   (`trigger(connection_id: str | None)`, a separate commit). The new review covers lax vs. `strict=True`,
   `put_transaction_rows` row ownership, and a docstring nit.
 - **#26:** first maintainer-facing review posted. Main finding: the run-summary log line can't be read by §12's
-  metric filter as currently logged.
+  metric filter as currently logged. Once the user approved it, `61dbe8e` swapped the `httpx` dev dependency for
+  `httpx2` and moved the API tests to FastAPI's `TestClient`.
 
 ## Blocked or pending the user
 
-- **The `httpx` to `httpx2` dev-dependency swap** was denied by the permission classifier. Starlette 1.8's `TestClient`
-  wants `httpx2`, so #26's tests use `httpx.ASGITransport`. See `memory/starlette-testclient-httpx2.md`.
 - **Judgment calls the user may revert:** #20's `PGH003`/`PGH004` (`e1524fe`) and #23's `trigger()` shape (`111c4de`).
 - **Spec gap:** Plaid's nullable `iso_currency_code` versus §6's non-null `currency`. M2's normalization must pick.
 - **`Closes #N` only takes effect once that PR's base is `main`**; see `memory/github-stacked-prs.md`.

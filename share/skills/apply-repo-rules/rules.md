@@ -13,9 +13,9 @@ file and the spec's rationale together, in one PR.
 - Its **Rule** table has one row per rule parameter. A rule with no parameters gets one row with
   empty Parameter and Value cells.
 - Its optional **Bypass** table has one row per bypass actor: the actor type, the actor ID, and
-  the bypass mode (`always`, `pull_request`, or `exempt`). `RepositoryRole` `5` is the repository
-  admin role, which on this personal-account repo means the owner. Without the table, nobody can
-  bypass the ruleset.
+  the bypass mode (`always`, `pull_request`, or `exempt`; `pull_request` applies only to branch
+  rulesets). `RepositoryRole` `5` is the repository admin role, which on this personal-account
+  repo means the owner. Without the table, nobody can bypass the ruleset.
 - `## Repository settings` lists repo fields set with `PATCH /repos/{owner}/{repo}`.
 - A value is a code span. It is read as JSON when it parses (`0`, `false`, `["merge"]`), and as a
   string otherwise.
@@ -44,9 +44,9 @@ file and the spec's rationale together, in one PR.
 |     | `pull_request`        | `required_approving_review_count`   | `0`         |
 | ✅  | `pull_request`        | `required_review_thread_resolution` | `true`      |
 
-|     | Bypass           | Actor ID | Mode     |
-| --- | ---------------- | -------- | -------- |
-|     | `RepositoryRole` | `5`      | `always` |
+|     | Bypass           | Actor ID | Mode           |
+| --- | ---------------- | -------- | -------------- |
+|     | `RepositoryRole` | `5`      | `pull_request` |
 
 ## Ruleset `release-tags`
 

@@ -15,7 +15,7 @@ re-exported by `budge.classify`.
 import datetime as dt
 from typing import Literal
 
-from pydantic import AwareDatetime, BaseModel, ConfigDict, field_serializer
+from pydantic import AwareDatetime, BaseModel, ConfigDict, FiniteFloat, field_serializer
 
 __all__ = [
     'Account',
@@ -147,9 +147,14 @@ class Transaction(DomainModel):
     datetime: AwareDatetime | None
     """Plaid's `datetime`, when available."""
 
-    amount: float
-    """Dollars, normalized so spend (money out) is positive; no `Decimal` (§5)."""
+    # a plain `float` that rejects NaN and ±inf: pydantic writes NaN to JSON as `null`, which then fails to read back
+    # and would make the connection's whole stored `transactions.json.gz` unreadable
+    amount: FiniteFloat
+    """Dollars, normalized so spend (money out) is positive; always finite; no `Decimal` (§5)."""
 
+    # open for milestone 2's normalization (spec §6 doesn't settle it): Plaid's `iso_currency_code` is `null` whenever
+    # `unofficial_currency_code` is set, so map such a row deliberately (fall back to the unofficial code, make this
+    # field nullable, or drop and log the row) rather than let it fail validation by accident
     currency: str
     """The ISO 4217 currency code."""
 

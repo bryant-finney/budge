@@ -71,10 +71,16 @@ def test_connection_rejects_invalid_values(field: str, value: object) -> None:
 
 @pytest.mark.parametrize(
     ('field', 'value'),
-    [('excluded_reason', 'refund'), ('datetime', dt.datetime(2026, 10, 6, 15, 10))],  # the datetime is naive on purpose
+    [
+        ('excluded_reason', 'refund'),
+        ('datetime', dt.datetime(2026, 10, 6, 15, 10)),  # naive on purpose
+        ('amount', float('nan')),
+        ('amount', float('inf')),
+        ('amount', float('-inf')),
+    ],
 )
 def test_transaction_rejects_invalid_values(field: str, value: object) -> None:
-    """Unknown `excluded_reason` values and naive datetimes are rejected."""
+    """Unknown `excluded_reason` values, naive datetimes, and non-finite amounts are rejected."""
     with pytest.raises(ValidationError):
         make_transaction(**{field: value})
 

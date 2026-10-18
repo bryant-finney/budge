@@ -14,12 +14,17 @@ itself, because they hold or protect its own state. Run it with the deploy accou
 credentials (AWS_PROFILE from .env) before `pulumi stack init prod`.
 
 Planned steps (region us-east-1; each step is skipped if it is already in place):
-  1. S3 state bucket budge-pulumi-state-<account_id>: versioning on, Block Public Access,
-     default server-side encryption.
-  2. KMS key for Pulumi secrets, with the alias alias/budge-pulumi-secrets.
+  1. KMS key for Pulumi secrets and state, with the alias alias/budge-pulumi-secrets and
+     automatic key rotation on. It comes first because the state bucket encrypts with it.
+  2. S3 state bucket budge-pulumi-state-<account_id>: Block Public Access; default
+     encryption SSE-KMS with that key (S3 Bucket Key on); a bucket policy that denies
+     requests without TLS (aws:SecureTransport false); versioning on, with a lifecycle rule
+     that expires noncurrent versions after 90 days.
   3. GitHub Actions OIDC identity provider (token.actions.githubusercontent.com).
-  4. Deploy role assumable by this repository's workflows through OIDC, with access to the
-     state bucket and the secrets KMS key.
+  4. Deploy role, assumable through OIDC only by this repository's workflows on main (or a
+     deploy environment), not by pull requests or other branches. It gets read/write on
+     the state bucket, kms:Encrypt/Decrypt/GenerateDataKey on the key (state and secrets),
+     and permissions for the resources the stack manages.
 
 Afterwards:
   PULUMI_BACKEND_URL=s3://budge-pulumi-state-<account_id>?region=us-east-1

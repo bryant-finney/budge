@@ -27,7 +27,7 @@ export default defineConfig(
       '@typescript-eslint/restrict-template-expressions': 'error',
       '@typescript-eslint/restrict-plus-operands': 'error',
       '@typescript-eslint/no-base-to-string': 'error',
-      // Stand-in for verbatimModuleSyntax, which tsconfig.json turns off for CommonJS output.
+      // Stand-in for verbatimModuleSyntax, which a CommonJS package can't use (TS1295/TS1287).
       '@typescript-eslint/consistent-type-imports': 'error',
       '@typescript-eslint/no-import-type-side-effects': 'error',
     },

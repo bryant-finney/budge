@@ -37,8 +37,8 @@ Found while building the root pnpm workspace (#12, 2026-10-17).
 - **`tsconfig.base.json` is extended last by front-end**
   (`"extends": ["$app/tsconfig", "../../tsconfig.base.json"]`; SvelteKit 3 has no
   `.svelte-kit/tsconfig.json`), so its options override SvelteKit's. Never add `types`, `paths`,
-  `include`, `rootDirs` or `isolatedModules`, and never change `verbatimModuleSyntax` there, or the
-  front-end breaks. The tsconfigs must stay comment-free, so this constraint lives here, in #12 and
+  `include`, `rootDirs`, `isolatedModules` or `verbatimModuleSyntax` there, or the front-end
+  breaks. The base holds only options every package shares (user decision, PR #21, 2026-10-18). The tsconfigs must stay comment-free, so this constraint lives here, in #12 and
   in PR #18.
 - **Prettier and `.claude/worktrees/`:** agent worktrees are full repo copies whose `.git` is a
   file, so Prettier doesn't skip them. `.prettierignore` lists `.claude/worktrees/`.
@@ -62,10 +62,13 @@ Found while building the root pnpm workspace (#12, 2026-10-17).
 - **`pnpm -r run` stops at the first failing package and kills the others** (SIGKILL), so root
   `pnpm run check` reports only one package's errors. To see every failure (e.g. when proving
   negative probes), run `pnpm -C <pkg> run check` per package, or pass `--no-bail`.
-- **The root `verbatimModuleSyntax` conflicts with CommonJS output.** `src/infrastructure` is
-  CommonJS (`module: nodenext`, no `"type": "module"`) for Pulumi's runtime. TS then rejects ESM
-  syntax (TS1295/TS1287), so that package sets `verbatimModuleSyntax: false` and
-  `isolatedModules: true` and relies on eslint `consistent-type-imports`. Dynamic `import()` still
+- **`verbatimModuleSyntax` conflicts with CommonJS output, so it lives in
+  `src/front-end/tsconfig.json`, not the base.** `src/infrastructure` is CommonJS
+  (`module: nodenext`, no `"type": "module"`) for Pulumi's runtime, where the option makes TS reject
+  ESM syntax (TS1295/TS1287). Infrastructure overrides nothing from the base: it adds
+  `isolatedModules: true`, because Vitest transpiles each file on its own, and it relies on eslint
+  `consistent-type-imports` for explicit type imports. The user moved the option out of the base on
+  PR #21, 2026-10-18. Dynamic `import()` still
   needs the `.js` extension in a CJS file under nodenext. Name the Vitest config `.mts`, or Vite
   warns about ESM syntax in a CJS-loaded file.
 - **pnpm 12's release-age gate edits `pnpm-workspace.yaml` during install.** A dependency version

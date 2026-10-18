@@ -7,7 +7,6 @@
     ],
     "module": "nodenext",
     "moduleResolution": "nodenext",
-    "verbatimModuleSyntax": false,
     "isolatedModules": true,
     "types": [
       "node"

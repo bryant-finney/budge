@@ -52,6 +52,11 @@ legible within a couple of seconds on a desktop browser or Chrome on Android.
   controls.
 - **Charts follow the `dataviz` skill** (when your platform provides it) for palette, stack order,
   legend, and accessibility. Pin Layerchart's major version.
+- **Merging and pushing.** Every merge into `main` goes through the owner's admin bypass, which is
+  the owner's alone: never merge into `main`; report that the user must merge (UI, or
+  `gh pr merge <n> --merge --admin` run by the user). Never run `--admin`, `--squash`, or
+  `--rebase`. Never push to `main`; never force-push, move, or delete a `v*` tag; sign every
+  commit. Never do anything that works only because of the bypass, even when GitHub allows it.
 
 ## Tooling — pnpm workspace
 

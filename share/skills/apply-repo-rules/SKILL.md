@@ -68,5 +68,5 @@ needs approval again.
 | Running `apply-ref` without the user's approval in this session | Ask first, naming the ref. `apply-ref` is never pre-approved. If the host denies it, report it and stop. Don't retry it in another form. |
 | Treating a `NOTE ... not in rules.md, so not compared` as drift | It isn't. `check` compares only the rule parameters `rules.md` sets. To pin one of them, add it to `rules.md` in a PR.                   |
 | Editing the skill and running `apply` to test it                | `apply` refuses (exit 4) and runs only merged code. Preview with `check HEAD`, and let the user merge before `apply`.                    |
-| `FAIL rulesets not in rules.md`                                 | Report it. Removing a ruleset is the user's call (the spec's Roll back procedure), so the script never deletes.                          |
+| `FAIL rulesets not in rules.md`                                 | Report it. Removing a ruleset is the user's call (the spec's emergency path), so the script never deletes.                               |
 | `check` shows `enforcement` `disabled`                          | The user may be partway through the spec's emergency path. Ask before running `apply`, which turns enforcement back on.                  |

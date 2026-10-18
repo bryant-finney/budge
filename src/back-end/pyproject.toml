@@ -44,9 +44,17 @@ source = ["budge"]
 
 [tool.mypy]
 disallow_untyped_decorators = true
-# `strict` doesn't reject a bare `# type: ignore`; every suppression must name its error code
-enable_error_code = ["ignore-without-code"]
+# `strict` omits these checks; require coded ignores and catch unsafe control flow / dropped awaitables.
+enable_error_code = [
+  "ignore-without-code",
+  "possibly-undefined",
+  "redundant-expr",
+  "truthy-bool",
+  "unused-awaitable",
+]
 files = ["budge", "tests"]
+# Lambda runs on Linux; keep local and CI platform branches identical.
+platform = "linux"
 plugins = ["pydantic.mypy"]
 pretty = true
 python_version = "3.11"
@@ -64,6 +72,8 @@ warn_required_dynamic_aliases = true
 respect-type-ignore-comments = false
 
 [tool.ty.environment]
+# Match Lambda and mypy regardless of the developer's host platform.
+python-platform = "linux"
 python-version = "3.11"
 
 [tool.ty.rules]
@@ -115,6 +125,7 @@ line-length = 120
 target-version = "py311"
 
 [tool.ruff.format]
+docstring-code-format = true
 quote-style = "single"
 
 [tool.ruff.lint]

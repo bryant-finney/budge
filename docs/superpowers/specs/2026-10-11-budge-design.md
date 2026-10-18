@@ -732,13 +732,13 @@ docs/
   version matrix. The Lambdas run on the **newest generally available Lambda
   Python runtime** (base image `public.ecr.aws/lambda/python:3.14` today;
   `python3.15` is in Lambda public preview only, not for production). Managed
-  with **uv**; **ruff** (lint + format), **mypy** (strict), **pyright** (strict),
-  **pytest** (+ moto, coverage).
+  with **uv**; **ruff** (lint + format), **mypy** (strict), Astral's
+  **ty** (`ty check`), **pytest** (+ moto, coverage).
 - **TypeScript:** Node 24 LTS, **pnpm** workspace (`front-end`, `infrastructure`);
   **eslint**, **prettier**, **svelte-check**, **Vitest** + Svelte Testing
   Library.
 - **pre-commit:** the existing generic, mdformat, markdownlint-cli2, gitleaks
-  (secret scanning), yamllint, and taplo hooks, plus ruff, mypy, pyright,
+  (secret scanning), yamllint, and taplo hooks, plus ruff, mypy, ty,
   eslint, prettier, and svelte-check. Every lint, format, and static-analysis
   check that CI/CD runs has a local parallel, via `pre-commit` where possible.
 - **Local dev:** `.envrc` copies the template `etc/base.env` to `.env` on first

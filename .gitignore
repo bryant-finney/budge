@@ -71,6 +71,8 @@ node_modules/
 .venv/
 __pycache__/
 dist/
+# written by hatchling's `version` build hook on every build and `uv sync` (see src/back-end/pyproject.toml)
+src/back-end/budge/_version.py
 
 # PyCharm
 .idea/

@@ -3,6 +3,7 @@
 import importlib
 import importlib.metadata
 import importlib.resources
+import sys
 from types import ModuleType
 
 import pytest
@@ -34,17 +35,22 @@ def test_version_matches_distribution_metadata() -> None:
     assert budge.__version__ == importlib.metadata.version('budge')
 
 
-def test_version_falls_back_when_not_installed(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Without installed metadata (e.g. only `budge/` copied into an image), `import budge` still works."""
+def test_generated_version_module_matches_distribution_metadata() -> None:
+    """The build hook writes `budge/_version.py` for editable installs too, with the distribution's version."""
+    version_module: ModuleType = importlib.import_module('budge._version')
 
-    def missing(distribution_name: str) -> str:
-        raise importlib.metadata.PackageNotFoundError(distribution_name)
+    assert version_module.__version__ == importlib.metadata.version('budge')
 
-    monkeypatch.setattr(importlib.metadata, 'version', missing)
+
+def test_version_falls_back_without_generated_module(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Without the build-generated `budge/_version.py` (e.g. only `budge/` copied into an image), `__version__` is
+    `'0.0.0'`."""
+    # a `None` entry in `sys.modules` makes `import budge._version` raise `ModuleNotFoundError`
+    monkeypatch.setitem(sys.modules, 'budge._version', None)
     try:
         assert importlib.reload(budge).__version__ == '0.0.0'
     finally:
-        # restore the real lookup and re-run `budge/__init__.py` so later tests see the installed version
+        # restore `budge._version` and re-run `budge/__init__.py` so later tests see the installed version
         monkeypatch.undo()
         importlib.reload(budge)
 

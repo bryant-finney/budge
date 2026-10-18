@@ -16,20 +16,16 @@ The installed distribution's version is exposed as `__version__`:
 >>> budge.__version__ == importlib.metadata.version('budge')
 True
 
-When `budge/` is importable but not installed, so no `budge-*.dist-info` exists, `__version__` stays `'0.0.0'`
-instead of raising at import time.
+The value comes from `budge/_version.py`, which every build and `uv sync` generates (and git ignores). Without that
+file, e.g. when only the committed `budge/` source is copied into an image, `__version__` is `'0.0.0'`, matching
+`fallback-version` in `pyproject.toml`, so importing never fails.
 """
 
-import contextlib
-import importlib.metadata
+__version__: str
+"""The version of the `budge` distribution this package was built as, or `'0.0.0'` if it was never built."""
 
-__version__: str = '0.0.0'
-"""The version of the installed `budge` distribution, or `'0.0.0'` if it isn't installed.
-
-`'0.0.0'` matches `fallback-version` in `pyproject.toml`, so "not installed" and "installed without `.git`" report
-the same version.
-"""
-
-# e.g. only the `budge/` source copied into an image: keep the default, so importing can't crash the Lambda handlers
-with contextlib.suppress(importlib.metadata.PackageNotFoundError):
-    __version__ = importlib.metadata.version(__name__)
+try:
+    # before the first build only `_version.pyi` exists, so pyright resolves the stub but warns that the source is missing
+    from budge._version import __version__  # pyright: ignore[reportMissingModuleSource]
+except ModuleNotFoundError:
+    __version__ = '0.0.0'

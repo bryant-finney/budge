@@ -1,6 +1,6 @@
 ---
 name: uv-dynamic-versioning-quirks
-description: uv-dynamic-versioning needs hatchling (not uv_build); fallback-version is for missing .git, not missing tags; needs cache-keys and full CI checkout
+description: uv-dynamic-versioning needs hatchling (not uv_build); fallback-version is for missing .git, not missing tags; cache-keys; full CI checkout; `__version__` via a gitignored hatch-generated `_version.py`
 metadata:
   type: reference
 ---
@@ -15,3 +15,20 @@ Decided for issue #1 (2026-10-17): budge gets its version from git tags via `uv-
 - Set `[tool.uv] cache-keys = [{ file = "pyproject.toml" }, { git = { commit = true, tags = true } }]`, or `uv sync` keeps a stale editable version.
 - CI checkout needs `fetch-depth: 0` + `fetch-tags: true` (infra's side).
 - Check the resolved version with `uvx uv-dynamic-versioning` from `src/back-end/`.
+- uv-dynamic-versioning has no file substitution (unlike poetry-dynamic-versioning, which config-ninja uses).
+
+## `budge.__version__` (decided 2026-10-17, PR #19)
+
+- Hatchling's `version` build hook in `pattern = true` mode **rewrites the tracked file in place** in the working tree,
+  on `uv build` and on editable `uv sync`, and never reverts it. With `cache-keys` that dirties every checkout on
+  every commit. Its default pattern also rejects an annotated `__version__: str = ...`. Don't use pattern mode.
+- Use template mode instead: `[tool.hatch.build.hooks.version] path = "budge/_version.py"` writes a module that the
+  root `.gitignore` ignores (`src/back-end/budge/_version.py`). The hook runs for editable installs too, and it
+  appends the path to `build_data["artifacts"]`, so the wheel and sdist ship the gitignored file without an explicit
+  `artifacts` entry. Building a wheel from the sdist (no `.git`) still gets the real version, from `PKG-INFO`.
+- `budge/__init__.py` does `from budge._version import __version__` and falls back to `'0.0.0'` on
+  `ModuleNotFoundError` (a copy-only `budge/` in an image). A committed `budge/_version.pyi` types the import for mypy
+  in a fresh clone. Pyright then warns `reportMissingModuleSource` until the first build, so the import carries a
+  scoped `# pyright: ignore[reportMissingModuleSource]`. `_version.py` is in coverage `omit`.
+- Test the fallback with `monkeypatch.setitem(sys.modules, 'budge._version', None)` plus `importlib.reload(budge)`,
+  then `undo()` and reload again.

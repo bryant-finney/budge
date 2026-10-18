@@ -1,6 +1,7 @@
 [project]
 name = "budge"
-version = "0.1.0"
+# the version comes from git tags (`vX.Y.Z`) via `uv-dynamic-versioning`; see `[tool.uv-dynamic-versioning]`
+dynamic = ["version"]
 description = "Trailing-7-day discretionary spend tracker: FastAPI API and Plaid ingestion Lambdas."
 requires-python = ">=3.11"
 # compatible-release pins: `~=MAJOR.MINOR` for stable (>=1.0) packages, `~=0.MINOR.PATCH` for 0.x packages
@@ -16,8 +17,9 @@ dev = [
 ]
 
 [build-system]
-build-backend = "uv_build"
-requires = ["uv_build>=0.13.1,<0.14"]
+# hatchling, not `uv_build`: `uv-dynamic-versioning` doesn't support the uv build backend (astral-sh/uv#14561)
+build-backend = "hatchling.build"
+requires = ["hatchling", "uv-dynamic-versioning>=0.14"]
 
 [tool.coverage.report]
 exclude_also = [
@@ -53,9 +55,25 @@ markers = [
 testpaths = ["budge", "tests"]
 xfail_strict = true
 
+[tool.hatch.build.targets.wheel]
+# flat layout: the package lives at `src/back-end/budge/`, not under a nested `src/`
+packages = ["budge"]
+
+[tool.hatch.version]
+source = "uv-dynamic-versioning"
+
 [tool.uv]
+# the version is dynamic, so a new commit or tag must rebuild the editable install to refresh `budge.__version__`
+cache-keys = [
+  { file = "pyproject.toml" },
+  { git = { commit = true, tags = true } },
+]
 required-version = ">=0.13,<0.14"
 
-[tool.uv.build-backend]
-module-name = "budge"
-module-root = ""
+# Dunamai's default pattern matches the repo-wide `v*` release tags, so no `pattern`/`pattern-prefix` is set
+[tool.uv-dynamic-versioning]
+bump = true
+# used only when there's no `.git` (e.g. the Docker build context); with no tags, git still yields a 0.0.x dev version
+fallback-version = "0.0.0"
+style = "pep440"
+vcs = "git"

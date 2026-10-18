@@ -60,12 +60,11 @@ repos:
     rev: v0.11.0.1-1
     hooks:
       - id: shellcheck
-        # explicit, so .envrc is checked however identify tags it
-        files: (^\.envrc$|\.sh$)
 
   - repo: https://github.com/rhysd/actionlint
     rev: v1.7.12
     hooks:
+      # shellchecks `run:` blocks only if a shellcheck binary is on PATH (not the hook env above)
       - id: actionlint
 
   # infra (src/infrastructure) plus the shared Prettier hook for both TS packages.
@@ -83,11 +82,22 @@ repos:
         name: eslint (src/infrastructure)
         language: system
         entry: pnpm -C src/infrastructure run lint
-        files: ^src/infrastructure/.*\.(ts|mts|cts|js|mjs|cjs)$
+        # also on dependency and tsconfig changes: typed linting reads them
+        files: |
+          (?x)^(
+            src/infrastructure/(.*\.(ts|mts|cts|js|mjs|cjs)|(package|tsconfig.*)\.json)
+            |pnpm-lock\.yaml
+            |tsconfig\.base\.json
+          )$
         pass_filenames: false
       - id: infrastructure-tsc
         name: tsc (src/infrastructure)
         language: system
         entry: pnpm -C src/infrastructure run check
-        files: ^(src/infrastructure/(.*\.(ts|mts|cts)|tsconfig.*\.json)|tsconfig\.base\.json)$
+        files: |
+          (?x)^(
+            src/infrastructure/(.*\.(ts|mts|cts)|(package|tsconfig.*)\.json)
+            |pnpm-lock\.yaml
+            |tsconfig\.base\.json
+          )$
         pass_filenames: false

@@ -1,12 +1,16 @@
 """Tests for the §6 domain models and the classifier vocabulary."""
 
+import ast
 import datetime as dt
+import inspect
 import json
 from typing import get_args
 
 import pytest
 from pydantic import BaseModel, ValidationError
 
+import budge.classify
+import budge.models
 from budge.classify import COUNT, NO_PFC_CATEGORY, ExcludedReason
 from budge.models import Account, BankConnection, Transaction
 from tests.factories import CONNECTION, TRANSACTION, make_connection, make_transaction
@@ -112,3 +116,20 @@ def test_classifier_vocabulary_matches_spec() -> None:
     )
     assert COUNT == 'count'
     assert NO_PFC_CATEGORY == 'UNCATEGORIZED'
+
+
+def test_models_is_a_leaf_module() -> None:
+    """`budge.models` imports nothing from `budge`, so the classifier can import `Transaction` without a cycle."""
+    imported: set[str] = set()
+    for node in ast.walk(ast.parse(inspect.getsource(budge.models))):
+        if isinstance(node, ast.Import):
+            imported.update(alias.name for alias in node.names)
+        elif isinstance(node, ast.ImportFrom) and node.module is not None:
+            imported.add(node.module)
+
+    assert sorted(name for name in imported if name.split('.')[0] == 'budge') == []
+
+
+def test_classify_re_exports_the_models_vocabulary() -> None:
+    """`budge.classify.ExcludedReason` is the very alias the `Transaction` model uses."""
+    assert budge.classify.ExcludedReason is budge.models.ExcludedReason

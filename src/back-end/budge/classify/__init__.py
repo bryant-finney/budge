@@ -7,6 +7,8 @@ Boundary: pure logic with no I/O. It takes plain values and returns a verdict, s
 PFC v2 detailed category.
 
 Milestone 1 defines only the vocabulary below; `classify()` and the `PFC_RULES` table arrive in milestone 2.
+`ExcludedReason` is a `budge.models.Transaction` field type, so it is defined in the leaf module `budge.models` and
+re-exported here: the classifier imports the models, never the other way round.
 
 >>> from typing import get_args
 >>> get_args(ExcludedReason)[-1]
@@ -15,12 +17,11 @@ Milestone 1 defines only the vocabulary below; `classify()` and the `PFC_RULES` 
 ('count', 'UNCATEGORIZED')
 """
 
-from typing import Final, Literal
+from typing import Final
+
+from budge.models import ExcludedReason
 
 __all__ = ['COUNT', 'NO_PFC_CATEGORY', 'ExcludedReason']
-
-ExcludedReason = Literal['inflow', 'transfer', 'cc_payment', 'bill', 'bank_fee', 'medical', 'tax', 'recurring', 'none']
-"""Why a transaction is excluded from discretionary spend; `'none'` means it counts (spec §6, §9)."""
 
 COUNT: Final = 'count'
 """`PFC_RULES` sentinel: ends the PFC lookup as spend; the recurring check still applies (spec §9)."""

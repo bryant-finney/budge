@@ -4,6 +4,10 @@ Every model forbids unknown fields and re-validates on assignment. No model has 
 material lives only behind `budge.storage.SecretStore` (spec §6), and `extra='forbid'` rejects stored or incoming data
 that tries to carry one.
 
+This is a leaf module: it imports nothing from `budge`, so every other package (the classifier included) can import
+the models without an import cycle. That is why `ExcludedReason`, a `Transaction` field type, is defined here and
+re-exported by `budge.classify`.
+
 >>> Account(account_id='acc-1', name=None, mask='0000', type='depository', subtype=None).mask
 '0000'
 """
@@ -13,13 +17,12 @@ from typing import Literal
 
 from pydantic import AwareDatetime, BaseModel, ConfigDict, field_serializer
 
-from budge.classify import ExcludedReason
-
 __all__ = [
     'Account',
     'BankConnection',
     'ConnectionStatus',
     'DomainModel',
+    'ExcludedReason',
     'PlaidEnv',
     'Transaction',
     'TransactionsUpdateStatus',
@@ -38,6 +41,12 @@ TransactionsUpdateStatus = Literal[
     'HISTORICAL_UPDATE_COMPLETE',
 ]
 """Plaid's `/transactions/sync` `transactions_update_status` values (spec §7)."""
+
+ExcludedReason = Literal['inflow', 'transfer', 'cc_payment', 'bill', 'bank_fee', 'medical', 'tax', 'recurring', 'none']
+"""Why a transaction is excluded from discretionary spend; `'none'` means it counts (spec §6, §9).
+
+Part of the classifier's vocabulary, re-exported by `budge.classify`.
+"""
 
 
 class DomainModel(BaseModel):

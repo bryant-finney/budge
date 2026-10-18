@@ -44,6 +44,8 @@ source = ["budge"]
 
 [tool.mypy]
 disallow_untyped_decorators = true
+# `strict` doesn't reject a bare `# type: ignore`; every suppression must name its error code
+enable_error_code = ["ignore-without-code"]
 files = ["budge", "tests"]
 plugins = ["pydantic.mypy"]
 pretty = true
@@ -58,8 +60,13 @@ init_typed = true
 warn_required_dynamic_aliases = true
 
 [tool.pyright]
+# pyright otherwise honours mypy's `# type: ignore[code]` as a blanket ignore of every pyright rule on that line;
+# suppress pyright findings with `# pyright: ignore[rule]` instead
+enableTypeIgnoreComments = false
 include = ["budge", "tests"]
 pythonVersion = "3.11"
+# strict mode leaves stale `# pyright: ignore[...]` comments unreported (mypy's `warn_unused_ignores` covers mypy's)
+reportUnnecessaryTypeIgnoreComment = "error"
 typeCheckingMode = "strict"
 venv = ".venv"
 venvPath = "."

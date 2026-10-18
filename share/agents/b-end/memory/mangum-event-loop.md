@@ -12,7 +12,8 @@ metadata:
   `mangum.adapter`). On 3.14+ the probe raises, and Mangum catches it. Each request then runs on
   `asyncio.get_event_loop()` (`HTTPCycle.__call__`). That is fine on Lambda, where the import-time loop stays
   current.
-- In pytest, `asyncio.run` doctests and anyio tests unset the current loop when they finish. A later handler call
+- In pytest, `asyncio.run` doctests (and any `pytest.mark.anyio` test; there are none since `61dbe8e`, and
+  `TestClient` runs on its own portal thread) unset the current loop when they finish. A later handler call
   then warns or raises, and the unowned import-time loop is garbage-collected unclosed. That `ResourceWarning`
   becomes `PytestUnraisableExceptionWarning`, which lands at session end or inside a random test.
 - Fix (`tests/conftest.py`): import `budge.api.handler` during collection, keep `MANGUM_LOOP = asyncio.get_event_loop()`, re-set it in the `current_event_loop` fixture that handler tests use, and close it in a

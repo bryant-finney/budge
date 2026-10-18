@@ -7,6 +7,8 @@
 import * as pulumi from '@pulumi/pulumi';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+// Constants only: config.ts registers no resources, so importing it statically is safe.
+import { IANA_ZONES_MISSING_FROM_ICU } from '../config.js';
 // Type-only (erased): the program itself must be imported dynamically, after setMocks.
 import type * as Program from '../index.js';
 
@@ -97,9 +99,53 @@ describe('config validation', () => {
     await expect(runProgram({})).rejects.toThrow(/household_timezone/);
   });
 
-  it('rejects a household_timezone that is not an IANA zone', async () => {
-    await expect(runProgram({ 'budge:household_timezone': 'Central Time' })).rejects.toThrow(
-      /budge:household_timezone must be an IANA time zone/,
+  it.each(['Central Time', 'america/chicago', '+05:30', 'US/Central'])(
+    'rejects household_timezone %j, which is not an exact IANA zone name',
+    async (zone) => {
+      await expect(runProgram({ 'budge:household_timezone': zone })).rejects.toThrow(
+        /budge:household_timezone must be an IANA time zone/,
+      );
+    },
+  );
+
+  it.each(['America/Chicago', 'Asia/Calcutta', 'Asia/Kolkata', 'Europe/Kyiv', 'UTC'])(
+    'accepts household_timezone %j, current or linked IANA name, unchanged',
+    async (zone) => {
+      const program = await runProgram({ ...BASE_CONFIG, 'budge:household_timezone': zone });
+
+      expect(await promiseOf(program.householdTimezone)).toBe(zone);
+    },
+  );
+
+  it('supplements Intl.supportedValuesOf only with zones the runtime accepts', () => {
+    const icu = new Set(Intl.supportedValuesOf('timeZone'));
+
+    for (const zone of IANA_ZONES_MISSING_FROM_ICU) {
+      expect(() => new Intl.DateTimeFormat('en-US', { timeZone: zone }), zone).not.toThrow();
+      expect(icu.has(zone), `${zone} is already in supportedValuesOf`).toBe(false);
+    }
+  });
+
+  it.each(['rate(1 hours)', 'rate(15 minutes)', 'rate(2 days)', 'cron(0 */4 * * ? *)'])(
+    'accepts schedule_rate %j',
+    async (rate) => {
+      const program = await runProgram({ ...BASE_CONFIG, 'budge:schedule_rate': rate });
+
+      expect(await promiseOf(program.scheduleRate)).toBe(rate);
+    },
+  );
+
+  it.each([
+    'rate(4 hour)',
+    'rate(4 hours',
+    'rate(0 hours)',
+    'rate(04 hours)',
+    'rate(4 weeks)',
+    'cron(0 */4 * * ?)',
+    'at(2026-11-20T13:00:00)',
+  ])('rejects schedule_rate %j', async (rate) => {
+    await expect(runProgram({ ...BASE_CONFIG, 'budge:schedule_rate': rate })).rejects.toThrow(
+      /Configuration 'budge:schedule_rate' value .* does not match the regular expression/,
     );
   });
 });

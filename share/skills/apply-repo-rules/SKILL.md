@@ -1,6 +1,6 @@
 ---
 name: apply-repo-rules
-description: Use when checking or applying budge's GitHub branch and tag rulesets or repo merge settings, verifying they match the repo protection spec, or after a change to rules.md merges to main.
+description: Use when checking or applying budge's GitHub branch and tag rulesets or repo merge settings, verifying the live settings match rules.md, or after a change to rules.md merges to main.
 allowed-tools: Bash(share/skills/apply-repo-rules/apply-repo-rules.sh check) Bash(share/skills/apply-repo-rules/apply-repo-rules.sh check *) Bash(share/skills/apply-repo-rules/apply-repo-rules.sh apply)
 ---
 

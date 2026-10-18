@@ -69,9 +69,10 @@ file and the spec's rationale together, in one PR.
 
 ## Repository settings
 
-|     | Setting               | Value   |
-| --- | --------------------- | ------- |
-| ✅  | `allow_merge_commit`  | `true`  |
-| ❌  | `allow_squash_merge`  | `false` |
-| ❌  | `allow_rebase_merge`  | `false` |
-| ✅  | `allow_update_branch` | `true`  |
+|     | Setting                  | Value   |
+| --- | ------------------------ | ------- |
+| ✅  | `allow_merge_commit`     | `true`  |
+| ❌  | `allow_squash_merge`     | `false` |
+| ❌  | `allow_rebase_merge`     | `false` |
+| ✅  | `allow_update_branch`    | `true`  |
+| ✅  | `delete_branch_on_merge` | `true`  |

@@ -15,7 +15,7 @@ sections, and agents should follow [Desired state](#desired-state) and
   that same account and sign their commits with the same GPG key.
 - Agents open stacked PRs: one per issue, with branches named `<type>/<issue#>/<slug>`. Each PR
   usually targets the previous issue's branch rather than `main`. When a parent PR merges, GitHub
-  retargets the child to `main`. `delete_branch_on_merge` is on.
+  deletes its head branch (`delete_branch_on_merge`) and so retargets the child to `main`.
 - PRs are merged with merge commits (the first was PR #18, merged as `a3a760f`). Local commits are
   GPG-signed. Commits made through the web UI (merge button, applied review suggestions) are
   signed by GitHub's web-flow key. That key isn't in the local keyring, so
@@ -32,7 +32,8 @@ items:
   `non_fast_forward`, `required_signatures`, and `pull_request` with merge commits only, 0
   approvals, and thread resolution required.
 - **Ruleset `release-tags`** (tag: `refs/tags/v*`): `deletion`, `non_fast_forward`, and `update`.
-- **Repository merge settings**: merge commits on, squash and rebase off, "Update branch" on.
+- **Repository merge settings**: merge commits on, squash and rebase off, "Update branch" on,
+  and head branches deleted on merge.
 
 Repository admins can always bypass both rulesets. On this personal-account repo, the only admin
 is the owner.
@@ -89,6 +90,9 @@ button.
 `allow_update_branch` is on because the required-checks rule will be strict (branches must be up
 to date with `main` before merging), and the "Update branch" button is how a PR catches up.
 Use its "Update with merge commit" option; see [Rules for agents](#rules-for-agents).
+
+`delete_branch_on_merge` is on because stacks depend on it: GitHub retargets a child PR to `main`
+only when the parent's head branch is deleted. Without it, stacks silently stop retargeting.
 
 ### Feature branches: deliberately unprotected
 

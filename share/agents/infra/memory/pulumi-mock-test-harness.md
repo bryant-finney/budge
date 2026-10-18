@@ -27,7 +27,15 @@ Found while reviewing PR #21 (#13), 2026-10-17. The fix is applied in `tests/pro
   ESM mode, uses the project's TypeScript (pnpm links the optional peer, giving
   `@pulumi+pulumi@3.269.0_typescript@6.0.3`) with the vendored `ts-node@7.0.1`. An emulation of that
   registration loaded `index.ts` and type-checked it: `noCheck` is unset, so `transpileOnly` is
-  undefined, and an injected TS2322 was rejected. This is an emulation, not `pulumi preview`.
+  undefined, and an injected TS2322 was rejected. The real smoke test passed on 2026-10-18 (Pulumi v3.270.0, #21 `d3a4c91`): 1 stack resource
+  plus the 3 outputs.
+- **Smoke-test safety:** agent shells already export `PULUMI_BACKEND_URL=s3://budge-pulumi-state-…`
+  and `AWS_PROFILE=budge` (from `.env`). For a throwaway stack, override all of these inline:
+  `PULUMI_BACKEND_URL=file://<worktree>/.cache/smoke/state`, `PULUMI_HOME=<worktree>/.cache/smoke/home`
+  (keeps `~/.pulumi` untouched) and `PULUMI_CONFIG_PASSPHRASE=…`, plus `unset AWS_PROFILE`. Then run
+  `pulumi stack init smoke --non-interactive`, `pulumi config set household_timezone …` and
+  `pulumi preview`. Clean up with `pulumi stack rm smoke --yes`, then delete the `.cache/smoke` dir
+  and `Pulumi.smoke.yaml`.
   `setAllConfig` replaces the whole config (it doesn't merge), so a missing-key test really runs
   without the key.
 

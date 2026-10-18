@@ -8,6 +8,8 @@ together.
 
 - One human, `bryant-finney` (repo admin). Agents run as that account with the same GPG key, so
   GitHub can't tell them apart from the owner. These rules stop accidents, not a misbehaving agent.
+  The owner's bypass on `main` is `always`, so the rules don't stop an agent running as the owner
+  from pushing to `main` either. Only the agents' instructions do.
 - Agents open stacked PRs. When a parent merges, GitHub deletes its head branch
   (`delete_branch_on_merge`) and so retargets the child to `main`.
 - Feature branches and non-`v*` tags are deliberately unprotected: agents force-push rebased
@@ -52,9 +54,9 @@ together.
 |     | `pull_request`        | `required_approving_review_count`   | `0`         |
 | ✅  | `pull_request`        | `required_review_thread_resolution` | `true`      |
 
-|     | Bypass           | Actor ID | Mode           |
-| --- | ---------------- | -------- | -------------- |
-|     | `RepositoryRole` | `5`      | `pull_request` |
+|     | Bypass           | Actor ID | Mode     |
+| --- | ---------------- | -------- | -------- |
+|     | `RepositoryRole` | `5`      | `always` |
 
 Why:
 
@@ -67,8 +69,13 @@ Why:
   PR merges **only through the owner's admin bypass**. The owner accepted this (2026-10-17).
 - **`require_last_push_approval`.** GitHub doesn't document it with 0 approvals. If it blocks PRs,
   the bypass still merges them. After an `apply`, confirm open PRs are still mergeable.
-- **Bypass in `pull_request` mode.** The owner can bypass-merge PRs, but nobody, agents included,
-  can push to, force-push, or delete `main`. A hotfix goes through a PR.
+- **Bypass `always`.** The owner can bypass-merge PRs and can also push directly to `main`. The
+  owner switched from `pull_request` mode in the web UI (2026-10-17) after that mode rejected a
+  direct push of `2a5f0cd`, as designed: `pull_request` mode only bypasses rules when merging a
+  PR. The bypass covers every rule in this ruleset, so the owner, and any agent running as the
+  owner, can also force-push, delete `main`, and push unsigned commits. Agents must not:
+  `AGENT.md` forbids pushing to `main` and anything that works only because of the bypass. To
+  enforce that again, set the mode back to `pull_request`; then a hotfix goes through a PR.
 - **Never add GitHub Actions or a workflow token as a bypass actor.**
 
 ## Ruleset `release-tags`
@@ -80,11 +87,11 @@ Why:
 |     | `include`     | `refs/tags/v*` |
 |     | `exclude`     | none           |
 
-|     | Rule               | Parameter                       | Value   |
-| --- | ------------------ | ------------------------------- | ------- |
-|     | `deletion`         |                                 |         |
-|     | `non_fast_forward` |                                 |         |
-| ❌  | `update`           | `update_allows_fetch_and_merge` | `false` |
+|     | Rule               | Parameter | Value |
+| --- | ------------------ | --------- | ----- |
+|     | `deletion`         |           |       |
+|     | `non_fast_forward` |           |       |
+|     | `update`           |           |       |
 
 |     | Bypass           | Actor ID | Mode     |
 | --- | ---------------- | -------- | -------- |
@@ -94,6 +101,8 @@ Why:
 
 - **Bypass `always`.** `pull_request` mode exists only for branch rulesets. The owner can re-point
   or delete a bad tag directly.
+- **`update` without parameters.** `update_allows_fetch_and_merge` defaults to `false`, and the
+  live ruleset doesn't store it, so the row sets no parameter.
 - **Tag `creation` left open.** Restricting it would leave only the admin able to tag, and would
   block a future release workflow on `GITHUB_TOKEN`.
 

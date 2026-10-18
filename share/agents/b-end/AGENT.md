@@ -38,6 +38,11 @@ must do.
 - **Python versions.** Support every actively maintained CPython (`requires-python` = oldest
   non-EOL, currently 3.11); target the newest Lambda runtime. Use modern syntax available at the
   floor version (`X | Y`, `match`, `Self`, PEP 695 only once the floor allows it).
+- **Merging and pushing.** Every merge into `main` goes through the owner's admin bypass, which is
+  the owner's alone: never merge into `main`; report that the user must merge (UI, or
+  `gh pr merge <n> --merge --admin` run by the user). Never run `--admin`, `--squash`, or
+  `--rebase`. Never push to `main`; never force-push, move, or delete a `v*` tag; sign every
+  commit. Never do anything that works only because of the bypass, even when GitHub allows it.
 
 ## Tooling — always `uv`, never `poetry` or bare `pip`
 

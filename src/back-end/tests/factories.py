@@ -1,4 +1,9 @@
-"""Valid example models for tests, with validated overrides."""
+"""Valid example models for tests, with validated overrides.
+
+The domain models validate in strict mode, so the factories rebuild a model from its typed field values (a `frozenset`
+stays a `frozenset`, a `datetime` stays a `datetime`), never from a python-mode `model_dump()`: that dump turns
+`recurring_outflow_ids` into a sorted `list`, which strict validation rejects. Overrides must be correctly typed too.
+"""
 
 import datetime as dt
 
@@ -44,10 +49,10 @@ TRANSACTION = Transaction(
 
 
 def make_connection(**update: object) -> BankConnection:
-    """Return `CONNECTION` with `update` applied, validated (unlike `model_copy(update=...)`)."""
-    return BankConnection.model_validate({**CONNECTION.model_dump(), **update})
+    """Return a deep copy of `CONNECTION` with `update` applied, validated (unlike `model_copy(update=...)`)."""
+    return BankConnection.model_validate({**dict(CONNECTION.model_copy(deep=True)), **update})
 
 
 def make_transaction(**update: object) -> Transaction:
-    """Return `TRANSACTION` with `update` applied, validated (unlike `model_copy(update=...)`)."""
-    return Transaction.model_validate({**TRANSACTION.model_dump(), **update})
+    """Return a deep copy of `TRANSACTION` with `update` applied, validated (unlike `model_copy(update=...)`)."""
+    return Transaction.model_validate({**dict(TRANSACTION.model_copy(deep=True)), **update})

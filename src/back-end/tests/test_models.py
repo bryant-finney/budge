@@ -103,8 +103,51 @@ def test_no_model_has_an_access_token_field(model: type[BaseModel]) -> None:
 @pytest.mark.parametrize('example', [CONNECTION, TRANSACTION, CONNECTION.accounts[0]])
 def test_unknown_fields_are_rejected(example: BaseModel) -> None:
     """`extra='forbid'`: data carrying an `access_token` (or any unknown field) fails validation."""
-    with pytest.raises(ValidationError, match='extra'):
-        type(example).model_validate({**example.model_dump(), 'access_token': 'access-sandbox-0000'})
+    with pytest.raises(ValidationError) as excinfo:
+        type(example).model_validate({**dict(example), 'access_token': 'access-sandbox-0000'})
+
+    assert [(error['type'], error['loc']) for error in excinfo.value.errors()] == [
+        ('extra_forbidden', ('access_token',))
+    ]
+
+
+@pytest.mark.parametrize(
+    ('field', 'value'),
+    [
+        ('amount', '28.34'),
+        ('pending', 'yes'),
+        ('is_discretionary', 1),
+        ('date', '2026-10-06'),
+        ('datetime', '2026-10-06T15:10:09Z'),
+    ],
+)
+def test_transaction_rejects_coercible_values(field: str, value: object) -> None:
+    """Strict mode: a value of the wrong type fails even when lax mode could coerce it, so mapping bugs surface."""
+    with pytest.raises(ValidationError) as excinfo:
+        make_transaction(**{field: value})
+
+    assert [error['loc'] for error in excinfo.value.errors()] == [(field,)]
+
+
+@pytest.mark.parametrize(
+    ('field', 'value'),
+    [
+        ('recurring_outflow_ids', ['txn-1']),
+        ('created_at', '2026-10-01T12:00:00Z'),
+    ],
+)
+def test_connection_rejects_coercible_values(field: str, value: object) -> None:
+    """Strict mode: python-mode input must already have the field's type (a `frozenset`, a `datetime`)."""
+    with pytest.raises(ValidationError) as excinfo:
+        make_connection(**{field: value})
+
+    assert [error['loc'] for error in excinfo.value.errors()] == [(field,)]
+
+
+def test_python_mode_dump_does_not_round_trip() -> None:
+    """Strict mode rejects a python-mode `model_dump()`: its `recurring_outflow_ids` is a list, so storage uses JSON."""
+    with pytest.raises(ValidationError, match='frozenset'):
+        BankConnection.model_validate(SYNCED.model_dump())
 
 
 def test_classifier_vocabulary_matches_spec() -> None:

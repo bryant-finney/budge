@@ -1,8 +1,14 @@
 """Domain models: the spec §6 entities, as Pydantic models shared by storage, ingestion, and the API.
 
-Every model forbids unknown fields and re-validates on assignment. No model has an `access_token` field: token
-material lives only behind `budge.storage.SecretStore` (spec §6), and `extra='forbid'` rejects stored or incoming data
-that tries to carry one.
+Every model validates in pydantic's strict mode, forbids unknown fields, and re-validates on assignment. Strict mode
+does no type coercion: python-mode input must already have each field's type, so `amount='28.34'` or `pending='yes'`
+fails instead of silently becoming `28.34` or `True`, and a mapping bug in Plaid normalization surfaces at the model.
+JSON input (`model_validate_json`) still parses dates, datetimes, and the `recurring_outflow_ids` list, so stored data
+round-trips through `model_dump_json`; a python-mode `model_dump()` doesn't, because it turns that `frozenset` into a
+list.
+
+No model has an `access_token` field: token material lives only behind `budge.storage.SecretStore` (spec §6), and
+`extra='forbid'` rejects stored or incoming data that tries to carry one.
 
 This is a leaf module: it imports nothing from `budge`, so every other package (the classifier included) can import
 the models without an import cycle. That is why `ExcludedReason`, a `Transaction` field type, is defined here and
@@ -50,9 +56,13 @@ Part of the classifier's vocabulary, re-exported by `budge.classify`.
 
 
 class DomainModel(BaseModel):
-    """Base for every `budge` domain model: unknown fields are rejected and assignments are validated."""
+    """Base for every `budge` domain model: strict, closed, and re-validated on assignment.
 
-    model_config = ConfigDict(extra='forbid', validate_assignment=True, use_attribute_docstrings=True)
+    `strict=True` disables type coercion (a string is never a float, bool, or date), `extra='forbid'` rejects unknown
+    fields, and `validate_assignment=True` applies both to later assignments. Nested models still accept a `dict`.
+    """
+
+    model_config = ConfigDict(extra='forbid', validate_assignment=True, use_attribute_docstrings=True, strict=True)
 
 
 class Account(DomainModel):

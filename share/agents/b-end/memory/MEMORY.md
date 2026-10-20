@@ -13,4 +13,5 @@ Index of b-end agent memories, one line per entry.
 - [GitHub stacked PRs](github-stacked-prs.md) — dependencies API rejects PRs; `Closes` links only once a PR targets `main`
 - [pyright gotchas](pyright-gotchas.md) — `@contextmanager` needs `Generator`; nodenv; silent hang = pyright not in `.venv`; private-import from repo root; `__all__`
 - [Explicit over implicit](feedback_explicit-over-implicit.md) — protocol impls subclass with `@override`; complete `__all__` everywhere (`tests/test_exports.py`)
+- [Strict and rigorous](feedback_strict-and-rigorous.md) — strict types/lint/format; fix data to fit strict types, never loosen them
 - [Three type checkers](project_type-checkers.md) — mypy, pyright and ty all run strict (user, 2026-10-20); a change passes all three

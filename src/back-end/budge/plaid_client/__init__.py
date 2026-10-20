@@ -6,3 +6,6 @@ Covers Link token creation and public-token exchange for onboarding, `/transacti
 Boundary: Plaid response types stop here; callers receive `budge` models. Access tokens are read from the
 `SecretStore` protocol, never from the `Repository`.
 """
+
+# no public names yet; list each one here as it's added
+__all__: list[str] = []

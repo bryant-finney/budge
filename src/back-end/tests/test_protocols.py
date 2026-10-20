@@ -36,9 +36,8 @@ def secrets() -> SecretStore:
 def test_implementations_conform_to_protocols() -> None:
     """The fakes and the AWS stubs implement the protocols; mypy and ty check these annotations.
 
-    The fakes match the protocols structurally, so this is their only conformance check. The AWS stubs subclass their
-    protocols, which checks their signatures at the class definition; instantiating them here also checks that no
-    protocol member is left unimplemented (a subclass that misses one is abstract).
+    Both subclass their protocols, which checks their signatures at the class definition; instantiating them here also
+    checks that no protocol member is left unimplemented (a subclass that misses one is abstract).
     """
     repositories: list[Repository] = [FakeRepository(), S3Repository(bucket='budge-data', plaid_env='sandbox')]
     secret_stores: list[SecretStore] = [FakeSecretStore(), SecretsManagerSecretStore()]

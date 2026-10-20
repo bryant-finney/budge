@@ -71,7 +71,11 @@ class FakeRepository(Repository):
 
     @override
     def put_transaction_rows(self, connection_id: str, rows: Sequence[Transaction]) -> None:
-        """Replace the connection's stored rows with copies of `rows`."""
+        """Replace the connection's stored rows with copies of `rows`, after checking each row belongs to it."""
+        for row in rows:
+            if row.connection_id != connection_id:
+                msg = f'row {row.transaction_id!r} has connection_id {row.connection_id!r}, not {connection_id!r}'
+                raise ValueError(msg)
         self.rows[connection_id] = [row.model_copy(deep=True) for row in rows]
 
     @override

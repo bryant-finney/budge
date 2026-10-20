@@ -71,7 +71,18 @@ class Repository(Protocol):
         ...
 
     def put_transaction_rows(self, connection_id: str, rows: Sequence[Transaction]) -> None:
-        """Replace the connection's stored transactions with `rows`."""
+        """Replace the connection's stored transactions with `rows`.
+
+        Every row must belong to the connection: `row.connection_id == connection_id`. An empty `rows` is valid and
+        clears the stored transactions, which is why the id is passed rather than read from the rows.
+
+        Args:
+            connection_id: The connection whose transactions are replaced.
+            rows: The connection's complete set of transactions.
+
+        Raises:
+            ValueError: If any row's `connection_id` isn't `connection_id`; nothing is stored.
+        """
         ...
 
     def get_transactions(self, start: dt.date, end: dt.date, *, discretionary_only: bool = True) -> list[Transaction]:

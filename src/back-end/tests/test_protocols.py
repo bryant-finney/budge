@@ -86,6 +86,18 @@ def test_get_transactions_is_inclusive_on_effective_date(repo: Repository) -> No
     )
 
 
+def test_put_transaction_rows_rejects_rows_of_another_connection(repo: Repository) -> None:
+    """A row whose `connection_id` isn't the argument raises `ValueError`, and the stored rows stay as they were."""
+    repo.put_transaction_rows('item-1', [TRANSACTION])
+    stray = make_transaction(transaction_id='txn-2', connection_id='item-2')
+
+    with pytest.raises(ValueError, match=r"'txn-2'.*'item-2'.*'item-1'"):
+        repo.put_transaction_rows('item-1', [TRANSACTION, stray])
+
+    assert repo.get_transaction_rows('item-1') == [TRANSACTION]
+    assert repo.get_transaction_rows('item-2') == []
+
+
 def test_delete_connection_removes_rows_and_is_idempotent(repo: Repository) -> None:
     """Deleting drops metadata and transactions; deleting again (or an unknown id) is a no-op."""
     repo.save_connection(make_connection())

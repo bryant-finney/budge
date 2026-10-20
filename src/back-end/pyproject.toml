@@ -5,7 +5,13 @@ dynamic = ["version"]
 description = "Trailing-7-day discretionary spend tracker: FastAPI API and Plaid ingestion Lambdas."
 requires-python = ">=3.11"
 # compatible-release pins: `~=MAJOR.MINOR` for stable (>=1.0) packages, `~=0.MINOR.PATCH` for 0.x packages
-dependencies = ["fastapi~=0.143.3", "mangum~=0.22.0", "pydantic~=2.14"]
+dependencies = [
+  "fastapi~=0.143.3",
+  "mangum~=0.22.0",
+  "pydantic~=2.14",
+  # `typing_extensions.override` until the 3.11 floor rises to 3.12 (`typing.override`); direct, not via pydantic
+  "typing-extensions~=4.16",
+]
 
 [dependency-groups]
 dev = [
@@ -46,6 +52,8 @@ source = ["budge"]
 disallow_untyped_decorators = true
 # `strict` omits these checks; require coded ignores and catch unsafe control flow / dropped awaitables.
 enable_error_code = [
+  # an override must say so with `@override`, so a renamed or removed base method can't leave it silently orphaned
+  "explicit-override",
   "ignore-without-code",
   "possibly-undefined",
   "redundant-expr",

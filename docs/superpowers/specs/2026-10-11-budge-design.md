@@ -301,8 +301,11 @@ interface. The protocols live in `storage/`; every AWS-backed implementation
 lives in the `budge.aws` adapter package (`aws/`): the S3 `Repository`, the
 Secrets Manager `SecretStore`, and the Lambda async-invoke
 `IngestionTrigger` the API uses to start ingestion (§7, §12; protocol in
-`ingestion/`). No module outside `aws/` imports `boto3`, and the rest of the
-app depends only on the protocols, so tests substitute fakes.
+`ingestion/`). Each AWS-backed implementation subclasses its protocol
+explicitly (PEP 544) and marks its methods `@override`, so the type checkers
+report signature drift at the adapter's class definition. No module outside
+`aws/` imports `boto3`, and the rest of the app depends only on the protocols,
+so tests substitute fakes.
 
 - `list_connections()`, `get_connection(id)`, `save_connection(c)`,
   `delete_connection(id)` (metadata + transactions)

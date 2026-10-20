@@ -3,22 +3,26 @@
 Implemented in milestone 2.
 """
 
+from typing_extensions import override
+
+from budge.storage import SecretStore
+
 __all__ = ['SecretsManagerSecretStore']
 
 _MILESTONE_2 = 'SecretsManagerSecretStore is implemented in milestone 2'
 
 
-class SecretsManagerSecretStore:
+class SecretsManagerSecretStore(SecretStore):
     """The AWS Secrets Manager implementation of `budge.storage.SecretStore`."""
 
+    @override
     def get_access_token(self, connection_id: str) -> str | None:
-        """See `budge.storage.SecretStore.get_access_token`."""
         raise NotImplementedError(_MILESTONE_2)
 
+    @override
     def put_access_token(self, connection_id: str, token: str) -> None:
-        """See `budge.storage.SecretStore.put_access_token`."""
         raise NotImplementedError(_MILESTONE_2)
 
+    @override
     def delete_access_token(self, connection_id: str) -> None:
-        """See `budge.storage.SecretStore.delete_access_token`."""
         raise NotImplementedError(_MILESTONE_2)

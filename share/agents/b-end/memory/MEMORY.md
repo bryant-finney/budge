@@ -11,5 +11,6 @@ Index of b-end agent memories, one line per entry.
 - [local Python matrix](local-python-matrix.md) — running 3.11–3.15 locally, worktree Bash limits, taplo vs `uv.lock`
 - [gh:commit skill forks](gh-commit-skill-forks.md) — skill commits in the background; wait, then verify signature/prefix
 - [GitHub stacked PRs](github-stacked-prs.md) — dependencies API rejects PRs; `Closes` links only once a PR targets `main`
-- [pyright gotchas](pyright-gotchas.md) — `@contextmanager` needs `Generator`; nodenv breaks wrapper; private-import from repo root; `__all__` coverage
+- [pyright gotchas](pyright-gotchas.md) — `@contextmanager` needs `Generator`; nodenv; silent hang = pyright not in `.venv`; private-import from repo root; `__all__`
 - [Explicit over implicit](feedback_explicit-over-implicit.md) — protocol impls subclass with `@override`; complete `__all__` everywhere (`tests/test_exports.py`)
+- [Three type checkers](project_type-checkers.md) — mypy, pyright and ty all run strict (user, 2026-10-20); a change passes all three

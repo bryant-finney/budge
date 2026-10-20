@@ -22,8 +22,9 @@ reported far from the adapter. Subclassing moves the error to the class definiti
   direct dependency in `pyproject.toml`, not borrowed from pydantic's transitive pin — same principle.
 - `@override` methods drop "See `X.y`" stand-in docstrings: ruff `D102` skips `@override` methods, and
   `inspect.getdoc` inherits the protocol's text. `__init__` stays undecorated and documented.
-- mypy enforces it: `explicit-override` is in `enable_error_code`, so an override without `@override` fails.
-  mypy and ty both report a drifted signature at the subclass (`invalid-method-override` in ty).
+- mypy and pyright enforce it: mypy's `explicit-override` (in `enable_error_code`) and pyright's
+  `reportImplicitOverride = "error"` fail an override without `@override`. All three checkers report a drifted
+  signature at the subclass (pyright `reportIncompatibleMethodOverride`, ty `invalid-method-override`).
 - Test fakes in `tests/fakes.py` follow the same rule: subclass the protocol, `@override` each method. The user
   rejected structural-only fakes (2026-10-20): they duplicate signatures with drift reported only at the test.
 - Beyond protocols, apply the same rule: declare dependencies you import, name codes in suppressions, annotate

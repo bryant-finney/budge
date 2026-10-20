@@ -25,8 +25,9 @@ must do.
   `typing.Protocol` for boundaries (the `Repository` and `SecretStore` interfaces), `dataclass` /
   Pydantic models over dicts, `enum`/`Literal` over magic strings, context managers for paired
   acquire/release (leases, `unlink_on_failure`). No `Any` without a comment justifying it; no blanket
-  `# type: ignore`, `# ty: ignore`, or `# noqa` — always name the code.
-- **Static analysis is a gate, not a suggestion.** `mypy --strict` and Astral's `ty check` must pass with zero errors before you call work done.
+  `# type: ignore`, `# pyright: ignore`, `# ty: ignore`, or `# noqa` — always name the code.
+- **Static analysis is a gate, not a suggestion.** `mypy --strict`, `pyright` (strict), and Astral's `ty check` all
+  run, and each must pass with zero errors before you call work done.
 - **FastAPI conventions.** Routes live under an `/api` `APIRouter` prefix. Every request and response
   body is a Pydantic model so the generated OpenAPI document is the complete contract (spec §8). Auth
   is a dependency, not middleware. Errors go through the single `{"error": {"code", "message"}}`
@@ -55,7 +56,7 @@ Run commands from `src/back-end/` (or pass `--directory src/back-end`):
 | inspect deps       | `uv tree`, `uv tree --outdated`, `uv pip list --outdated`         |
 | lint + autofix     | `uv run ruff check --fix .`                                       |
 | format             | `uv run ruff format .`                                            |
-| type check         | `uv run mypy` and `uv run ty check`                               |
+| type check         | `uv run mypy`, `uv run pyright`, and `uv run ty check`            |
 | tests              | `uv run pytest`                                                   |
 | repo hooks         | `pre-commit run --all-files` (or `--files <paths>`)               |
 | local stack        | `docker compose up` / `docker compose run --rm api ...`           |
@@ -71,17 +72,22 @@ Mirror the house style (from `config-ninja`), adjusted for this project:
 - Per-directory overrides via a nested `ruff.toml` with `extend = "../pyproject.toml"` (e.g. `tests/`
   ignores `S101`). Keep ignores narrow and explained.
 
-### mypy / ty
+### mypy / pyright / ty
 
 - mypy: `strict = true`, `warn_unreachable`, `disallow_untyped_decorators`, `show_error_codes`,
   `pretty`. Use typed stubs (`boto3-stubs[s3,secretsmanager,lambda]`, etc.) instead of
   `ignore_missing_imports` wherever stubs exist.
+- pyright: a dev dependency, so `uv run pyright` resolves from `.venv`. `typeCheckingMode = "strict"`,
+  `pythonVersion = "3.11"`, `pythonPlatform = "Linux"`, `include = ["budge", "tests"]`, `venvPath`/`venv` pointing at
+  `.venv`. Set `enableTypeIgnoreComments = false` so mypy's `# type: ignore[code]` doesn't blanket-ignore pyright, and
+  set `reportUnnecessaryTypeIgnoreComment` and `reportImplicitOverride` to `"error"`. Suppress pyright diagnostics
+  only with necessary, rule-specific `# pyright: ignore[rule]` comments.
 - ty: configure `[tool.ty.environment] python-version = "3.11"` and `[tool.ty.src] include = ["budge", "tests"]`.
   `uv run ty check` uses the project's `.venv`. Keep mypy suppressions independent with
   `[tool.ty.analysis] respect-type-ignore-comments = false`.
 - In `[tool.ty.rules]`, set `blanket-ignore-comment`, `invalid-ignore-comment`, and `unused-ignore-comment`
   to `"error"`. Suppress ty diagnostics only with necessary, rule-specific `# ty: ignore[rule]` comments.
-- When pre-commit runs mypy or ty, pass the whole project (`pass_filenames: false`) — per-file runs give
+- When pre-commit runs mypy, pyright, or ty, pass the whole project (`pass_filenames: false`) — per-file runs give
   false positives.
 
 ### pytest — religiously
@@ -102,7 +108,7 @@ Mirror the house style (from `config-ninja`), adjusted for this project:
 - Pin with compatible-release ranges in `pyproject.toml`; `uv.lock` is committed and authoritative.
 - Before adding a dependency, check it is maintained, typed (or has stubs), and licensed compatibly.
 - When upgrading, read the changelog for breaking changes, run `uv lock --upgrade-package <pkg>`,
-  then the full gate (ruff, mypy, ty, pytest). Keep pre-commit hook `rev`s and their
+  then the full gate (ruff, mypy, pyright, ty, pytest). Keep pre-commit hook `rev`s and their
   `additional_dependencies` in sync with `pyproject.toml`.
 - Use Context7 (`resolve-library-id` → `query-docs`) for current FastAPI, Pydantic, Mangum, boto3,
   moto, and Plaid SDK documentation rather than relying on memory.
@@ -110,7 +116,7 @@ Mirror the house style (from `config-ninja`), adjusted for this project:
 ## Definition of done
 
 1. `uv run ruff check .` and `uv run ruff format --check .` are clean.
-2. `uv run mypy` and `uv run ty check` report zero errors.
+2. `uv run mypy`, `uv run pyright`, and `uv run ty check` report zero errors.
 3. `uv run pytest` passes (doctests included) with coverage at or above the threshold.
 4. `pre-commit run --files <changed files>` passes.
 5. Report the exact commands you ran and their results; never claim green without output.

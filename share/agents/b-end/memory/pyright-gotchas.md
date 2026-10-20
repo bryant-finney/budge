@@ -1,6 +1,6 @@
 ---
 name: pyright-gotchas
-description: pyright quirks in budge (contextmanager return type, nodenv node lookup, reportPrivateImportUsage only from repo root) and what each checker does or does not enforce about __all__
+description: pyright quirks in budge (contextmanager return type, nodenv node lookup, silent hang when pyright is missing from .venv, reportPrivateImportUsage only from repo root) and what each checker does or does not enforce about __all__
 metadata:
   type: feedback
 ---
@@ -11,17 +11,22 @@ metadata:
   strict reports `reportDeprecated` for `-> Iterator[None]` (typeshed deprecates that overload). Use the
   three-argument `Generator` form, which also works on the 3.11 floor.
 
-- **The PyPI `pyright` wrapper runs `node` from `PATH`.** In a worktree under the main checkout, the nodenv shim
-  resolves the nearest `.node-version` walking up, which can be the main checkout's file (Node `24.22.0`, not
-  installed on 2026-10-17), and pyright dies with `nodenv: version ... is not installed`. Run
-  `NODENV_VERSION=system uv run pyright` locally. CI is unaffected, but if a repo-root `.node-version` lands in
-  `main`, the pre-commit pyright hook (#5) needs that Node installed (or the same override).
+- **The PyPI `pyright` wrapper runs `node` from `PATH`.** The nodenv shim resolves the nearest `.node-version`
+  walking up from the cwd. On 2026-10-17 that was a Node (`24.22.0`) that wasn't installed, and pyright died with
+  `nodenv: version ... is not installed`. By 2026-10-20 the repo-root `.node-version` (`24.22.0`) is installed and
+  `uv run pyright` works in the pr-23 worktree with no override. If a `.node-version` names an uninstalled Node again,
+  run `NODENV_VERSION=system uv run pyright`; the pre-commit pyright hook (#5) will need the same Node.
+
+- **pyright is a dev dependency, so `uv run pyright` resolves from `.venv` (2026-10-20).** Between #20's ty swap
+  (`4c8e21d`) and its return in #23, pyright wasn't installed. `uv run pyright` then fell through to the pyenv shim,
+  which re-enters `pyenv-which pyright` forever with no output. If `uv run pyright` hangs silently, the venv lacks
+  pyright: run `uv sync --all-groups`. Wrap pyright runs in `timeout`.
 
 - **`reportPrivateImportUsage` fires only from the repo root.** Pylance's workspace is the repo root, so `budge`
   resolves through the `.venv` editable `.pth` as an installed `py.typed` library. A bare `from x import y` in
   `budge/__init__.py` is then private, and `budge.y` is flagged. From `src/back-end` pyright treats `budge` as local
-  source and stays silent. To check the whole layer from the worktree root, run
-  `NODENV_VERSION=system uvx pyright --pythonpath src/back-end/.venv/bin/python src/back-end`. The user's
+  source and stays silent. To check the whole layer from the worktree root with the locked pyright, run
+  `src/back-end/.venv/bin/pyright --pythonpath src/back-end/.venv/bin/python src/back-end`. The user's
   convention (2026-10-20) is to list the name in the module's `__all__`, not to use an `import y as y` alias. See
   [[explicit-over-implicit]].
 

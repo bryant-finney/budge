@@ -8,3 +8,6 @@ uses the single `{"error": {"code", "message"}}` envelope.
 Boundary: the API depends only on the `budge.storage` and `budge.ingestion` protocols, never on `boto3` or token
 material directly.
 """
+
+# no public names yet; list each one here as it's added
+__all__: list[str] = []

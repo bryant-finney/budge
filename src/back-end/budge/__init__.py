@@ -21,10 +21,9 @@ file, e.g. when only the committed `budge/` source is copied into an image, `__v
 `fallback-version` in `pyproject.toml`, so importing never fails.
 """
 
-__version__: str
-"""The version of the `budge` distribution this package was built as, or `'0.0.0'` if it was never built."""
-
 try:
     from budge._version import __version__
 except ModuleNotFoundError:
     __version__ = '0.0.0'
+
+__all__ = ['__version__']

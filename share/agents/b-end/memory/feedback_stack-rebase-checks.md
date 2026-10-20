@@ -19,5 +19,5 @@ commands out one at a time (or use `${=t}`).
 and mypy were missing because of this.
 
 **How to apply:** any multi-branch verification. Note that feat/1 has pytest only; ruff, mypy, and
-pyright arrive with feat/2 (#20). Also check `git ls-remote` before trusting a caller's claim that a
-branch is "pushed" (feat/4 was not).
+ty arrive with feat/2 (#20), whose tip dropped pyright; pyright returns with feat/3 (#23). Also check
+`git ls-remote` before trusting a caller's claim that a branch is "pushed" (feat/4 was not).

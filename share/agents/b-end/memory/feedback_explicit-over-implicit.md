@@ -24,7 +24,8 @@ reported far from the adapter. Subclassing moves the error to the class definiti
   `inspect.getdoc` inherits the protocol's text. `__init__` stays undecorated and documented.
 - mypy enforces it: `explicit-override` is in `enable_error_code`, so an override without `@override` fails.
   mypy and ty both report a drifted signature at the subclass (`invalid-method-override` in ty).
-- Test fakes in `tests/fakes.py` may stay structural; `test_implementations_conform_to_protocols` is their check.
+- Test fakes in `tests/fakes.py` follow the same rule: subclass the protocol, `@override` each method. The user
+  rejected structural-only fakes (2026-10-20): they duplicate signatures with drift reported only at the test.
 - Beyond protocols, apply the same rule: declare dependencies you import, name codes in suppressions, annotate
   rather than infer at boundaries, and write config down instead of relying on tool defaults.
 - Every `budge/` module and package declares `__all__` after its imports (the user's choice, 2026-10-20). It lists the

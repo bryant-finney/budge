@@ -17,6 +17,7 @@ dependencies = [
 dev = [
   "httpx~=0.28.1",
   "mypy~=2.4",
+  "pyright~=1.1.414",
   "pytest-clarity~=1.0",
   "pytest-cov~=7.1",
   "pytest-mock~=3.17",
@@ -74,6 +75,22 @@ warn_unreachable = true
 init_forbid_extra = true
 init_typed = true
 warn_required_dynamic_aliases = true
+
+[tool.pyright]
+# pyright otherwise honours mypy's `# type: ignore[code]` as a blanket ignore of every pyright rule on that line;
+# suppress pyright findings with `# pyright: ignore[rule]` instead
+enableTypeIgnoreComments = false
+include = ["budge", "tests"]
+# Lambda runs on Linux; keep local and CI platform branches identical (as mypy's `platform` and ty's `python-platform`)
+pythonPlatform = "Linux"
+pythonVersion = "3.11"
+# pyright's twin of mypy's `explicit-override` (off even in strict): an override must say so with `@override`
+reportImplicitOverride = "error"
+# strict mode leaves stale `# pyright: ignore[...]` comments unreported (mypy's `warn_unused_ignores` covers mypy's)
+reportUnnecessaryTypeIgnoreComment = "error"
+typeCheckingMode = "strict"
+venv = ".venv"
+venvPath = "."
 
 [tool.ty.analysis]
 # Keep mypy suppressions independent; ty findings must use `# ty: ignore[rule]`.

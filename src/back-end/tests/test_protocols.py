@@ -34,7 +34,7 @@ def secrets() -> SecretStore:
 
 
 def test_implementations_conform_to_protocols() -> None:
-    """The fakes and the AWS stubs implement the protocols; mypy and ty check these annotations.
+    """The fakes and the AWS stubs implement the protocols; mypy, pyright and ty check these annotations.
 
     Both subclass their protocols, which checks their signatures at the class definition; instantiating them here also
     checks that no protocol member is left unimplemented (a subclass that misses one is abstract).

@@ -3,8 +3,8 @@
 The verdict comes from the transaction's sign, its Plaid personal finance category (PFC v2), and whether its stream
 is a recurring outflow.
 
-Boundary: pure logic with no I/O. It takes plain values and returns a verdict, so it is table-tested against every
-PFC v2 detailed category.
+Boundary: pure logic with no I/O. It takes a `budge.models.Transaction` and the connection's recurring outflow ids and
+returns a verdict, so it is table-tested against every PFC v2 detailed category.
 
 Milestone 1 defines only the vocabulary below; `classify()` and the `PFC_RULES` table arrive in milestone 2.
 `ExcludedReason` is a `budge.models.Transaction` field type, so it is defined in the leaf module `budge.models` and

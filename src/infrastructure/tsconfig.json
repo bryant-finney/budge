@@ -7,13 +7,14 @@
     ],
     "module": "nodenext",
     "moduleResolution": "nodenext",
-    "verbatimModuleSyntax": false,
     "isolatedModules": true,
     "types": [
       "node"
     ]
   },
   "include": [
-    "*.ts"
+    "*.ts",
+    "tests/**/*.ts",
+    "vitest.config.mts"
   ]
 }

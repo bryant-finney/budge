@@ -27,8 +27,10 @@ Found while reviewing PR #21 (#13), 2026-10-17. The fix is applied in `tests/pro
   ESM mode, uses the project's TypeScript (pnpm links the optional peer, giving
   `@pulumi+pulumi@3.269.0_typescript@6.0.3`) with the vendored `ts-node@7.0.1`. An emulation of that
   registration loaded `index.ts` and type-checked it: `noCheck` is unset, so `transpileOnly` is
-  undefined, and an injected TS2322 was rejected. The real smoke test passed on 2026-10-18 (Pulumi v3.270.0, #21 `d3a4c91`): 1 stack resource
-  plus the 3 outputs.
+  undefined, and an injected TS2322 was rejected. The real smoke test passed on 2026-10-18 (Pulumi
+  v3.270.0, #21 `d3a4c91`): 1 stack resource plus the 3 outputs. It passed again on 2026-10-20 at
+  `e2d854e`, after the round-3 `config.ts` changes. Rerun it whenever `config.ts` or `index.ts`
+  changes, because the unit tests don't load the program through Pulumi's runtime.
 - **Smoke-test safety:** agent shells already export `PULUMI_BACKEND_URL=s3://budge-pulumi-state-…`
   and `AWS_PROFILE=budge` (from `.env`). For a throwaway stack, override all of these inline:
   `PULUMI_BACKEND_URL=file://<worktree>/.cache/smoke/state`, `PULUMI_HOME=<worktree>/.cache/smoke/home`

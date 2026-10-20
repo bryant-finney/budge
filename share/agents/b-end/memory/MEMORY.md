@@ -12,3 +12,4 @@ Index of b-end agent memories, one line per entry.
 - [gh:commit skill forks](gh-commit-skill-forks.md) — skill commits in the background; wait, then verify signature/prefix
 - [GitHub stacked PRs](github-stacked-prs.md) — dependencies API rejects PRs; `Closes` links only once a PR targets `main`
 - [pyright gotchas](pyright-gotchas.md) — `@contextmanager` needs `Generator`; nodenv `.node-version` breaks the wrapper
+- [Explicit over implicit](feedback_explicit-over-implicit.md) — protocol impls subclass the protocol with `@override`; declare intent

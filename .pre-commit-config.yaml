@@ -83,9 +83,9 @@ repos:
         language: system
         entry: pnpm -C src/infrastructure run lint
         # also on dependency and tsconfig changes: typed linting reads them
-        files: |
+        files: &infrastructure-inputs |
           (?x)^(
-            src/infrastructure/(.*\.(ts|mts|cts|js|mjs|cjs)|(package|tsconfig.*)\.json)
+            src/infrastructure/(.*\.(ts|mts|cts|js|mjs|cjs)|(package|tsconfig[^/]*)\.json)
             |pnpm-lock\.yaml
             |tsconfig\.base\.json
           )$
@@ -94,10 +94,5 @@ repos:
         name: tsc (src/infrastructure)
         language: system
         entry: pnpm -C src/infrastructure run check
-        files: |
-          (?x)^(
-            src/infrastructure/(.*\.(ts|mts|cts)|(package|tsconfig.*)\.json)
-            |pnpm-lock\.yaml
-            |tsconfig\.base\.json
-          )$
+        files: *infrastructure-inputs
         pass_filenames: false

@@ -28,6 +28,8 @@ ty arrive with feat/2 (#20), whose tip dropped pyright; pyright returns with fea
   tip refuses to move the lower branches. Instead, rebase each worktree onto the *local* branch below it, bottom-up
   (`git rebase feat/2/...` in `pr-23`, then `git rebase feat/3/...` in `pr-26`). Push the bottom PR plainly if it
   only gained commits, and push the rest with `--force-with-lease=<branch>:<old sha>`.
+- Every branch adds index lines to `memory/MEMORY.md`, so a restack often conflicts there. Keep the union of the
+  lines, without duplicates.
 - The `prepare-commit-msg` hook prints `symbolic-ref ... exit status 128` during a rebase (detached HEAD). That's
   harmless: replayed subjects are not re-prefixed. Check them with `git log --format='%h %G? %s'`.
 - **A worktree that was moved or renamed (e.g. `agent-<hash>` to `pr-26`) keeps a `.venv` whose script shebangs point

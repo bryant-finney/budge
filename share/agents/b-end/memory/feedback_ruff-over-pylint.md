@@ -1,6 +1,6 @@
 ---
 name: ruff-over-pylint
-description: User rule (2026-10-25) — ruff owns every check it has a rule for and pylint keeps only the rest; the chosen exceptions, how to re-derive the split, and how to run pylint
+description: User rule (2026-10-25) — ruff owns every check it has a rule for, naming included, and pylint keeps only the rest; the tests exception, how to re-derive the split, and how to run pylint
 metadata:
   type: feedback
 ---
@@ -18,15 +18,17 @@ pylint options that mirror ruff values are not kept. The exception is interprete
 `py-version`, which tracks ruff's `target-version`.
 
 **Why:** the user wants ruff used wherever it supports a check and pylint kept only for what ruff can't do. They
-rejected an earlier rule that kept pylint checks on with mirrored ruff values when the ruff rule wasn't enabled.
+rejected an earlier rule that kept pylint checks on with mirrored ruff values when the ruff rule wasn't enabled. They
+also dropped a naming exception that had kept pylint's naming checks on.
 
-**Exceptions the user chose:**
+**Naming:**
 
-- pylint's naming checks stay on beside pep8-naming (`invalid-name`, `bad-classmethod-argument`,
-  `no-self-argument`, `non-ascii-file-name`) because they also cover constants and TypeVars. This is the one
-  deliberate overlap with rule 1. `[tool.pylint.basic]` styles match pep8-naming wherever both apply.
-- No camelCase allowances: `good-names` keeps only short names, not pep8-naming's `ignore-names` (`setUp`, `maxDiff`,
-  ...).
+- pep8-naming (`N`) owns naming, and PYI042/PYI043 add the type-alias naming that pylint's `invalid-name` also
+  checked. The cost is pylint's UPPER_CASE-constant and TypeVar-name styles, which no ruff rule enforces.
+- Keep pep8-naming's `ignore-names` at their defaults. Don't add camelCase allowances.
+
+**Tests exception:**
+
 - `redefined-outer-name` (no ruff counterpart) is off in `tests/` only, through the `pylint-per-file-ignores` plugin.
   pytest injects fixtures by parameter name, so tests always shadow them; the check stays on for `budge/`. pylint 4
   has no per-directory or per-file message control of its own. The plugin's globs are resolved relative to pylint's

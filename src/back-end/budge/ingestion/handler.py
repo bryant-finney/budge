@@ -24,12 +24,12 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
-def handler(event: Mapping[str, object], context: object) -> RunSummary:
+def handler(_event: Mapping[str, object], _context: object) -> RunSummary:
     """Run ingestion for the connections the event names, then return and log the run summary.
 
     Args:
-        event: The invocation payload: a Scheduler target input, or the API's async-invoke payload.
-        context: The Lambda context object (unused until a typed context is adopted in milestone 2).
+        _event: The invocation payload: a Scheduler target input, or the API's async-invoke payload.
+        _context: The Lambda context object (unused until a typed context is adopted in milestone 2).
 
     Returns:
         `{connection_id: RunResult}`; empty in milestone 1.

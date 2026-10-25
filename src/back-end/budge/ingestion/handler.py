@@ -5,13 +5,16 @@
 EventBridge Scheduler (all connections) and the API's async invokes (all, or one connection) call `handler`
 (spec §4, §9). Milestone 1 is a stub: it processes nothing and returns an empty run summary. Milestone 2 replaces the
 body with `run_ingestion(connection_ids)`.
+
+The run summary is logged as one record whose `extra` carries `summary` and `failed_connections`. Under Lambda's JSON
+log format (`LoggingConfig.LogFormat = JSON`) those become top-level fields of the JSON log line, which §12's metric
+filter reads as `{ $.failed_connections > 0 }`. The text format prints only the message, so the function needs JSON.
 """
 
-import json
 import logging
 from collections.abc import Mapping
 
-from budge.ingestion.summary import RunSummary
+from budge.ingestion.summary import RunSummary, count_failed
 
 __all__ = ['handler']
 
@@ -35,5 +38,5 @@ def handler(event: Mapping[str, object], context: object) -> RunSummary:
     {}
     """
     summary: RunSummary = {}
-    logger.info('%s', json.dumps(summary, sort_keys=True, separators=(',', ':')))
+    logger.info('ingestion run summary', extra={'summary': summary, 'failed_connections': count_failed(summary)})
     return summary

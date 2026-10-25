@@ -598,7 +598,10 @@ One envelope for **every** error, including FastAPI's request-validation errors
 - **Run summary** (returned and logged as one JSON line):
   `{connection_id: {outcome, added, modified, removed, error_code}}` with
   `outcome` ∈ `ok` | `skipped_locked` | `not_ready` | `login_required` |
-  `error`.
+  `error`. It is logged as one record whose `extra` carries `summary` (the
+  summary) and `failed_connections` (the count of `error` and
+  `login_required` outcomes); with the function's log format set to JSON,
+  both are top-level fields of that line (§12).
 
 - **Systemic failure** — Plaid credentials invalid (`INVALID_API_KEYS`), S3 or
   Secrets Manager inaccessible, or every connection failing with the same
@@ -885,7 +888,10 @@ docs/
   - ingestion Lambda `Errors` > 0 (systemic failure, §9);
   - API Lambda `Errors` > 0 over 5 min;
   - a metric filter on the run summary counting connections with `outcome` ∈
-    {`error`, `login_required`} > 0.
+    {`error`, `login_required`} > 0: `{ $.failed_connections > 0 }` on the
+    ingestion log group. This needs the ingestion function's
+    `LoggingConfig.LogFormat = JSON` (with `ApplicationLogLevel = INFO`):
+    the text format prints only the message, not the `extra` fields.
 
 ## 13. Milestones
 

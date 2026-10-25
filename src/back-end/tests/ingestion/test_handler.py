@@ -1,6 +1,5 @@
 """Tests for the stub ingestion Lambda handler (spec §9, §12: Scheduler and async-invoke payloads)."""
 
-import json
 import logging
 
 import pytest
@@ -26,9 +25,15 @@ SCHEDULER_EVENT: dict[str, object] = {
 def test_handler_returns_and_logs_an_empty_summary(
     event: dict[str, object], lambda_context: LambdaContext, caplog: pytest.LogCaptureFixture
 ) -> None:
-    """Milestone 1's stub processes nothing: it returns `{}` and logs that summary as one JSON line."""
+    """Milestone 1's stub processes nothing: it returns `{}` and logs one record carrying the summary in `extra`.
+
+    With Lambda's JSON log format, `extra` keys become top-level fields, so §12's metric filter reads
+    `$.failed_connections` directly.
+    """
     with caplog.at_level(logging.INFO, logger='budge.ingestion.handler'):
         summary = handler(event, lambda_context)
 
     assert summary == {}
-    assert [json.loads(record.getMessage()) for record in caplog.records] == [{}]
+    assert [
+        (record.getMessage(), vars(record)['summary'], vars(record)['failed_connections']) for record in caplog.records
+    ] == [('ingestion run summary', {}, 0)]

@@ -86,3 +86,4 @@ src/back-end/budge/_version.py
 .*.bak
 .cache
 .coverage
+.coverage.*

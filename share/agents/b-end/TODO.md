@@ -34,8 +34,9 @@ user to resolve.
   (`FiniteFloat` and the `currency` note), `0763f2e` (order-free asserts) and `111c4de`
   (`trigger(connection_id: str | None)`, a separate commit). The new review covers lax vs. `strict=True`,
   `put_transaction_rows` row ownership, and a docstring nit.
-- **#26:** first maintainer-facing review posted. Main finding: the run-summary log line can't be read by §12's
-  metric filter as currently logged. Once the user approved it, `61dbe8e` swapped the `httpx` dev dependency for
+- **#26:** first maintainer-facing review posted. Its main finding, that §12's metric filter can't read the
+  run-summary log line, is fixed on the branch: the handler logs `summary` and `failed_connections` via `extra`
+  (infra still needs JSON log format and the filter). Once the user approved it, `61dbe8e` swapped the `httpx` dev dependency for
   `httpx2` and moved the API tests to FastAPI's `TestClient`.
 
 ## Blocked or pending the user

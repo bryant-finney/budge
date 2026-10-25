@@ -19,4 +19,4 @@ Index of b-end agent memories, one line per entry.
 - [Mangum event loop](mangum-event-loop.md) — conftest owns Mangum's import-time loop; async tests unset it; run the full matrix
 - [Pydantic model notes](pydantic-model-notes.md) — field docstrings become OpenAPI text; models.py stays a leaf; FiniteFloat; strict vs frozenset
 - [pylint mirrors ruff](feedback_pylint-mirrors-ruff.md) — disable if ruff enforces, mirror if not enabled, else default; naming on; tests W0621 via plugin; re-derive steps
-- [Lambda logging format](lambda-logging-format.md) — text prefix vs JSON `message`; §12 metric filter needs JSON format + `extra` fields
+- [Lambda logging format](lambda-logging-format.md) — text vs JSON format; run summary logs `extra` `summary`/`failed_connections`; test via `vars(record)`

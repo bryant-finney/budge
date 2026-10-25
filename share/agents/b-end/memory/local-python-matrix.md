@@ -28,4 +28,11 @@ metadata:
   export. Don't delete or reinstall the user's uv Pythons yourself; report it. The user repaired it the same day.
   Afterwards, rebuild each worktree `.venv` (`rm -rf .venv && uv sync --locked --all-groups`, with `VIRTUAL_ENV` unset).
 
+- **2026-10-25: it happened again in PR #26.** Gates passed on the worktree `.venv`, then a few minutes later every
+  `uv run` exited 137 with no output. A bare `cpython-3.13.7.../python3.13 -c 1` also exited 137. A shell chain like
+  `cmd | tail -1` hides this: it prints nothing instead of failing, so check `$?` on a separate line. Workaround
+  without touching the worktree `.venv`: `rsync` `src/back-end/` (excluding `.venv` and caches) into the scratchpad and
+  run the gates there with `UV_PYTHON=3.14`. Run hooks with `uvx --python 3.14 pre-commit`. The installed git
+  `pre-commit` hook uses Homebrew's Python, so commits still work.
+
 Related: [[coverage-sysmon-contexts]].

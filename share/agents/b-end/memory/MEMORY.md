@@ -8,11 +8,11 @@ Index of b-end agent memories, one line per entry.
 - [Commit hook prefix](commit-msg-hook-prefix.md) — prepare-commit-msg prepends `type(#N):` from the branch; write bare subjects
 - [coverage sysmon vs contexts](coverage-sysmon-contexts.md) — keep `core = "ctrace"`; 3.14+ sysmon breaks `--cov-context=test`
 - [ruff nested config first-party](ruff-nested-config-first-party.md) — `tests/ruff.toml` moves project root; keep `known-first-party`
-- [local Python matrix](local-python-matrix.md) — running 3.11–3.15 locally, worktree Bash limits, taplo vs `uv.lock`
+- [local Python matrix](local-python-matrix.md) — 3.11–3.15 locally; uv 3.13.7 SIGKILL (137) recurs, gate on a 3.14 copy; worktree Bash limits; taplo
 - [gh:commit skill forks](gh-commit-skill-forks.md) — skill commits in the background; wait, then verify signature/prefix
 - [GitHub stacked PRs](github-stacked-prs.md) — dependencies API rejects PRs; `Closes` links only once a PR targets `main`
 - [pyright gotchas](pyright-gotchas.md) — `@contextmanager` needs `Generator`; nodenv; silent hang = pyright not in `.venv`; private-import from repo root; `__all__`
-- [Explicit over implicit](feedback_explicit-over-implicit.md) — protocol impls subclass with `@override`; complete `__all__` everywhere (`tests/test_exports.py`)
+- [Explicit over implicit](feedback_explicit-over-implicit.md) — protocol impls subclass with `@override`; complete `__all__` (`tests/test_exports.py`), loggers exempt
 - [Strict and rigorous](feedback_strict-and-rigorous.md) — strict types/lint/format; fix data to fit strict types, never loosen them
 - [Three type checkers](project_type-checkers.md) — mypy, pyright and ty all run strict (user, 2026-10-20); a change passes all three
 - [Starlette TestClient and httpx2](starlette-testclient-httpx2.md) — TestClient needs `httpx2` (dev group since 2026-10-18); FastAPI route listing

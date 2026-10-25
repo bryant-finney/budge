@@ -18,5 +18,5 @@ Index of b-end agent memories, one line per entry.
 - [Starlette TestClient and httpx2](starlette-testclient-httpx2.md) — TestClient needs `httpx2` (dev group since 2026-10-18); FastAPI route listing
 - [Mangum event loop](mangum-event-loop.md) — conftest owns Mangum's import-time loop; async tests unset it; run the full matrix
 - [Pydantic model notes](pydantic-model-notes.md) — field docstrings become OpenAPI text; models.py stays a leaf; FiniteFloat; strict vs frozenset
-- [pylint mirrors ruff](feedback_pylint-mirrors-ruff.md) — disable if ruff enforces, mirror if not enabled, else default; naming on; tests W0621 via plugin; re-derive steps
+- [ruff over pylint](feedback_ruff-over-pylint.md) — ruff owns any check it has a rule for (preview by code); pylint keeps the rest; naming on; tests W0621 via plugin
 - [Lambda logging format](lambda-logging-format.md) — text vs JSON format; run summary logs `extra` `summary`/`failed_connections`; test via `vars(record)`

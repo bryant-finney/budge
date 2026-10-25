@@ -76,6 +76,23 @@ Found while building the root pnpm workspace (#12, 2026-10-17).
   without asking. Revert that and pin a version that clears the gate (#13 used `@pulumi/pulumi`
   3.269.0, not 3.270.0, which was less than a day old). New build scripts (e.g. `protobufjs`) need
   an explicit `allowBuilds` entry, or install fails with `ERR_PNPM_IGNORED_BUILDS`.
+- **pre-commit file selection (#14):** identify tags `.mjs` as `javascript` but gives `.mts`/`.cts`
+  no `ts` tag, so the shared `prettier` hook selects by extension (`files:`) instead of `types_or`.
+  `.envrc` has a bash shebang (for shellcheck's dialect) but must not be executable, so it is
+  excluded from `check-shebang-scripts-are-executable`. The `repo: local` hooks are
+  `language: system` and need `pnpm` on `PATH`. On a machine without global pnpm, use the
+  `.cache/bin/pnpm` shim from the next bullet (`.cache` is in `.gitignore`). These hooks type-check
+  only `src/infrastructure`; front-end's `check` gets a hook in #10 (`front-end-svelte-check`).
+- **A hook's `files:` is ANDed with its manifest's `types:`. It narrows selection and never widens
+  it** (PR #22 review). A `files: (^\.envrc$|\.sh$)` override on shellcheck-py (`types: [shell]`)
+  dropped extensionless executable scripts and still relied on identify tagging `.envrc` as
+  `shell`. Leave a hook's defaults alone unless a probe shows they miss a file. Prove selection
+  with a probe that fails (an unquoted `$VAR`), because `--verbose` doesn't list files. Whole-package
+  hooks (`pass_filenames: false`) also trigger on `package.json`, `pnpm-lock.yaml` and tsconfigs.
+- **`Intl.supportedValuesOf('timeZone')` lists CLDR-canonical IDs, not current IANA names**
+  (Node 24.22, ICU 78.3). It has `Asia/Calcutta` and `Europe/Kiev`, but not `Asia/Kolkata`,
+  `Europe/Kyiv` or `UTC`. `new Intl.DateTimeFormat('en-US', { timeZone })` accepts all of them
+  (it throws `RangeError` on an unknown zone). Raised on PR #21; the user decides.
 - **Agent sessions:** the worktree guard rejects Bash commands that mention the scratchpad path,
   because the path contains `github`. Run pnpm through `npx --yes pnpm@<ver>` instead of a
   scratchpad install. zsh doesn't word-split `P="npx --yes pnpm@<ver>"; $P ...`, so put a

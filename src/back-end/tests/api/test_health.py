@@ -16,7 +16,7 @@ def test_health_returns_ok(client: TestClient) -> None:
     assert response.json() == {'ok': True}
 
 
-@pytest.mark.parametrize('path', ['/health', '/openapi.json', '/docs', '/docs/oauth2-redirect', '/redoc', '/api/redoc'])
+@pytest.mark.parametrize('path', ['/health', '/openapi.json', '/docs', '/docs/oauth2-redirect', '/redoc'])
 def test_routes_are_only_served_under_the_api_prefix(client: TestClient, path: str) -> None:
     """Without the `/api` prefix there is no route, and FastAPI's default doc paths are disabled."""
     response = client.get(path)

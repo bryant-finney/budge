@@ -18,13 +18,13 @@ __all__ = ['app', 'create_app']
 def create_app(*, docs_dependencies: Sequence[Depends] = docs.DOCS_DEPENDENCIES) -> FastAPI:
     """Build the API application.
 
-    The OpenAPI document and Swagger UI (with its OAuth2 redirect page) are served under the `/api` prefix too:
+    The OpenAPI document, Swagger UI (with its OAuth2 redirect page) and ReDoc are served under the `/api` prefix too:
     CloudFront routes only `/api/*` to the API, so FastAPI's default `/openapi.json` would be unreachable once deployed.
-    FastAPI's built-in doc routes are off; `budge.api.routes.docs` serves the same URLs from a router whose
+    FastAPI's built-in doc routes are off; `budge.api.routes.docs` serves those four routes from a router whose
     dependencies are `docs_dependencies`, the hook the auth PR fills (spec §8). `GET /api/health` never gets them.
 
     Args:
-        docs_dependencies: Dependencies every docs route requires. Defaults to the hook,
+        docs_dependencies: Dependencies all four docs routes require. Defaults to the hook,
             `budge.api.routes.docs.DOCS_DEPENDENCIES`.
 
     Returns:

@@ -11,7 +11,9 @@ from fastapi.testclient import TestClient
 from budge.api.app import app, create_app
 from budge.api.routes import API_PREFIX, docs
 
-DOCS_URLS = [f'{API_PREFIX}{path}' for path in (docs.OPENAPI_PATH, docs.DOCS_PATH, docs.OAUTH2_REDIRECT_PATH)]
+DOCS_URLS = [
+    f'{API_PREFIX}{path}' for path in (docs.OPENAPI_PATH, docs.DOCS_PATH, docs.OAUTH2_REDIRECT_PATH, docs.REDOC_PATH)
+]
 """Every docs route's full path."""
 
 
@@ -106,6 +108,24 @@ def test_oauth2_redirect_page_is_served(client: TestClient) -> None:
     assert response.status_code == HTTPStatus.OK
     assert response.headers['content-type'] == 'text/html; charset=utf-8'
     assert 'oauth2' in response.text
+
+
+def test_redoc_loads_the_prefixed_document(client: TestClient) -> None:
+    """`/api/redoc` serves ReDoc HTML that loads `/api/openapi.json`."""
+    response = client.get('/api/redoc')
+
+    assert response.status_code == HTTPStatus.OK
+    assert response.headers['content-type'] == 'text/html; charset=utf-8'
+    assert '<redoc spec-url="/api/openapi.json"></redoc>' in response.text
+    assert '<title>budge - ReDoc</title>' in response.text
+
+
+def test_redoc_prefixes_the_root_path() -> None:
+    """Under an ASGI `root_path`, ReDoc's document URL carries it."""
+    with TestClient(create_app(), root_path='/stage') as test_client:
+        text = test_client.get('/api/redoc').text
+
+    assert '<redoc spec-url="/stage/api/openapi.json"></redoc>' in text
 
 
 @pytest.mark.parametrize('url', DOCS_URLS)

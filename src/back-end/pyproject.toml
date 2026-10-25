@@ -77,6 +77,213 @@ init_forbid_extra = true
 init_typed = true
 warn_required_dynamic_aliases = true
 
+# pylint isn't a gate, but wherever it runs (e.g. an editor) it agrees with ruff by one rule: a default pylint message
+# whose ruff counterpart is enabled in `[tool.ruff.lint]` is disabled here and left to ruff (mapping from
+# astral-sh/ruff#970 and ruff's `PL*` codes); a message whose counterpart isn't enabled stays on with ruff's option
+# values. Messages without a ruff counterpart keep pylint's defaults. Re-check the list when `select` changes
+[tool.pylint.main]
+py-version = "3.11" # ruff `target-version`
+
+# ruff `lint.pylint.max-*` values for counterparts that are preview-only in ruff, hence off
+[tool.pylint.design]
+max-bool-expr = 5       # PLR0916 (`max-bool-expr`)
+max-locals = 15         # PLR0914 (`max-locals`)
+max-public-methods = 20 # PLR0904 (`max-public-methods`)
+
+[tool.pylint.format]
+# ruff `line-length`, which `ruff format` wraps to; E501 isn't selected, so ruff itself doesn't flag longer lines
+max-line-length = 120
+
+[tool.pylint."messages control"]
+disable = [
+  # pycodestyle
+  "multiple-imports",              # E401
+  "wrong-import-position",         # E402
+  "multiple-statements",           # E701, E702
+  "unnecessary-semicolon",         # E703
+  "singleton-comparison",          # E711, E712
+  "unidiomatic-typecheck",         # E721
+  "bare-except",                   # E722
+  "unnecessary-lambda-assignment", # E731
+  "trailing-whitespace",           # W291
+  "missing-final-newline",         # W292
+  "anomalous-backslash-in-string", # W605
+  # Pyflakes
+  "unused-import",                       # F401
+  "wildcard-import",                     # F403
+  "misplaced-future",                    # F404
+  "truncated-format-string",             # F501
+  "format-needs-mapping",                # F502
+  "unused-format-string-key",            # F504
+  "mixed-format-string",                 # F506
+  "unused-format-string-argument",       # F507
+  "bad-format-string",                   # F521
+  "too-many-format-args",                # F522
+  "missing-format-string-key",           # F524
+  "too-few-format-args",                 # F524
+  "missing-format-argument-key",         # F524
+  "format-combined-specification",       # F525
+  "f-string-without-interpolation",      # F541
+  "format-string-without-interpolation", # F541
+  "duplicate-key",                       # F601
+  "too-many-star-expressions",           # F622
+  "assert-on-tuple",                     # F631
+  "literal-comparison",                  # F632
+  "not-in-loop",                         # F701, F702
+  "yield-outside-function",              # F704
+  "return-outside-function",             # F706
+  "function-redefined",                  # F811
+  "reimported",                          # F811
+  "used-before-assignment",              # F821
+  "undefined-variable",                  # F821
+  "undefined-all-variable",              # F822
+  "unused-variable",                     # F841
+  "notimplemented-raised",               # F901
+  # pep8-naming
+  "invalid-name",             # N801, N802, N803, N806, N815, N816
+  "bad-classmethod-argument", # N804
+  "no-self-argument",         # N805
+  "non-ascii-file-name",      # N999
+  # pydocstyle
+  "missing-module-docstring",   # D100, D104
+  "missing-class-docstring",    # D101, D106
+  "missing-function-docstring", # D102, D103
+  "empty-docstring",            # D419
+  # isort
+  "wrong-import-order", # I001
+  "ungrouped-imports",  # I001
+  # flake8-bugbear
+  "nonexistent-operator",       # B002
+  "dangerous-default-value",    # B006
+  "lost-exception",             # B012
+  "duplicate-except",           # B014
+  "pointless-statement",        # B018
+  "expression-not-assigned",    # B018
+  "method-cache-max-size-none", # B019
+  "cell-var-from-loop",         # B023
+  "keyword-arg-before-vararg",  # B026
+  "duplicate-value",            # B033
+  "raise-missing-from",         # B904
+  # flake8-bandit
+  "exec-used", # S102
+  "eval-used", # S307
+  # flake8-logging-format
+  "logging-format-interpolation",  # G001
+  "logging-not-lazy",              # G002
+  "logging-fstring-interpolation", # G004
+  # flake8-return
+  "inconsistent-return-statements", # RET501, RET502, RET503
+  "no-else-return",                 # RET505
+  "no-else-raise",                  # RET506
+  "no-else-continue",               # RET507
+  "no-else-break",                  # RET508
+  # flake8-tidy-imports
+  "relative-beyond-top-level", # TID252
+  # pyupgrade
+  "useless-object-inheritance", # UP004
+  "super-with-arguments",       # UP008
+  "redundant-u-string-prefix",  # UP025
+  "use-yield-from",             # UP028
+  # Pylint
+  "typevar-name-incorrect-variance",     # PLC0105
+  "typevar-double-variance",             # PLC0131
+  "typevar-name-mismatch",               # PLC0132
+  "single-string-used-for-slots",        # PLC0205
+  "consider-using-dict-items",           # PLC0206
+  "use-maxsplit-arg",                    # PLC0207
+  "use-sequence-for-iteration",          # PLC0208
+  "useless-import-alias",                # PLC0414
+  "import-outside-toplevel",             # PLC0415
+  "use-implicit-booleaness-not-len",     # PLC1802
+  "non-ascii-name",                      # PLC2401
+  "non-ascii-module-import",             # PLC2403
+  "unnecessary-direct-lambda-call",      # PLC3002
+  "init-is-generator",                   # PLE0100
+  "return-in-init",                      # PLE0101
+  "nonlocal-and-global",                 # PLE0115
+  "nonlocal-without-binding",            # PLE0117
+  "used-prior-global-declaration",       # PLE0118
+  "assigning-non-slot",                  # PLE0237
+  "duplicate-bases",                     # PLE0241
+  "unexpected-special-method-signature", # PLE0302
+  "invalid-length-returned",             # PLE0303
+  "invalid-bool-returned",               # PLE0304
+  "invalid-index-returned",              # PLE0305
+  "invalid-str-returned",                # PLE0307
+  "invalid-bytes-returned",              # PLE0308
+  "invalid-hash-returned",               # PLE0309
+  "invalid-all-object",                  # PLE0604
+  "invalid-all-format",                  # PLE0605
+  "potential-index-error",               # PLE0643
+  "misplaced-bare-raise",                # PLE0704
+  "repeated-keyword",                    # PLE1132
+  "await-outside-async",                 # PLE1142
+  "logging-too-many-args",               # PLE1205
+  "logging-too-few-args",                # PLE1206
+  "bad-format-character",                # PLE1300
+  "bad-string-format-type",              # PLE1307
+  "bad-str-strip-call",                  # PLE1310
+  "invalid-envvar-value",                # PLE1507
+  "singledispatch-method",               # PLE1519
+  "singledispatchmethod-function",       # PLE1520
+  "yield-inside-async-function",         # PLE1700
+  "bidirectional-unicode",               # PLE2502
+  "invalid-character-backspace",         # PLE2510
+  "invalid-character-sub",               # PLE2512
+  "invalid-character-esc",               # PLE2513
+  "invalid-character-nul",               # PLE2514
+  "invalid-character-zero-width-space",  # PLE2515
+  "comparison-with-itself",              # PLR0124
+  "comparison-of-constants",             # PLR0133
+  "property-with-parameters",            # PLR0206
+  "consider-using-from-import",          # PLR0402
+  "too-many-return-statements",          # PLR0911
+  "too-many-branches",                   # PLR0912
+  "too-many-arguments",                  # PLR0913
+  "too-many-statements",                 # PLR0915
+  "too-many-positional-arguments",       # PLR0917
+  "redefined-argument-from-local",       # PLR1704
+  "stop-iteration-return",               # PLR1708
+  "useless-return",                      # PLR1711
+  "consider-using-in",                   # PLR1714
+  "chained-comparison",                  # PLR1716
+  "consider-using-sys-exit",             # PLR1722
+  "consider-using-min-builtin",          # PLR1730
+  "consider-using-max-builtin",          # PLR1730
+  "unnecessary-dict-index-lookup",       # PLR1733
+  "unnecessary-list-index-lookup",       # PLR1736
+  "unnecessary-lambda",                  # PLW0108
+  "useless-else-on-loop",                # PLW0120
+  "self-assigning-variable",             # PLW0127
+  "redeclared-assigned-name",            # PLW0128
+  "assert-on-string-literal",            # PLW0129
+  "named-expr-without-context",          # PLW0131
+  "pointless-exception-statement",       # PLW0133
+  "nan-comparison",                      # PLW0177
+  "bad-staticmethod-argument",           # PLW0211
+  "super-without-brackets",              # PLW0245
+  "import-self",                         # PLW0406
+  "global-variable-not-assigned",        # PLW0602
+  "global-statement",                    # PLW0603
+  "global-at-module-level",              # PLW0604
+  "self-cls-assignment",                 # PLW0642
+  "binary-op-exception",                 # PLW0711
+  "bad-open-mode",                       # PLW1501
+  "shallow-copy-environ",                # PLW1507
+  "invalid-envvar-default",              # PLW1508
+  "subprocess-popen-preexec-fn",         # PLW1509
+  "subprocess-run-check",                # PLW1510
+  "useless-with-lock",                   # PLW2101
+  "nested-min-max",                      # PLW3301
+]
+
+[tool.pylint.refactoring]
+max-nested-blocks = 5 # PLR1702 (`lint.pylint.max-nested-blocks`; preview-only in ruff, hence off)
+
+[tool.pylint.variables]
+# ruff `lint.dummy-variable-rgx`, which the unused-argument rules use (ARG001-ARG005; `ARG` isn't selected)
+ignored-argument-names = '^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$'
+
 [tool.pyright]
 # pyright otherwise honours mypy's `# type: ignore[code]` as a blanket ignore of every pyright rule on that line;
 # suppress pyright findings with `# pyright: ignore[rule]` instead

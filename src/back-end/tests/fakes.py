@@ -1,7 +1,7 @@
 """In-memory fakes of the boundary protocols, shared by the test suite (spec §12 Testing: "a fake repository").
 
-Each fake is deliberately small and dict-backed. Like the `budge.aws` adapters, each one subclasses its protocol and marks
-every protocol method with `@override`, so the type checkers report signature drift here, at the fake.
+Each fake is deliberately small and dict-backed. Like the `budge.aws` adapters, each one subclasses its protocol and
+marks every protocol method with `@override`, so the type checkers report signature drift here, at the fake.
 """
 
 import contextlib

@@ -17,6 +17,8 @@ dependencies = [
 dev = [
   "httpx2~=2.13",
   "mypy~=2.4",
+  "pylint-per-file-ignores~=4.0",
+  "pylint~=4.1",
   "pyright~=1.1.414",
   "pytest-clarity~=1.0",
   "pytest-cov~=7.1",
@@ -80,9 +82,25 @@ warn_required_dynamic_aliases = true
 # pylint isn't a gate, but wherever it runs (e.g. an editor) it agrees with ruff by one rule: a default pylint message
 # whose ruff counterpart is enabled in `[tool.ruff.lint]` is disabled here and left to ruff (mapping from
 # astral-sh/ruff#970 and ruff's `PL*` codes); a message whose counterpart isn't enabled stays on with ruff's option
-# values. Messages without a ruff counterpart keep pylint's defaults. Re-check the list when `select` changes
+# values. Messages without a ruff counterpart keep pylint's defaults. Re-check the list when `select` changes.
+# One exception, by the user's decision (2026-10-25): pylint's naming checks stay on beside pep8-naming (`N`), with the
+# naming styles in `[tool.pylint.basic]` set to pep8-naming's conventions
 [tool.pylint.main]
-py-version = "3.11" # ruff `target-version`
+# pylint has no per-directory or per-file message control of its own; this plugin adds `per-file-ignores`
+load-plugins = ["pylint_per_file_ignores"]
+py-version = "3.11"                        # ruff `target-version`
+
+[tool.pylint.basic]
+argument-naming-style = "snake_case" # N803
+class-naming-style = "PascalCase"    # N801
+function-naming-style = "snake_case" # N802
+# pylint's default short names that pep8-naming also allows (`Run`, which N802 rejects, is dropped)
+good-names = ["_", "ex", "i", "j", "k"]
+method-naming-style = "snake_case"      # N802
+module-naming-style = "snake_case"      # N999
+variable-naming-style = "snake_case"    # N806
+# pylint's other name types (const, class-const, class-attribute, attr, inlinevar, TypeVar) keep pylint's defaults: no
+# pep8-naming rule states a style for them (N815/N816 only reject mixedCase, which ruff checks)
 
 # ruff `lint.pylint.max-*` values for counterparts that are preview-only in ruff, hence off
 [tool.pylint.design]
@@ -90,14 +108,11 @@ max-bool-expr = 5       # PLR0916 (`max-bool-expr`)
 max-locals = 15         # PLR0914 (`max-locals`)
 max-public-methods = 20 # PLR0904 (`max-public-methods`)
 
-[tool.pylint.format]
-# ruff `line-length`, which `ruff format` wraps to; E501 isn't selected, so ruff itself doesn't flag longer lines
-max-line-length = 120
-
 [tool.pylint."messages control"]
 disable = [
   # pycodestyle
   "multiple-imports",              # E401
+  "line-too-long",                 # E501 (`line-length`)
   "wrong-import-position",         # E402
   "multiple-statements",           # E701, E702
   "unnecessary-semicolon",         # E703
@@ -139,11 +154,7 @@ disable = [
   "undefined-all-variable",              # F822
   "unused-variable",                     # F841
   "notimplemented-raised",               # F901
-  # pep8-naming
-  "invalid-name",             # N801, N802, N803, N806, N815, N816
-  "bad-classmethod-argument", # N804
-  "no-self-argument",         # N805
-  "non-ascii-file-name",      # N999
+  # pep8-naming: none, by the naming exception above
   # pydocstyle
   "missing-module-docstring",   # D100, D104
   "missing-class-docstring",    # D101, D106
@@ -276,6 +287,13 @@ disable = [
   "useless-with-lock",                   # PLW2101
   "nested-min-max",                      # PLW3301
 ]
+# `pylint_per_file_ignores` globs, resolved against pylint's cwd: `src/back-end`, or the repo root with
+# `--rcfile src/back-end/pyproject.toml`. pytest injects fixtures by parameter name, so a test that takes a module-level
+# fixture always shadows it; no ruff rule covers W0621, and it stays on for `budge/`
+per-file-ignores = [
+  "tests/**/*.py:redefined-outer-name",
+  "src/back-end/tests/**/*.py:redefined-outer-name",
+]
 
 [tool.pylint.refactoring]
 max-nested-blocks = 5 # PLR1702 (`lint.pylint.max-nested-blocks`; preview-only in ruff, hence off)
@@ -373,6 +391,7 @@ select = [
   "D",
   "E1",
   "E4",
+  "E501",
   "E7",
   "E9",
   "ERA",

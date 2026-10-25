@@ -14,6 +14,10 @@ API_PREFIX = '/api'
 """The path prefix every route is served under."""
 
 api_router = APIRouter(prefix=API_PREFIX)
-"""The single router the app includes; each feature router is included here."""
+"""The router for the API's own routes; each feature router is included here.
+
+The docs routes (`budge.api.routes.docs`) are not: `create_app` includes them under the same prefix itself, so it can
+apply their auth hook.
+"""
 
 api_router.include_router(health.router)

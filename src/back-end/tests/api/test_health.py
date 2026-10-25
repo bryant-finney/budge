@@ -24,19 +24,15 @@ def test_routes_are_only_served_under_the_api_prefix(client: TestClient, path: s
     assert response.status_code == HTTPStatus.NOT_FOUND
 
 
-def test_every_route_is_under_the_api_prefix() -> None:
-    """Every route the module-level app serves, docs included, lives under `/api`.
+def test_every_api_route_is_under_the_api_prefix() -> None:
+    """Every route in the module-level app's OpenAPI document lives under `/api`.
 
-    The API routes are read from the OpenAPI document and the doc routes from the app's settings, since FastAPI's
-    `app.routes` holds included routers as private wrapper objects without a `path`.
+    The docs routes are left out of the document; `tests/api/test_docs.py` covers their paths.
     """
     api_paths = list(app.openapi()['paths'])
-    doc_paths = [app.openapi_url, app.docs_url, app.swagger_ui_oauth2_redirect_url]
 
     assert api_paths
-    assert app.redoc_url is None
-    for path in [*api_paths, *doc_paths]:
-        assert path is not None
+    for path in api_paths:
         assert path.startswith('/api/'), path
 
 
@@ -49,19 +45,3 @@ def test_openapi_document_describes_health(client: TestClient) -> None:
     health = document['paths']['/api/health']['get']['responses']['200']
     assert health['content']['application/json']['schema'] == {'$ref': '#/components/schemas/HealthResponse'}
     assert document['components']['schemas']['HealthResponse']['properties']['ok']['const'] is True
-
-
-def test_docs_are_served_under_the_api_prefix(client: TestClient) -> None:
-    """Swagger UI is served at `/api/docs` and loads the prefixed OpenAPI document."""
-    response = client.get('/api/docs')
-
-    assert response.status_code == HTTPStatus.OK
-    assert '/api/openapi.json' in response.text
-    assert '/api/docs/oauth2-redirect' in response.text
-
-
-def test_docs_oauth2_redirect_is_served_under_the_api_prefix(client: TestClient) -> None:
-    """Swagger UI's OAuth2 redirect page is reachable through CloudFront's `/api/*` behavior."""
-    response = client.get('/api/docs/oauth2-redirect')
-
-    assert response.status_code == HTTPStatus.OK

@@ -82,25 +82,12 @@ warn_required_dynamic_aliases = true
 # pylint isn't a gate, but wherever it runs (e.g. an editor) it defers to ruff: ruff owns every check it has a rule for
 # (mapping from astral-sh/ruff#970 and ruff's `PL*` codes). That rule is selected and configured in `[tool.ruff.lint]`,
 # and the pylint message is disabled below with the ruff code beside it; pylint keeps only checks ruff can't run.
-# Re-derive the list when ruff, pylint or `select` changes.
-# One exception, by the user's decision (2026-10-25): pylint's naming checks stay on beside pep8-naming (`N`), since
-# they also cover constants and TypeVars; `[tool.pylint.basic]` sets their styles to pep8-naming's conventions
+# Re-derive the list when ruff, pylint or `select` changes. Naming included: pep8-naming (`N`) and PYI042/PYI043 replace
+# `invalid-name`, so pylint's UPPER_CASE-constant and TypeVar-name styles go unchecked
 [tool.pylint.main]
 # pylint has no per-directory or per-file message control of its own; this plugin adds `per-file-ignores`
 load-plugins = ["pylint_per_file_ignores"]
 py-version = "3.11"                        # ruff `target-version`
-
-[tool.pylint.basic]
-argument-naming-style = "snake_case" # N803
-class-naming-style = "PascalCase"    # N801
-function-naming-style = "snake_case" # N802
-# pylint's default short names that pep8-naming also allows (`Run`, which N802 rejects, is dropped)
-good-names = ["_", "ex", "i", "j", "k"]
-method-naming-style = "snake_case"      # N802
-module-naming-style = "snake_case"      # N999
-variable-naming-style = "snake_case"    # N806
-# pylint's other name types (const, class-const, class-attribute, attr, inlinevar, TypeVar) keep pylint's defaults: no
-# pep8-naming rule states a style for them (N815/N816 only reject mixedCase, which ruff checks)
 
 [tool.pylint."messages control"]
 disable = [
@@ -152,7 +139,11 @@ disable = [
   "undefined-all-variable",              # F822
   "unused-variable",                     # F841
   "notimplemented-raised",               # F901
-  # pep8-naming: none, by the naming exception above
+  # pep8-naming
+  "invalid-name",             # N801, N802, N803, N806, N815, N816; PYI042, PYI043 (type aliases)
+  "bad-classmethod-argument", # N804
+  "no-self-argument",         # N805
+  "non-ascii-file-name",      # N999
   # pydocstyle
   "missing-module-docstring",   # D100, D104
   "missing-class-docstring",    # D101, D106
@@ -472,6 +463,9 @@ select = [
   "FIX",
   "ISC001",
   "PIE790",
+  # type-alias naming, the part of pylint's `invalid-name` that pep8-naming lacks
+  "PYI042",
+  "PYI043",
   "SIM101",
   "SIM108",
   "SIM115",

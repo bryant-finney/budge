@@ -44,8 +44,6 @@ yourself.
 ## #22 `chore/14/pre-commit-hooks`
 
 - [ ] **Awaiting the user** (review of 2026-10-18T15:14Z):
-  - **Low** `.pre-commit-config.yaml:78`: drop `--ignore-unknown` from the prettier entry? #14's
-    table prescribes the flag; the reviewer showed it hides a missing parser. Recommended: drop it.
   - **Medium-low** this file: keep it as a living handoff (b), drop it from the PR (a), or fold
     its lasting notes into `memory/` and delete it before #22 merges (c). Until the user picks, each
     infra session keeps it current.

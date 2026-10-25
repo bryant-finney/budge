@@ -75,7 +75,7 @@ repos:
       - id: prettier
         name: prettier (src/front-end, src/infrastructure)
         language: system
-        entry: pnpm exec prettier --write --ignore-unknown
+        entry: pnpm exec prettier --write
         # by extension: identify doesn't tag .mts/.cts as ts
         files: ^src/(front-end|infrastructure)/.*\.(ts|mts|cts|js|mjs|cjs|svelte|css|html)$
       - id: infrastructure-eslint

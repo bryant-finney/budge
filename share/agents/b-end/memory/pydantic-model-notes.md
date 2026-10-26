@@ -1,6 +1,6 @@
 ---
 name: pydantic-model-notes
-description: budge pydantic model gotchas — field docstrings leak into OpenAPI, strict mode vs the frozenset serializer, FiniteFloat, models.py must stay a leaf
+description: budge pydantic model gotchas — field docstrings leak into OpenAPI, strict mode and python-mode dumps, FiniteFloat, models.py must stay a leaf
 metadata:
   type: reference
 ---
@@ -15,9 +15,9 @@ metadata:
   `tests/test_models.py::test_models_is_a_leaf_module` enforces it.
 - **`amount: FiniteFloat`**: pydantic writes NaN to JSON as `null`, which then fails `model_validate_json`, so one
   bad row would make a connection's whole `transactions.json.gz` unreadable.
-- **Lax mode coerces** (`amount='28.34'` becomes `28.34`, `pending='yes'` becomes `True`). `strict=True` was measured
-  on 2026-10-18 and broke 7 tests: the factories rebuild from python-mode `model_dump()`, which emits the sorted
-  `list` for `recurring_outflow_ids`, and strict mode rejects a list for a `frozenset` (JSON input is still fine).
-  Raised on PR #23 as a maintainer decision; not adopted yet.
+- **`DomainModel` is `strict=True`** (adopted 2026-10-20, PR #23), so python-mode input is never coerced
+  (`amount='28.34'` and `pending='yes'` fail). A python-mode `model_dump()` does not round-trip: it emits the sorted
+  `list` for `recurring_outflow_ids`, which strict mode rejects for a `frozenset`. JSON round-trips still pass. Build
+  test models from typed field values (as `tests/factories.py` does), never from a python-mode dump.
 
 Related: [[lambda-logging-format]].

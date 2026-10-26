@@ -20,7 +20,8 @@ Source: <https://docs.aws.amazon.com/lambda/latest/dg/python-logging.html> (chec
   The handler now logs `logger.info('ingestion run summary', extra={'summary': ..., 'failed_connections': n})`, with
   `n = count_failed(summary)` from `budge.ingestion.summary`. Infra must set `LogFormat: JSON` and
   `ApplicationLogLevel: INFO` on the ingestion function; the filter is `{ $.failed_connections > 0 }`. In text format
-  the `extra` fields aren't printed at all, so JSON format is mandatory, not optional.
+  the `extra` fields aren't printed at all, so JSON format is mandatory, not optional. The handler doesn't call
+  `logger.setLevel`; `ApplicationLogLevel` alone sets the level, so code and function config can't disagree.
 - **Testing `extra`:** `LogRecord` has no typed `summary` attribute, so strict pyright/mypy/ty reject
   `record.summary`; read `vars(record)['summary']` (ruff B009 flags `getattr` with a constant).
 

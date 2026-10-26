@@ -19,9 +19,6 @@ from budge.ingestion.summary import RunSummary, count_failed
 __all__ = ['handler']
 
 logger = logging.getLogger(__name__)
-# the run summary is the function's one operational log line (spec §9), so it must survive the Lambda runtime's
-# default root level
-logger.setLevel(logging.INFO)
 
 
 def handler(_event: Mapping[str, object], _context: object) -> RunSummary:

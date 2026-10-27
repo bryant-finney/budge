@@ -64,7 +64,7 @@ enable_error_code = [
   "truthy-bool",
   "unused-awaitable",
 ]
-files = ["budge", "tests"]
+files = ["budge", "conftest.py", "tests"]
 # Lambda runs on Linux; keep local and CI platform branches identical.
 platform = "linux"
 plugins = ["pydantic.mypy"]
@@ -337,7 +337,7 @@ per-file-ignores = [
 # pyright otherwise honours mypy's `# type: ignore[code]` as a blanket ignore of every pyright rule on that line;
 # suppress pyright findings with `# pyright: ignore[rule]` instead
 enableTypeIgnoreComments = false
-include = ["budge", "tests"]
+include = ["budge", "conftest.py", "tests"]
 # Lambda runs on Linux; keep local and CI platform branches identical (as mypy's `platform` and ty's `python-platform`)
 pythonPlatform = "Linux"
 pythonVersion = "3.11"
@@ -365,7 +365,7 @@ invalid-ignore-comment = "error"
 unused-ignore-comment = "error"
 
 [tool.ty.src]
-include = ["budge", "tests"]
+include = ["budge", "conftest.py", "tests"]
 
 [tool.pytest.ini_options]
 addopts = [

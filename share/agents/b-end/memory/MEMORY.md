@@ -16,10 +16,11 @@ Index of b-end agent memories, one line per entry.
 - [Strict and rigorous](feedback_strict-and-rigorous.md) — strict types/lint/format; fix data to fit strict types, never loosen them
 - [Three type checkers](project_type-checkers.md) — mypy, pyright and ty all run strict (user, 2026-10-20); a change passes all three
 - [Starlette TestClient and httpx2](starlette-testclient-httpx2.md) — TestClient needs `httpx2`; list routes with `iter_route_contexts`; overrides per app
-- [Mangum event loop](mangum-event-loop.md) — conftest owns Mangum's import-time loop; async tests unset it; run the full matrix
+- [Mangum event loop](mangum-event-loop.md) — rootdir conftest.py owns Mangum's import-time loop (doctests too); async tests unset it; run the full matrix
 - [Pydantic model notes](pydantic-model-notes.md) — field and route docstrings become OpenAPI text (routes pass `description=`); leaf models.py; FiniteFloat; strict
 - [ruff over pylint](feedback_ruff-over-pylint.md) — ruff owns any check it has a rule for (preview by code); pylint keeps the rest; naming in ruff; tests W0621 via plugin
 - [Lambda logging format](lambda-logging-format.md) — text vs JSON format; run summary logs `extra` `summary`/`failed_connections`; test via `vars(record)`
 - [FastAPI app settings](fastapi-app-settings.md) — redirect_slashes=False (Host-derived 307 leaves CloudFront origin); operationId = route.name
 - [FastAPI docs CDN pinning](fastapi-docs-cdn-pinning.md) — exact jsdelivr releases ≥2 weeks old; favicon `data:,` not ''; helpers allow no SRI; redoc stays 2.x
 - [Route gating tests](feedback_route-gating-tests.md) — pin (method, path) pairs; gate by a denial marker, not == 200; fail-open stub ships a tripwire
+- [CloudFront viewer IP](cloudfront-viewer-ip.md) — request.client is the CloudFront edge; read cloudfront-viewer-address for the viewer IP

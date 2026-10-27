@@ -1,8 +1,10 @@
-"""Shared pytest fixtures: the API test clients, recorded Lambda events, and a Lambda context double."""
+"""Shared pytest fixtures: the API test clients, recorded Lambda events, and a Lambda context double.
 
-import asyncio
+Mangum's import-time event loop (`MANGUM_LOOP`, the `current_event_loop` fixture) is set up in the rootdir
+`conftest.py`, so `pytest budge` doctest-only runs get it too.
+"""
+
 import dataclasses
-import importlib
 import json
 from collections.abc import Iterator
 from pathlib import Path
@@ -17,14 +19,6 @@ from tests.fakes import deny_session
 
 EVENTS_DIR = Path(__file__).parent / 'events'
 """Recorded (or docs-derived) Lambda event payloads."""
-
-# constructing the module-level `Mangum` handler creates an event loop and makes it current, exactly as at import on
-# Lambda; nothing owns that loop, so hold it here: otherwise it is garbage-collected unclosed (a fatal ResourceWarning)
-# once an `asyncio.run` doctest unsets the current loop. Collection doesn't run anything, so the loop is
-# still current while this module is imported.
-importlib.import_module('budge.api.handler')
-MANGUM_LOOP = asyncio.get_event_loop()
-"""The event loop Mangum created when `budge.api.handler` was imported."""
 
 
 def load_event(name: str) -> dict[str, object]:
@@ -56,6 +50,10 @@ class FakeLambdaContext:
 def client() -> Iterator[TestClient]:
     """FastAPI's in-process `TestClient` for a fresh app (spec §12), entered so the app's lifespan runs as on uvicorn.
 
+    The lifespan never runs on Lambda: `budge.api.handler` wraps the app with `lifespan='off'`. Keep per-process setup
+    (signing keys, the JWKS cache) at module scope, as spec §8 caches the JWKS "at Lambda module scope", not in a
+    lifespan hook: a route that relied on one would pass here and under uvicorn but fail once deployed.
+
     It needs the `httpx2` dev dependency: Starlette 1.8's test client is built on `httpx2` and warns (fatal under
     `filterwarnings = error`) if only `httpx` is installed.
     """
@@ -75,24 +73,6 @@ def denied_client() -> Iterator[TestClient]:
         yield test_client
 
 
-@pytest.fixture(scope='session', autouse=True)
-def _close_mangum_loop() -> Iterator[None]:
-    """Close Mangum's import-time event loop when the session ends."""
-    yield
-    MANGUM_LOOP.close()
-
-
-@pytest.fixture
-def current_event_loop() -> asyncio.AbstractEventLoop:
-    """Make Mangum's loop the thread's current loop again, as it stays on Lambda, before a Mangum call.
-
-    Mangum runs each request on `asyncio.get_event_loop()`, which warns (3.12-3.13) or raises (3.14+) when there is no
-    current loop, and the `asyncio.run` doctests unset it when they finish.
-    """
-    asyncio.set_event_loop(MANGUM_LOOP)
-    return MANGUM_LOOP
-
-
 @pytest.fixture
 def lambda_context() -> LambdaContext:
     """A Lambda context object."""
@@ -101,5 +81,10 @@ def lambda_context() -> LambdaContext:
 
 @pytest.fixture
 def apigw_v2_get_health() -> dict[str, object]:
-    """An API Gateway HTTP API (payload format 2.0) event for `GET /api/health` arriving through CloudFront."""
+    """An API Gateway HTTP API (payload format 2.0) event for `GET /api/health` arriving through CloudFront.
+
+    It matches the `/api/*` behavior's `AllViewerExceptHostHeader` origin request policy (spec §4): the viewer's
+    headers (a `curl` smoke test's User-Agent) plus CloudFront's `cloudfront-*` headers, and `sourceIp` is the
+    CloudFront edge, the last `x-forwarded-for` hop. The viewer's own address is only in `cloudfront-viewer-address`.
+    """
     return load_event('apigw-v2-get-health')

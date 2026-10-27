@@ -37,4 +37,7 @@ metadata:
     `cpython-3.13-macos-aarch64-none` symlink, which the reinstall kept. If a `.venv` still fails afterwards, rebuild
     it (`rm -rf .venv && uv sync --locked --all-groups`, with `VIRTUAL_ENV` unset).
 
+- When other agents share the worktree, run the `UV_PYTHON` matrix on an `rsync` copy in the scratchpad: each
+  `UV_PYTHON=<v> uv run` recreates the shared `src/back-end/.venv` under them.
+
 Related: [[coverage-sysmon-contexts]].

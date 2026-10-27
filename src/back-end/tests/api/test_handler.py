@@ -28,6 +28,16 @@ def test_handler_serves_health(apigw_v2_get_health: dict[str, object], lambda_co
     assert json.loads(response['body']) == {'ok': True}
 
 
+def _with_path(event: dict[str, object], path: str) -> dict[str, object]:
+    """Copy a recorded payload 2.0 `event`, re-addressed to `path`."""
+    event = copy.deepcopy(event)
+    event['rawPath'] = path
+    request_context = event['requestContext']
+    assert isinstance(request_context, dict)
+    request_context['http']['path'] = path
+    return event
+
+
 async def _echo(request: Request) -> dict[str, object]:
     return {
         'path': request.url.path,
@@ -42,11 +52,7 @@ def test_handler_translates_path_query_and_cookies(
     """Mangum keeps the `/api` path, the repeated query values, and the `cookies` array (spec §12 "Gap")."""
     app = create_app()
     app.add_api_route('/api/echo', _echo)
-    event = copy.deepcopy(apigw_v2_get_health)
-    event['rawPath'] = '/api/echo'
-    request_context = event['requestContext']
-    assert isinstance(request_context, dict)
-    request_context['http']['path'] = '/api/echo'
+    event = _with_path(apigw_v2_get_health, '/api/echo')
 
     response = Mangum(app, lifespan='off')(event, lambda_context)
 
@@ -55,4 +61,33 @@ def test_handler_translates_path_query_and_cookies(
         'path': '/api/echo',
         'probe': ['deploy', 'smoke'],
         'cookies': {'budge_session': 's3ss10n.t0k3n', 'theme': 'dark'},
+    }
+
+
+async def _echo_client(request: Request) -> dict[str, object]:
+    return {
+        'client_host': request.client.host if request.client else None,
+        'viewer_address': request.headers.get('cloudfront-viewer-address'),
+        'user_agent': request.headers.get('user-agent'),
+    }
+
+
+def test_handler_client_is_the_cloudfront_edge(
+    apigw_v2_get_health: dict[str, object], lambda_context: LambdaContext
+) -> None:
+    """Behind CloudFront, `request.client` is the edge; the viewer's address is only in `cloudfront-viewer-address`.
+
+    Anything that needs the viewer's IP (logging a rejected sign-in, rate limiting) must read that header.
+    """
+    app = create_app()
+    app.add_api_route('/api/echo', _echo_client)
+    event = _with_path(apigw_v2_get_health, '/api/echo')
+
+    response = Mangum(app, lifespan='off')(event, lambda_context)
+
+    assert response['statusCode'] == HTTPStatus.OK
+    assert json.loads(response['body']) == {
+        'client_host': '203.0.113.24',
+        'viewer_address': '198.51.100.7:52814',
+        'user_agent': 'curl/8.7.1',
     }

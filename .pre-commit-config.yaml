@@ -98,43 +98,53 @@ repos:
         files: *infrastructure-inputs
         pass_filenames: false
 
-  # back end (src/back-end): ruff, mypy, pyright and ty from `src/back-end/uv.lock`, so the hook and CI versions can't
-  # drift from pyproject.toml (no mirror `rev`s or `additional_dependencies` to sync by hand).
-  # language: system: needs uv on PATH, and `uv sync --directory src/back-end --locked --all-groups` first.
-  # Hook ids are a CI contract: CI's pre-commit job SKIPs ruff-check, ruff-format, mypy, pyright and ty (#5, #15).
+  # back end (src/back-end): ruff, mypy, pyright and ty run through `uv run --locked`, so their versions come from
+  # `src/back-end/uv.lock` (no mirror `rev`s to sync by hand), and the type checkers see the project's dependencies.
+  # language: python: pre-commit installs the pinned uv into the hook env, so uv needn't be on PATH, and `uv run`
+  # creates or syncs `src/back-end/.venv` itself, so no `uv sync` step is needed first. Keep the `uv==` pin inside
+  # `[tool.uv] required-version`; uv checks that at runtime and fails if the two disagree. `-q` hides uv's warning
+  # that pre-commit's `VIRTUAL_ENV` (the hook env) isn't the project environment, but not its errors.
   - repo: local
     hooks:
       # ruff: `--project` keeps the cwd at the repo root, where pre-commit's filenames are relative to; ruff finds
       # `src/back-end/pyproject.toml` and `tests/ruff.toml` per file. `check --fix` runs before `format`, per ruff
       - id: ruff-check
         name: ruff check (src/back-end)
-        language: system
-        entry: uv run --project src/back-end --locked ruff check --fix --force-exclude
+        language: python
+        additional_dependencies: &uv [uv==0.13.6]
+        entry: uv run -q --project src/back-end --locked ruff check --fix --force-exclude
         types_or: [python, pyi]
         files: ^src/back-end/
+        # one ruff run (it parallelizes itself), not one `uv run` per batch of files
+        require_serial: true
       - id: ruff-format
         name: ruff format (src/back-end)
-        language: system
-        entry: uv run --project src/back-end --locked ruff format --force-exclude
+        language: python
+        additional_dependencies: *uv
+        entry: uv run -q --project src/back-end --locked ruff format --force-exclude
         types_or: [python, pyi]
         files: ^src/back-end/
+        require_serial: true
       # type checkers: `--directory` makes `src/back-end` the cwd so each finds its pyproject.toml config, and each
       # checks the whole project once (`pass_filenames: false`): per-file runs give false positives
       - id: mypy
         name: mypy (src/back-end)
-        language: system
-        entry: uv run --directory src/back-end --locked mypy
+        language: python
+        additional_dependencies: *uv
+        entry: uv run -q --directory src/back-end --locked mypy
         files: &back-end-inputs ^src/back-end/(.*\.pyi?|pyproject\.toml|uv\.lock)$
         pass_filenames: false
       - id: pyright
         name: pyright (src/back-end)
-        language: system
-        entry: uv run --directory src/back-end --locked pyright
+        language: python
+        additional_dependencies: *uv
+        entry: uv run -q --directory src/back-end --locked pyright
         files: *back-end-inputs
         pass_filenames: false
       - id: ty
         name: ty (src/back-end)
-        language: system
-        entry: uv run --directory src/back-end --locked ty check
+        language: python
+        additional_dependencies: *uv
+        entry: uv run -q --directory src/back-end --locked ty check
         files: *back-end-inputs
         pass_filenames: false

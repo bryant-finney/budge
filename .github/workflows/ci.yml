@@ -1,21 +1,12 @@
-# Pull-request CI: pre-commit, the TypeScript suites (front-end, infrastructure), and the back-end
-# Python matrix. `ci-ok` aggregates every job and is the single required status check on `main`,
-# so the matrix can change without a ruleset change.
-#
+# Pull-request CI: shared pre-commit checks and all test suites. `ci-ok` is the aggregate gate.
 # ref: https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax
-#
-# pattern: every `uses:` is pinned to a full commit SHA with its version in a comment (Dependabot
-# keeps the pins current); top-level `permissions: {}` and each job grants only what it reads.
 name: ci
 
 on:
-  # no `branches:` filter, or stacked PRs (based on another PR's branch) never report `ci-ok`;
-  # `edited` re-runs the checks when a PR is retargeted
   pull_request:
     types: [opened, synchronize, reopened, edited]
   push:
     branches: [main]
-  # the deploy workflow (milestone 5) runs these checks before it deploys
   workflow_call:
 
 concurrency:
@@ -25,171 +16,104 @@ concurrency:
 permissions: {}
 
 jobs:
-  # Which suites exist. A job-level `if:` can't call hashFiles(), so this checks in a step. Remove
-  # this guard once the back-end and front-end scaffolds are both on `main`, so a moved manifest
-  # can't silently skip a suite.
-  detect:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    outputs:
-      ts: ${{ steps.manifests.outputs.ts }}
-      py: ${{ steps.manifests.outputs.py }}
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
-        with:
-          persist-credentials: false
-      - id: manifests
-        name: Detect the TypeScript and Python manifests
-        run: |
-          if [[ -f pnpm-lock.yaml ]]; then ts=true; else ts=false; fi
-          if [[ -f src/back-end/pyproject.toml ]]; then py=true; else py=false; fi
-          echo "ts=$ts" >>"$GITHUB_OUTPUT"
-          echo "py=$py" >>"$GITHUB_OUTPUT"
-
   pre-commit:
     runs-on: ubuntu-latest
     permissions:
       contents: read
     env:
-      # the interpreter `uvx` runs pre-commit (and its Python hook envs) on
       UV_PYTHON: "3.14"
-      # run by the `ts`, `py-test` and `py-lint` jobs instead, so each check runs exactly once;
-      # pre-commit strips the spaces this folded scalar puts after each comma
-      SKIP: >-
-        ruff-check, ruff-format, mypy, pyright,
-        front-end-eslint, front-end-svelte-check,
-        infrastructure-eslint, infrastructure-tsc
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           persist-credentials: false
-      # the prettier hook is `language: system` and runs the workspace's pinned Prettier
       - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413  # v6.1.0
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1  # v7.1.0
         with:
           node-version-file: .node-version
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      # uv only provides `uvx`: every uv-backed hook is in SKIP, so there's no `uv sync`. If a hook
-      # that runs through `uv` stops being skipped, add
-      # `uv sync --directory src/back-end --locked --all-groups` here.
       - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e  # v10.3.2
         with:
           version-file: src/back-end/pyproject.toml
-          enable-cache: false
+          enable-cache: true
+          cache-dependency-glob: src/back-end/uv.lock
       - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
         with:
           path: ~/.cache/pre-commit
           key: pre-commit-${{ runner.os }}-py${{ env.UV_PYTHON }}-${{ hashFiles('.pre-commit-config.yaml') }}
       - run: uvx pre-commit run --all-files --show-diff-on-failure
 
-  ts:
-    needs: detect
-    if: needs.detect.outputs.ts == 'true'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
-        with:
-          persist-credentials: false
-      # reads `packageManager` from the root package.json
-      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413  # v6.1.0
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1  # v7.1.0
-        with:
-          node-version-file: .node-version
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      # each root script is `pnpm -r --if-present run <name>` (the script contract from #12);
-      # the infrastructure tests use in-process Pulumi mocks, so no Pulumi CLI is installed
-      - run: pnpm run check
-      - run: pnpm run lint
-      - run: pnpm run test
-      - run: pnpm -r --if-present run build
-
-  py-test:
-    needs: detect
-    if: needs.detect.outputs.py == 'true'
+  test:
     runs-on: ubuntu-latest
     permissions:
       contents: read
     strategy:
       fail-fast: false
       matrix:
-        # every CPython that isn't end-of-life; `requires-python` in src/back-end/pyproject.toml
-        # is authoritative, and a version leaves this list in the PR that raises it
-        python: ["3.11", "3.12", "3.13", "3.14", "3.15"]
+        include:
+          - suite: typescript
+          - suite: python
+            python: "3.11"
+          - suite: python
+            python: "3.12"
+          - suite: python
+            python: "3.13"
+          - suite: python
+            python: "3.14"
+          - suite: python
+            python: "3.15"
     env:
       UV_PYTHON: ${{ matrix.python }}
     steps:
-      # uv-dynamic-versioning reads the version from tags and history; a shallow clone gets it wrong
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           fetch-depth: 0
           fetch-tags: true
           persist-credentials: false
-      # `version-file` honors `[tool.uv] required-version`
-      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e  # v10.3.2
+      - if: matrix.suite == 'typescript'
+        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413  # v6.1.0
+      - if: matrix.suite == 'typescript'
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1  # v7.1.0
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+      - if: matrix.suite == 'typescript'
+        run: pnpm install --frozen-lockfile
+      - if: matrix.suite == 'typescript'
+        run: pnpm run test
+      - if: matrix.suite == 'typescript'
+        run: pnpm -r --if-present run build
+      - if: matrix.suite == 'python'
+        uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e  # v10.3.2
         with:
           version-file: src/back-end/pyproject.toml
           enable-cache: true
           cache-dependency-glob: src/back-end/uv.lock
           cache-suffix: py${{ matrix.python }}
-      # `--directory`, not `--project`: pytest finds its config and rootdir from the working dir
-      - run: uv sync --directory src/back-end --locked --all-groups
-      # `addopts` already apply `-m "not integration"` and coverage's `fail_under`
-      - run: >-
+      - if: matrix.suite == 'python'
+        run: uv sync --directory src/back-end --locked --all-groups
+      - if: matrix.suite == 'python'
+        run: >-
           uv run --directory src/back-end --locked
           pytest --junitxml=reports/junit.xml --cov-report=xml:reports/coverage.xml
-      - if: ${{ !cancelled() }}
+      - if: ${{ matrix.suite == 'python' && !cancelled() }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         with:
           name: py-test-reports-${{ matrix.python }}
           path: src/back-end/reports/
           if-no-files-found: warn
 
-  py-lint:
-    needs: detect
-    if: needs.detect.outputs.py == 'true'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    env:
-      # the Lambda runtime; mypy and pyright pin their target version in config
-      UV_PYTHON: "3.14"
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
-        with:
-          fetch-depth: 0
-          fetch-tags: true
-          persist-credentials: false
-      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e  # v10.3.2
-        with:
-          version-file: src/back-end/pyproject.toml
-          enable-cache: true
-          cache-dependency-glob: src/back-end/uv.lock
-          cache-suffix: py3.14
-      - run: uv sync --directory src/back-end --locked --all-groups
-      - run: uv run --directory src/back-end --locked ruff check --output-format=github .
-      - run: uv run --directory src/back-end --locked ruff format --check .
-      - run: uv run --directory src/back-end --locked mypy
-      - run: uv run --directory src/back-end --locked pyright
-
-  # The single required status check. Red if any job failed or was cancelled; green when the rest
-  # succeeded or were skipped. `detect` is listed too: if it fails, the suites are skipped, and
-  # skipped alone would read as green.
   ci-ok:
-    needs: [detect, pre-commit, ts, py-test, py-lint]
+    needs: [pre-commit, test]
     if: always()
     runs-on: ubuntu-latest
     permissions: {}
     steps:
-      - name: Fail if a required job failed or was cancelled
-        if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')
+      - name: Require all checks and tests to pass
+        if: needs.pre-commit.result != 'success' || needs.test.result != 'success'
         env:
           RESULTS: ${{ toJSON(needs) }}
         run: |
           echo "$RESULTS"
           exit 1
-      - run: echo "every required job succeeded or was skipped"
+      - run: echo "every required job succeeded"

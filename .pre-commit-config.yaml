@@ -70,7 +70,6 @@ repos:
 
   # infra (src/infrastructure) plus the shared Prettier hook for both TS packages.
   # language: system: needs Node 24 + pnpm on PATH and `pnpm install --frozen-lockfile` first.
-  # Hook ids are a CI contract: CI's pre-commit job SKIPs infrastructure-eslint/-tsc (#15).
   - repo: local
     hooks:
       - id: prettier

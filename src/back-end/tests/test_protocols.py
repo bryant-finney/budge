@@ -140,6 +140,11 @@ def test_secret_store_round_trip(secrets: SecretStore) -> None:
     assert secrets.get_access_token('item-1') is None
 
 
+def test_secret_store_holds_the_session_signing_key() -> None:
+    """The fake returns its configured session-signing key (spec §8)."""
+    assert FakeSecretStore(session_signing_key='k' * 32).get_session_signing_key() == 'k' * 32
+
+
 def test_ingestion_trigger_records_requests() -> None:
     """The fake records one entry per request: one connection's id, or `None` for all connections."""
     trigger = FakeIngestionTrigger()
@@ -166,6 +171,7 @@ def _stub_calls() -> list[Callable[[], object]]:
         lambda: secrets.get_access_token('item-1'),
         lambda: secrets.put_access_token('item-1', 'access-sandbox-0000'),
         lambda: secrets.delete_access_token('item-1'),
+        secrets.get_session_signing_key,
         trigger.trigger,
     ]
 

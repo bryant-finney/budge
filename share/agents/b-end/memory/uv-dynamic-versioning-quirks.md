@@ -1,6 +1,6 @@
 ---
 name: uv-dynamic-versioning-quirks
-description: uv-dynamic-versioning needs hatchling (not uv_build); fallback-version is for missing .git, not missing tags; cache-keys; full CI checkout; `__version__` via a gitignored hatch-generated `_version.py`
+description: uv-dynamic-versioning needs hatchling (not uv_build); fallback-version is for missing .git, not missing tags; cache-keys; full CI checkout; `__version__` via a gitignored hatch-generated `_version.py`; sdist `only-include`
 metadata:
   type: reference
 ---
@@ -34,3 +34,12 @@ Decided for issue #1 (2026-10-17): budge gets its version from git tags via `uv-
   every synced environment. `_version.py` is in coverage `omit`.
 - Test the fallback with `monkeypatch.setitem(sys.modules, 'budge._version', None)` plus `importlib.reload(budge)`,
   then `undo()` and reload again.
+
+## sdist contents (decided 2026-10-27, PR #26 review)
+
+- Hatchling's wheel follows `packages = ["budge"]`, but its sdist defaults to every file git doesn't ignore, so the
+  rootdir `conftest.py`, `tests/`, `.envrc` and `uv.lock` shipped in it. `[tool.hatch.build.targets.sdist] only-include = ["budge"]` fixes that. Hatchling still adds `pyproject.toml`, `PKG-INFO`, the root `.gitignore`, and
+  the version hook's `budge/_version.py` artifact. `uv build` builds the wheel from the sdist, so both stay complete.
+- `tests/test_package.py` builds a copy of the back end with `uv build --offline` (about 1 s) and asserts the top-level
+  entries of both artifacts. Check a build-config change there or with `uv build --out-dir <scratch>` plus
+  `tar tzf`/`unzip -Z1`.

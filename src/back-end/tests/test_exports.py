@@ -3,7 +3,8 @@
 Type checkers only need re-exports listed, but documentation generators (pdoc, Sphinx autodoc, mkdocstrings) document
 only what `__all__` names, so a definition left out is missing from the API docs. Modules are read with `ast`, not
 imported, so the check sees each binding as written, including both branches of a `try`/`except` fallback. Imported
-names are optional: a module lists the ones it re-exports.
+names are optional: a module lists the ones it re-exports. A module-level logger bound with `getLogger(...)` is exempt:
+it is module infrastructure that callers reach by name through `logging`, never by import, so it is not API to document.
 """
 
 import ast
@@ -69,10 +70,35 @@ def assignment_targets(node: ast.stmt) -> list[ast.expr]:
     return []
 
 
+def assigned_value(node: ast.stmt) -> ast.expr | None:
+    """Return the value an assignment binds; `None` for an annotation-only declaration or any other statement."""
+    return node.value if isinstance(node, ast.Assign | ast.AnnAssign) else None
+
+
+def is_logger_binding(node: ast.stmt) -> bool:
+    """Whether the statement binds a logger: its value is a `getLogger(...)` call, e.g. `logging.getLogger(__name__)`.
+
+    The rule matches the callee's name, so `from logging import getLogger` works too, and never the bound name, so a
+    constant called `logger` is still listed.
+    """
+    value = assigned_value(node)
+    if not isinstance(value, ast.Call):
+        return False
+    func = value.func
+    return (isinstance(func, ast.Attribute) and func.attr == 'getLogger') or (
+        isinstance(func, ast.Name) and func.id == 'getLogger'
+    )
+
+
 def defined_names(node: ast.stmt) -> Iterator[str]:
-    """Yield the names a statement defines: a class, a function, or assignment targets. Imports define none here."""
+    """Yield the names a statement defines: a class, a function, or assignment targets other than a logger.
+
+    Imports define none here.
+    """
     if isinstance(node, ast.ClassDef | ast.FunctionDef | ast.AsyncFunctionDef):
         yield node.name
+    if is_logger_binding(node):
+        return
     for target in assignment_targets(node):
         yield from target_names(target)
 
@@ -133,10 +159,11 @@ def test_all_lists_every_public_definition(path: Path) -> None:
 
 
 def test_public_definitions_finds_every_binding_form() -> None:
-    """The walker finds each binding form, inside `if` and `try` blocks too, and skips private and nested names."""
+    """The walker finds each binding form, in `if` and `try` blocks too, and skips private, nested and logger names."""
     tree = ast.parse(
         textwrap.dedent(
             """
+            import logging
             import os
             from typing import Final
             class Model: field = 1
@@ -145,6 +172,7 @@ def test_public_definitions_finds_every_binding_form() -> None:
             CONSTANT: Final = 1
             FIRST, (SECOND, *REST) = 1, (2, 3)
             OBJ.attribute = _private = __dunder__ = 1
+            logger = logging.getLogger(__name__)
             def __getattr__(name): ...
             if os.name:
                 BRANCH = 1
@@ -184,6 +212,25 @@ def test_public_definitions_finds_every_binding_form() -> None:
 def test_public_definitions_finds_type_aliases() -> None:
     """A PEP 695 `type` alias is a definition, listed like any other."""
     assert public_definitions(ast.parse('type Alias = int\ntype _Private = str')) == {'Alias'}
+
+
+@pytest.mark.parametrize(
+    ('source', 'expected'),
+    [
+        ('logger = logging.getLogger(__name__)', set[str]()),
+        ("log: logging.Logger = logging.getLogger('budge')", set[str]()),
+        ('logger = getLogger(__name__)', set[str]()),
+        ('if DEBUG:\n    logger = logging.getLogger(__name__)', set[str]()),
+        ('logger = make_logger(__name__)', {'logger'}),
+        ('logger = logging.Logger(__name__)', {'logger'}),
+        ('LEVEL = logging.INFO', {'LEVEL'}),
+        ('logger: logging.Logger', {'logger'}),
+        ('LOGGERS = [logging.getLogger(__name__)]', {'LOGGERS'}),
+    ],
+)
+def test_public_definitions_exempts_only_logger_bindings(source: str, expected: set[str]) -> None:
+    """A `getLogger(...)` call is what exempts a binding, not the name it is bound to; other names are still listed."""
+    assert public_definitions(ast.parse(source)) == expected
 
 
 @pytest.mark.parametrize(

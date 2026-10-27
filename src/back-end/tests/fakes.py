@@ -1,18 +1,32 @@
 """In-memory fakes of the boundary protocols, shared by the test suite (spec §12 Testing: "a fake repository").
 
-Each fake is deliberately small and dict-backed. Like the `budge.aws` adapters, each one subclasses its protocol and marks
-every protocol method with `@override`, so the type checkers report signature drift here, at the fake.
+Each fake is deliberately small and dict-backed. Like the `budge.aws` adapters, each one subclasses its protocol and
+marks every protocol method with `@override`, so the type checkers report signature drift here, at the fake.
 """
 
 import contextlib
 import datetime as dt
 from collections.abc import Generator, Sequence
+from http import HTTPStatus
+from typing import NoReturn
 
+from fastapi import HTTPException
 from typing_extensions import override
 
 from budge.ingestion import IngestionTrigger
 from budge.models import BankConnection, PlaidEnv, Transaction
 from budge.storage import LeaseHeld, Repository, SecretStore
+
+SESSION_DENIED = 'session-denied-by-test'
+"""The `detail` of the `401` that `deny_session` raises, which no real route can answer with."""
+
+
+def deny_session() -> NoReturn:
+    """Stand in for a failed session check, as the auth PR's `require_session` will fail one (spec §8).
+
+    The `401`'s `detail` is `SESSION_DENIED`, so a test can tell this refusal from any other `401`.
+    """
+    raise HTTPException(status_code=HTTPStatus.UNAUTHORIZED, detail=SESSION_DENIED)
 
 
 class FakeRepository(Repository):

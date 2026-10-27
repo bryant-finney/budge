@@ -21,3 +21,18 @@ and mypy were missing because of this.
 **How to apply:** any multi-branch verification. Note that feat/1 has pytest only; ruff, mypy, and
 ty arrive with feat/2 (#20), whose tip dropped pyright; pyright returns with feat/3 (#23). Also check
 `git ls-remote` before trusting a caller's claim that a branch is "pushed" (feat/4 was not).
+
+## Propagating a fix up a worktree-per-PR stack (2026-10-18)
+
+- Each branch is checked out in its own worktree (`.claude/worktrees/pr-<n>`), so `git rebase --update-refs` from the
+  tip refuses to move the lower branches. Instead, rebase each worktree onto the *local* branch below it, bottom-up
+  (`git rebase feat/2/...` in `pr-23`, then `git rebase feat/3/...` in `pr-26`). Push the bottom PR plainly if it
+  only gained commits, and push the rest with `--force-with-lease=<branch>:<old sha>`.
+- Every branch adds index lines to `memory/MEMORY.md`, so a restack often conflicts there. Keep the union of the
+  lines, without duplicates.
+- The `prepare-commit-msg` hook prints `symbolic-ref ... exit status 128` during a rebase (detached HEAD). That's
+  harmless: replayed subjects are not re-prefixed. Check them with `git log --format='%h %G? %s'`.
+- **A worktree that was moved or renamed (e.g. `agent-<hash>` to `pr-26`) keeps a `.venv` whose script shebangs point
+  at the old path**, so `uv run mypy` fails with "Failed to spawn". The shell may also export a stale `VIRTUAL_ENV`
+  for the old path. Fix it with `rm -rf .venv && unset VIRTUAL_ENV && uv sync --locked --all-groups` in
+  `src/back-end`, which is gitignored and safe.

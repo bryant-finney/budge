@@ -38,5 +38,9 @@ reported far from the adapter. Subclassing moves the error to the class definiti
   `__all__` (see [[pyright-gotchas]]). `tests/test_exports.py` does: it parses each `budge/**/*.py` except
   `_version.py` with `ast`. It fails when a module lacks a literal `__all__`, or when a public definition is missing
   from it. That includes bindings inside module-level `if`/`try` blocks, and dunders such as `__version__`.
+- One exemption (user, 2026-10-25, PR #26): a module-level `logger = logging.getLogger(__name__)` stays named `logger`
+  and stays out of `__all__`. It is infrastructure reached by name through `logging`, not API to document.
+  `tests/test_exports.py` skips any assignment whose value is a `getLogger(...)` call. The match is on the callee, not
+  the bound name. Don't rename loggers `_logger` or list them to satisfy the test.
 
 Related: [[pyright-gotchas]], [[ruff-nested-config-first-party]].

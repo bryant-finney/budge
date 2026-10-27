@@ -1,0 +1,51 @@
+{
+  "version": "2.0",
+  "routeKey": "ANY /{proxy+}",
+  "rawPath": "/api/health",
+  "rawQueryString": "probe=deploy&probe=smoke&source=cloudfront",
+  "cookies": [
+    "budge_session=s3ss10n.t0k3n",
+    "theme=dark"
+  ],
+  "headers": {
+    "accept": "application/json",
+    "cloudfront-forwarded-proto": "https",
+    "cloudfront-viewer-address": "198.51.100.7:52814",
+    "cloudfront-viewer-country": "US",
+    "content-length": "0",
+    "host": "abcdef1234.execute-api.us-east-1.amazonaws.com",
+    "user-agent": "curl/8.7.1",
+    "via": "2.0 0123456789abcdef0123456789abcdef.cloudfront.net (CloudFront)",
+    "x-amz-cf-id": "Fv8rjwYDE6tBxJ2cZ6OE1n5wQ5yXZ9sY1lmnEXAMPLE==",
+    "x-amzn-trace-id": "Root=1-6710f1c2-0123456789abcdef01234567",
+    "x-forwarded-for": "198.51.100.7, 203.0.113.24",
+    "x-forwarded-port": "443",
+    "x-forwarded-proto": "https"
+  },
+  "queryStringParameters": {
+    "probe": "deploy,smoke",
+    "source": "cloudfront"
+  },
+  "requestContext": {
+    "accountId": "123456789012",
+    "apiId": "abcdef1234",
+    "domainName": "abcdef1234.execute-api.us-east-1.amazonaws.com",
+    "domainPrefix": "abcdef1234",
+    "http": {
+      "method": "GET",
+      "path": "/api/health",
+      "protocol": "HTTP/1.1",
+      "sourceIp": "203.0.113.24",
+      "userAgent": "curl/8.7.1"
+    },
+    "requestId": "fJ3uVg2yIAMEPdQ=",
+    "routeKey": "ANY /{proxy+}",
+    "stage": "$default",
+    "time": "17/Oct/2026:16:00:00 +0000",
+    "timeEpoch": 1792252800000
+  },
+  "pathParameters": {
+    "proxy": "api/health"
+  },
+  "isBase64Encoded": false
+}

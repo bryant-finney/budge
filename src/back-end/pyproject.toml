@@ -15,8 +15,10 @@ dependencies = [
 
 [dependency-groups]
 dev = [
-  "httpx~=0.28.1",
+  "httpx2~=2.13",
   "mypy~=2.4",
+  "pylint-per-file-ignores~=4.0",
+  "pylint~=4.1",
   "pyright~=1.1.414",
   "pytest-clarity~=1.0",
   "pytest-cov~=7.1",
@@ -24,6 +26,7 @@ dev = [
   "pytest~=9.1",
   "ruff~=0.17.1",
   "ty~=0.0.89",
+  "uvicorn[standard]~=0.54.0",
 ]
 
 [build-system]
@@ -61,7 +64,7 @@ enable_error_code = [
   "truthy-bool",
   "unused-awaitable",
 ]
-files = ["budge", "tests"]
+files = ["budge", "conftest.py", "tests"]
 # Lambda runs on Linux; keep local and CI platform branches identical.
 platform = "linux"
 plugins = ["pydantic.mypy"]
@@ -76,11 +79,265 @@ init_forbid_extra = true
 init_typed = true
 warn_required_dynamic_aliases = true
 
+# pylint isn't a gate, but wherever it runs (e.g. an editor) it defers to ruff: ruff owns every check it has a rule for
+# (mapping from astral-sh/ruff#970 and ruff's `PL*` codes). That rule is selected and configured in `[tool.ruff.lint]`,
+# and the pylint message is disabled below with the ruff code beside it; pylint keeps only checks ruff can't run.
+# Re-derive the list when ruff, pylint or `select` changes. Naming included: pep8-naming (`N`) and PYI042/PYI043 replace
+# `invalid-name`, so pylint's UPPER_CASE-constant and TypeVar-name styles go unchecked
+[tool.pylint.main]
+# pylint has no per-directory or per-file message control of its own; this plugin adds `per-file-ignores`
+load-plugins = ["pylint_per_file_ignores"]
+py-version = "3.11"                        # ruff `target-version`
+
+[tool.pylint."messages control"]
+disable = [
+  # ruff format: the matching lint rules (E111, Q000) conflict with the formatter, which enforces the same thing
+  "bad-indentation",     # E111 (`ruff format`)
+  "inconsistent-quotes", # Q000 (`ruff format`, `quote-style`)
+  # pycodestyle
+  "multiple-imports",              # E401
+  "line-too-long",                 # E501 (`line-length`)
+  "wrong-import-position",         # E402
+  "multiple-statements",           # E701, E702
+  "unnecessary-semicolon",         # E703
+  "singleton-comparison",          # E711, E712
+  "unidiomatic-typecheck",         # E721
+  "bare-except",                   # E722
+  "unnecessary-lambda-assignment", # E731
+  "trailing-whitespace",           # W291
+  "missing-final-newline",         # W292
+  "trailing-newlines",             # W391
+  "anomalous-backslash-in-string", # W605
+  # Pyflakes
+  "unused-import",                       # F401
+  "wildcard-import",                     # F403
+  "misplaced-future",                    # F404
+  "truncated-format-string",             # F501
+  "format-needs-mapping",                # F502
+  "unused-format-string-key",            # F504
+  "mixed-format-string",                 # F506
+  "unused-format-string-argument",       # F507
+  "bad-format-string",                   # F521
+  "too-many-format-args",                # F522
+  "missing-format-string-key",           # F524
+  "too-few-format-args",                 # F524
+  "missing-format-argument-key",         # F524
+  "format-combined-specification",       # F525
+  "f-string-without-interpolation",      # F541
+  "format-string-without-interpolation", # F541
+  "duplicate-key",                       # F601
+  "too-many-star-expressions",           # F622
+  "assert-on-tuple",                     # F631
+  "literal-comparison",                  # F632
+  "not-in-loop",                         # F701, F702
+  "yield-outside-function",              # F704
+  "return-outside-function",             # F706
+  "function-redefined",                  # F811
+  "reimported",                          # F811
+  "used-before-assignment",              # F821
+  "undefined-variable",                  # F821
+  "undefined-all-variable",              # F822
+  "unused-variable",                     # F841
+  "notimplemented-raised",               # F901
+  # pep8-naming
+  "invalid-name",             # N801, N802, N803, N806, N815, N816; PYI042, PYI043 (type aliases)
+  "bad-classmethod-argument", # N804
+  "no-self-argument",         # N805
+  "non-ascii-file-name",      # N999
+  # pydocstyle
+  "missing-module-docstring",   # D100, D104
+  "missing-class-docstring",    # D101, D106
+  "missing-function-docstring", # D102, D103
+  "empty-docstring",            # D419
+  # isort
+  "wrong-import-order", # I001
+  "ungrouped-imports",  # I001
+  # flake8-bugbear
+  "nonexistent-operator",       # B002
+  "dangerous-default-value",    # B006
+  "lost-exception",             # B012
+  "duplicate-except",           # B014
+  "pointless-statement",        # B018
+  "expression-not-assigned",    # B018
+  "method-cache-max-size-none", # B019
+  "cell-var-from-loop",         # B023
+  "keyword-arg-before-vararg",  # B026
+  "duplicate-value",            # B033
+  "raise-missing-from",         # B904
+  # flake8-bandit
+  "exec-used", # S102
+  "eval-used", # S307
+  # flake8-builtins
+  "redefined-builtin", # A001, A002, A004, A006
+  # flake8-unused-arguments
+  "unused-argument", # ARG001-ARG005
+  # flake8-blind-except
+  "broad-exception-caught", # BLE001
+  # flake8-comprehensions
+  "consider-using-set-comprehension",  # C401
+  "consider-using-dict-comprehension", # C402
+  "use-list-literal",                  # C405
+  "use-dict-literal",                  # C406
+  "unnecessary-comprehension",         # C416
+  "consider-using-generator",          # C417
+  "use-a-generator",                   # C419
+  # flake8-commas
+  "trailing-comma-tuple", # COM818
+  # flake8-fixme
+  "fixme", # FIX001-FIX004
+  # flake8-implicit-str-concat
+  "implicit-str-concat", # ISC001
+  # flake8-pie
+  "unnecessary-pass",     # PIE790
+  "unnecessary-ellipsis", # PIE790
+  # flake8-simplify
+  "consider-merging-isinstance",   # SIM101
+  "simplifiable-if-statement",     # SIM108
+  "consider-using-with",           # SIM115
+  "consider-iterating-dictionary", # SIM118
+  "simplifiable-if-expression",    # SIM210, SIM211
+  "consider-using-get",            # SIM401
+  # flake8-self
+  "protected-access", # SLF001
+  # flake8-debugger
+  "forgotten-debug-statement", # T100
+  # tryceratops
+  "broad-exception-raised", # TRY002
+  "try-except-raise",       # TRY203
+  # flake8-logging-format
+  "logging-format-interpolation",  # G001
+  "logging-not-lazy",              # G002
+  "logging-fstring-interpolation", # G004
+  # flake8-return
+  "inconsistent-return-statements", # RET501, RET502, RET503
+  "no-else-return",                 # RET505
+  "no-else-raise",                  # RET506
+  "no-else-continue",               # RET507
+  "no-else-break",                  # RET508
+  # flake8-tidy-imports
+  "relative-beyond-top-level", # TID252
+  # pyupgrade
+  "useless-object-inheritance", # UP004
+  "super-with-arguments",       # UP008
+  "redundant-u-string-prefix",  # UP025
+  "use-yield-from",             # UP028
+  # Pylint
+  "typevar-name-incorrect-variance",     # PLC0105
+  "typevar-double-variance",             # PLC0131
+  "typevar-name-mismatch",               # PLC0132
+  "single-string-used-for-slots",        # PLC0205
+  "consider-using-dict-items",           # PLC0206
+  "use-maxsplit-arg",                    # PLC0207
+  "use-sequence-for-iteration",          # PLC0208
+  "useless-import-alias",                # PLC0414
+  "import-outside-toplevel",             # PLC0415
+  "use-implicit-booleaness-not-len",     # PLC1802
+  "non-ascii-name",                      # PLC2401
+  "non-ascii-module-import",             # PLC2403
+  "unnecessary-dunder-call",             # PLC2801 (preview)
+  "unnecessary-direct-lambda-call",      # PLC3002
+  "init-is-generator",                   # PLE0100
+  "return-in-init",                      # PLE0101
+  "nonlocal-and-global",                 # PLE0115
+  "nonlocal-without-binding",            # PLE0117
+  "used-prior-global-declaration",       # PLE0118
+  "assigning-non-slot",                  # PLE0237
+  "duplicate-bases",                     # PLE0241
+  "unexpected-special-method-signature", # PLE0302
+  "invalid-length-returned",             # PLE0303
+  "invalid-bool-returned",               # PLE0304
+  "invalid-index-returned",              # PLE0305
+  "invalid-str-returned",                # PLE0307
+  "invalid-bytes-returned",              # PLE0308
+  "invalid-hash-returned",               # PLE0309
+  "invalid-all-object",                  # PLE0604
+  "invalid-all-format",                  # PLE0605
+  "potential-index-error",               # PLE0643
+  "misplaced-bare-raise",                # PLE0704
+  "repeated-keyword",                    # PLE1132
+  "dict-iter-missing-items",             # PLE1141 (preview)
+  "await-outside-async",                 # PLE1142
+  "logging-too-many-args",               # PLE1205
+  "logging-too-few-args",                # PLE1206
+  "bad-format-character",                # PLE1300
+  "bad-string-format-type",              # PLE1307
+  "bad-str-strip-call",                  # PLE1310
+  "invalid-envvar-value",                # PLE1507
+  "singledispatch-method",               # PLE1519
+  "singledispatchmethod-function",       # PLE1520
+  "yield-inside-async-function",         # PLE1700
+  "bidirectional-unicode",               # PLE2502
+  "invalid-character-backspace",         # PLE2510
+  "invalid-character-sub",               # PLE2512
+  "invalid-character-esc",               # PLE2513
+  "invalid-character-nul",               # PLE2514
+  "invalid-character-zero-width-space",  # PLE2515
+  "modified-iterating-set",              # PLE4703 (preview)
+  "comparison-with-itself",              # PLR0124
+  "comparison-of-constants",             # PLR0133
+  "no-classmethod-decorator",            # PLR0202 (preview)
+  "no-staticmethod-decorator",           # PLR0203 (preview)
+  "property-with-parameters",            # PLR0206
+  "consider-using-from-import",          # PLR0402
+  "too-many-public-methods",             # PLR0904 (preview)
+  "too-many-return-statements",          # PLR0911
+  "too-many-branches",                   # PLR0912
+  "too-many-arguments",                  # PLR0913
+  "too-many-locals",                     # PLR0914 (preview)
+  "too-many-statements",                 # PLR0915
+  "too-many-boolean-expressions",        # PLR0916 (preview)
+  "too-many-positional-arguments",       # PLR0917
+  "too-many-nested-blocks",              # PLR1702 (preview)
+  "redefined-argument-from-local",       # PLR1704
+  "stop-iteration-return",               # PLR1708
+  "useless-return",                      # PLR1711
+  "consider-swap-variables",             # PLR1712 (preview)
+  "consider-using-in",                   # PLR1714
+  "chained-comparison",                  # PLR1716
+  "consider-using-sys-exit",             # PLR1722
+  "consider-using-min-builtin",          # PLR1730
+  "consider-using-max-builtin",          # PLR1730
+  "unnecessary-dict-index-lookup",       # PLR1733
+  "unnecessary-list-index-lookup",       # PLR1736
+  "unnecessary-lambda",                  # PLW0108
+  "useless-else-on-loop",                # PLW0120
+  "self-assigning-variable",             # PLW0127
+  "redeclared-assigned-name",            # PLW0128
+  "assert-on-string-literal",            # PLW0129
+  "named-expr-without-context",          # PLW0131
+  "pointless-exception-statement",       # PLW0133
+  "nan-comparison",                      # PLW0177
+  "bad-staticmethod-argument",           # PLW0211
+  "redefined-slots-in-subclass",         # PLW0244 (preview)
+  "super-without-brackets",              # PLW0245
+  "import-self",                         # PLW0406
+  "global-variable-not-assigned",        # PLW0602
+  "global-statement",                    # PLW0603
+  "global-at-module-level",              # PLW0604
+  "self-cls-assignment",                 # PLW0642
+  "binary-op-exception",                 # PLW0711
+  "bad-open-mode",                       # PLW1501
+  "shallow-copy-environ",                # PLW1507
+  "invalid-envvar-default",              # PLW1508
+  "subprocess-popen-preexec-fn",         # PLW1509
+  "subprocess-run-check",                # PLW1510
+  "unspecified-encoding",                # PLW1514 (preview)
+  "useless-with-lock",                   # PLW2101
+  "nested-min-max",                      # PLW3301
+]
+# `pylint_per_file_ignores` globs, resolved against pylint's cwd: `src/back-end`, or the repo root with
+# `--rcfile src/back-end/pyproject.toml`. pytest injects fixtures by parameter name, so a test that takes a module-level
+# fixture always shadows it; no ruff rule covers W0621, and it stays on for `budge/`
+per-file-ignores = [
+  "tests/**/*.py:redefined-outer-name",
+  "src/back-end/tests/**/*.py:redefined-outer-name",
+]
+
 [tool.pyright]
 # pyright otherwise honours mypy's `# type: ignore[code]` as a blanket ignore of every pyright rule on that line;
 # suppress pyright findings with `# pyright: ignore[rule]` instead
 enableTypeIgnoreComments = false
-include = ["budge", "tests"]
+include = ["budge", "conftest.py", "tests"]
 # Lambda runs on Linux; keep local and CI platform branches identical (as mypy's `platform` and ty's `python-platform`)
 pythonPlatform = "Linux"
 pythonVersion = "3.11"
@@ -108,7 +365,7 @@ invalid-ignore-comment = "error"
 unused-ignore-comment = "error"
 
 [tool.ty.src]
-include = ["budge", "tests"]
+include = ["budge", "conftest.py", "tests"]
 
 [tool.pytest.ini_options]
 addopts = [
@@ -121,7 +378,12 @@ addopts = [
   "-m",
   "not integration",
 ]
-filterwarnings = ["error"]
+filterwarnings = [
+  "error",
+  # mangum 0.22's constructor probes `asyncio.get_event_loop()` and creates a loop if there is none; on Python
+  # 3.12-3.13 that probe warns when no loop is set yet (as when `budge.api.handler` is imported in a fresh process)
+  "ignore:There is no current event loop:DeprecationWarning:mangum.adapter",
+]
 markers = [
   "integration: needs real Plaid Sandbox or a container; excluded by default",
 ]
@@ -137,6 +399,12 @@ template = '''"""The `budge` version, written at build time by hatchling's `vers
 
 __version__: str = '{version}'
 '''
+
+# hatchling's sdist otherwise ships every file git doesn't ignore: the rootdir `conftest.py`, `tests/`, `.envrc` and
+# `uv.lock` are development files, not the package. `tests/` can't run without the rootdir conftest anyway. The version
+# hook's `budge/_version.py` still ships (its `artifacts` entry), and hatchling always adds `pyproject.toml`/`PKG-INFO`
+[tool.hatch.build.targets.sdist]
+only-include = ["budge"]
 
 [tool.hatch.build.targets.wheel]
 # flat layout: the package lives at `src/back-end/budge/`, not under a nested `src/`
@@ -154,12 +422,16 @@ docstring-code-format = true
 quote-style = "single"
 
 [tool.ruff.lint]
+# preview rules run only where `select` names them by code (the preview cluster below); the formatter stays stable
+explicit-preview-rules = true
+preview = true
 select = [
   "B",
   "C90",
   "D",
   "E1",
   "E4",
+  "E501",
   "E7",
   "E9",
   "ERA",
@@ -179,6 +451,52 @@ select = [
   "TID",
   "UP",
   "W",
+  # ruff owns every check it shares with pylint (see `[tool.pylint]`): the counterparts outside the families above
+  "A001",
+  "A002",
+  "A004",
+  "A006",
+  "ARG",
+  "BLE001",
+  "C401",
+  "C402",
+  "C405",
+  "C406",
+  "C416",
+  "C417",
+  "C419",
+  "COM818",
+  "FIX",
+  "ISC001",
+  "PIE790",
+  # type-alias naming, the part of pylint's `invalid-name` that pep8-naming lacks
+  "PYI042",
+  "PYI043",
+  "SIM101",
+  "SIM108",
+  "SIM115",
+  "SIM118",
+  "SIM210",
+  "SIM211",
+  "SIM401",
+  "SLF001",
+  "T100",
+  "TRY002",
+  "TRY203",
+  # pylint counterparts that are preview rules in ruff, selected on purpose (`explicit-preview-rules`)
+  "PLC2801",
+  "PLE1141",
+  "PLE4703",
+  "PLR0202",
+  "PLR0203",
+  "PLR0904",
+  "PLR0914",
+  "PLR0916",
+  "PLR1702",
+  "PLR1712",
+  "PLW0244",
+  "PLW1514",
+  "W391",
 ]
 
 [tool.ruff.lint.flake8-tidy-imports]
@@ -203,6 +521,18 @@ max-complexity = 5
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
+
+# ruff's defaults, which are also pylint's, made explicit: these thresholds live here, not in `[tool.pylint]`
+[tool.ruff.lint.pylint]
+max-args = 5            # PLR0913
+max-bool-expr = 5       # PLR0916
+max-branches = 12       # PLR0912
+max-locals = 15         # PLR0914
+max-nested-blocks = 5   # PLR1702
+max-positional-args = 5 # PLR0917
+max-public-methods = 20 # PLR0904
+max-returns = 6         # PLR0911
+max-statements = 50     # PLR0915
 
 [tool.uv]
 # the version is dynamic, so a new commit or tag must rebuild the editable install to refresh `budge.__version__`

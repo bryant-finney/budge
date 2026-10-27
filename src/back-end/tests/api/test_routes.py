@@ -11,6 +11,7 @@ from starlette.routing import BaseRoute
 
 from budge.api.app import app, create_app
 from budge.api.routes import open_router
+from tests.fakes import SESSION_DENIED
 
 PATH_PARAM = re.compile(r'\{[^}]+\}')
 """A path parameter in a route's path, such as `{connection_id}`."""
@@ -39,11 +40,28 @@ def request_path(path: str) -> str:
 
 
 def test_open_router_holds_only_the_health_check() -> None:
-    """Only `GET /api/health` is public (spec §8), so making any other route public has to change this test.
+    """Only `GET /api/health` is public (spec §8), so making any other operation public has to change this test.
 
-    `POST /api/auth/session` joins it in the auth PR (#29).
+    The auth PR (#29) adds `POST /api/auth/session` here and nothing else: `DELETE /api/auth/session` (sign-out) still
+    requires a session, so it stays on `protected_router`.
     """
-    assert {path for _, path in OPEN_OPERATIONS} == {'/api/health'}
+    assert OPEN_OPERATIONS == {('GET', '/api/health')}
+
+
+def test_only_docs_are_protected_until_auth() -> None:
+    """Delete in #29: while `require_session` admits every request, no feature route may sit behind it.
+
+    Until the auth PR (#29) fills in `require_session`, every route on `protected_router` is public in practice. Only
+    the docs routes are accepted there for now, so merging a feature route before #29 has to change this test.
+    """
+    protected = set(APP_OPERATIONS) - OPEN_OPERATIONS
+
+    assert protected == {
+        ('GET', '/api/openapi.json'),
+        ('GET', '/api/docs'),
+        ('GET', '/api/docs/oauth2-redirect'),
+        ('GET', '/api/redoc'),
+    }
 
 
 def test_route_walk_finds_every_route() -> None:
@@ -55,10 +73,18 @@ def test_route_walk_finds_every_route() -> None:
 
 @pytest.mark.parametrize(('method', 'path'), APP_OPERATIONS)
 def test_session_gates_every_route_but_the_open_ones(denied_client: TestClient, method: str, path: str) -> None:
-    """With `require_session` failing, every route off `open_router` answers `401`, and the open ones still `200`."""
-    expected = HTTPStatus.OK if (method, path) in OPEN_OPERATIONS else HTTPStatus.UNAUTHORIZED
+    """With `require_session` failing, the session check refuses every route off `open_router`, and none on it.
 
-    assert denied_client.request(method, request_path(path)).status_code == expected
+    An open route may still answer `4xx` for its own reasons (such as an empty request body), so the check is that the
+    session gate's own refusal never reaches it, not that it answers `200`.
+    """
+    response = denied_client.request(method, request_path(path))
+
+    if (method, path) in OPEN_OPERATIONS:
+        assert SESSION_DENIED not in response.text
+    else:
+        assert response.status_code == HTTPStatus.UNAUTHORIZED
+        assert SESSION_DENIED in response.text
 
 
 @pytest.mark.parametrize(('method', 'path'), APP_OPERATIONS)

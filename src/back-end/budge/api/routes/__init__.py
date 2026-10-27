@@ -28,8 +28,8 @@ Each feature router, and the docs routes (`budge.api.routes.docs`), is included 
 open_router = APIRouter(prefix=API_PREFIX)
 """The router for the unauthenticated routes: `GET /api/health`, and `POST /api/auth/session` once the auth PR adds it.
 
-Adding a route here makes it public, so do it deliberately: `tests/api/test_routes.py` pins this router's paths, so
-the change has to show up in a test, too.
+Adding a route here makes it public, so do it deliberately: `tests/api/test_routes.py` pins this router's
+`(method, path)` operations, so the change has to show up in a test, too.
 """
 
 protected_router.include_router(docs.router)

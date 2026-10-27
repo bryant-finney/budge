@@ -7,12 +7,26 @@ marks every protocol method with `@override`, so the type checkers report signat
 import contextlib
 import datetime as dt
 from collections.abc import Generator, Sequence
+from http import HTTPStatus
+from typing import NoReturn
 
+from fastapi import HTTPException
 from typing_extensions import override
 
 from budge.ingestion import IngestionTrigger
 from budge.models import BankConnection, PlaidEnv, Transaction
 from budge.storage import LeaseHeld, Repository, SecretStore
+
+SESSION_DENIED = 'session-denied-by-test'
+"""The `detail` of the `401` that `deny_session` raises, which no real route can answer with."""
+
+
+def deny_session() -> NoReturn:
+    """Stand in for a failed session check, as the auth PR's `require_session` will fail one (spec §8).
+
+    The `401`'s `detail` is `SESSION_DENIED`, so a test can tell this refusal from any other `401`.
+    """
+    raise HTTPException(status_code=HTTPStatus.UNAUTHORIZED, detail=SESSION_DENIED)
 
 
 class FakeRepository(Repository):

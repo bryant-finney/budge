@@ -22,3 +22,4 @@ Index of b-end agent memories, one line per entry.
 - [Lambda logging format](lambda-logging-format.md) — text vs JSON format; run summary logs `extra` `summary`/`failed_connections`; test via `vars(record)`
 - [FastAPI app settings](fastapi-app-settings.md) — redirect_slashes=False (Host-derived 307 leaves CloudFront origin); operationId = route.name
 - [FastAPI docs CDN pinning](fastapi-docs-cdn-pinning.md) — exact jsdelivr releases ≥2 weeks old; favicon `data:,` not ''; helpers allow no SRI; redoc stays 2.x
+- [Route gating tests](feedback_route-gating-tests.md) — pin (method, path) pairs; gate by a denial marker, not == 200; fail-open stub ships a tripwire

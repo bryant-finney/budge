@@ -33,7 +33,8 @@ def test_handler_returns_and_logs_an_empty_summary(
     with caplog.at_level(logging.INFO, logger='budge.ingestion.handler'):
         summary = handler(event, lambda_context)
 
-    assert summary == {}
+    assert isinstance(summary, dict)
+    assert not summary
     assert [
         (record.getMessage(), vars(record)['summary'], vars(record)['failed_connections']) for record in caplog.records
     ] == [('ingestion run summary', {}, 0)]

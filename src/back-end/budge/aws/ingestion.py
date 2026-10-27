@@ -13,7 +13,8 @@ __all__ = ['LambdaIngestionTrigger']
 _MILESTONE_2 = 'LambdaIngestionTrigger is implemented in milestone 2'
 
 
-class LambdaIngestionTrigger(IngestionTrigger):
+# This adapter implements the trigger boundary's single operation.
+class LambdaIngestionTrigger(IngestionTrigger):  # pylint: disable=too-few-public-methods
     """Starts ingestion with an async (`InvocationType=Event`) Lambda invoke."""
 
     function_name: str

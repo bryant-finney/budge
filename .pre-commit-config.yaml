@@ -98,12 +98,7 @@ repos:
         files: *infrastructure-inputs
         pass_filenames: false
 
-  # back end (src/back-end): ruff, mypy, pyright and ty run through `uv run --locked`, so their versions come from
-  # `src/back-end/uv.lock` (no mirror `rev`s to sync by hand), and the type checkers see the project's dependencies.
-  # language: python: pre-commit installs the pinned uv into the hook env, so uv needn't be on PATH, and `uv run`
-  # creates or syncs `src/back-end/.venv` itself, so no `uv sync` step is needed first. Keep the `uv==` pin inside
-  # `[tool.uv] required-version`; uv checks that at runtime and fails if the two disagree. `-q` hides uv's warning
-  # that pre-commit's `VIRTUAL_ENV` (the hook env) isn't the project environment, but not its errors.
+  # back end (src/back-end).
   - repo: local
     hooks:
       # ruff: `--project` keeps the cwd at the repo root, where pre-commit's filenames are relative to; ruff finds
@@ -146,5 +141,12 @@ repos:
         language: python
         additional_dependencies: *uv
         entry: uv run -q --directory src/back-end --locked ty check
+        files: *back-end-inputs
+        pass_filenames: false
+      - id: pylint
+        name: pylint (src/back-end)
+        language: python
+        additional_dependencies: *uv
+        entry: uv run -q --directory src/back-end --locked pylint budge tests
         files: *back-end-inputs
         pass_filenames: false

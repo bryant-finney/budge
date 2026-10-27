@@ -79,7 +79,7 @@ init_forbid_extra = true
 init_typed = true
 warn_required_dynamic_aliases = true
 
-# pylint isn't a gate, but wherever it runs (e.g. an editor) it defers to ruff: ruff owns every check it has a rule for
+# pylint complements ruff: ruff owns every check it has a rule for
 # (mapping from astral-sh/ruff#970 and ruff's `PL*` codes). That rule is selected and configured in `[tool.ruff.lint]`,
 # and the pylint message is disabled below with the ruff code beside it; pylint keeps only checks ruff can't run.
 # Re-derive the list when ruff, pylint or `select` changes. Naming included: pep8-naming (`N`) and PYI042/PYI043 replace

@@ -27,8 +27,9 @@ def load_event(name: str) -> dict[str, object]:
     return event
 
 
+# The runtime context contract requires all nine data attributes.
 @dataclasses.dataclass
-class FakeLambdaContext:
+class FakeLambdaContext:  # pylint: disable=too-many-instance-attributes
     """Satisfies Mangum's `LambdaContext` protocol (the attributes AWS's Python runtime provides)."""
 
     function_name: str = 'budge-api'

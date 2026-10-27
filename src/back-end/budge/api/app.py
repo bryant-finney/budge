@@ -52,7 +52,7 @@ def create_app() -> FastAPI:
     >>> sorted(create_app().openapi()['paths'])
     ['/api/health']
     """
-    app = FastAPI(
+    application = FastAPI(
         title='budge',
         version=budge.__version__,
         openapi_url=None,
@@ -65,9 +65,9 @@ def create_app() -> FastAPI:
         # leave the app's origin. A trailing slash gets a plain 404 instead.
         redirect_slashes=False,
     )
-    app.include_router(open_router)
-    app.include_router(protected_router)
-    return app
+    application.include_router(open_router)
+    application.include_router(protected_router)
+    return application
 
 
 app = create_app()

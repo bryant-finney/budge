@@ -1,17 +1,25 @@
 """Tests for the OpenAPI document and Swagger UI routes in `budge.api.routes.docs` (spec §8)."""
 
+import re
 from http import HTTPStatus
 
 import pytest
 from fastapi.testclient import TestClient
 
 from budge.api.app import app, create_app
-from budge.api.routes import API_PREFIX, docs
+from budge.api.routes import docs
 
-DOCS_URLS = [
-    f'{API_PREFIX}{path}' for path in (docs.OPENAPI_PATH, docs.DOCS_PATH, docs.OAUTH2_REDIRECT_PATH, docs.REDOC_PATH)
-]
+DOCS_URLS = ['/api/openapi.json', '/api/docs', '/api/docs/oauth2-redirect', '/api/redoc']
 """Every docs route's full path."""
+
+HTML_URLS = ['/api/docs', '/api/docs/oauth2-redirect', '/api/redoc']
+"""The docs routes that serve an HTML page."""
+
+EXTERNAL_URL = re.compile(r'https?://[^\s"\'<>]+')
+"""Any absolute `http(s)` URL in a page's source."""
+
+PINNED_CDN_URL = re.compile(r'https://cdn\.jsdelivr\.net/npm/[a-z][a-z0-9-]*@\d+\.\d+\.\d+/\S+')
+"""A `cdn.jsdelivr.net` URL that names an exact `major.minor.patch` npm release, never a floating tag."""
 
 
 def test_builtin_doc_routes_are_off() -> None:
@@ -72,6 +80,15 @@ def test_swagger_ui_loads_the_prefixed_document(client: TestClient) -> None:
     assert '<title>budge - Swagger UI</title>' in response.text
 
 
+def test_swagger_ui_loads_the_pinned_assets(client: TestClient) -> None:
+    """Swagger UI loads its JavaScript and CSS from the pinned `swagger-ui-dist` release, with no remote favicon."""
+    text = client.get('/api/docs').text
+
+    assert f'<script src="{docs.SWAGGER_UI_JS_URL}"></script>' in text
+    assert f'<link type="text/css" rel="stylesheet" href="{docs.SWAGGER_UI_CSS_URL}">' in text
+    assert f'<link rel="shortcut icon" href="{docs.FAVICON_URL}">' in text
+
+
 def test_swagger_ui_prefixes_the_root_path() -> None:
     """Under an ASGI `root_path`, Swagger UI's document and redirect URLs carry it."""
     with TestClient(create_app(), root_path='/stage') as test_client:
@@ -98,6 +115,24 @@ def test_redoc_loads_the_prefixed_document(client: TestClient) -> None:
     assert response.headers['content-type'] == 'text/html; charset=utf-8'
     assert '<redoc spec-url="/api/openapi.json"></redoc>' in response.text
     assert '<title>budge - ReDoc</title>' in response.text
+
+
+def test_redoc_loads_the_pinned_assets(client: TestClient) -> None:
+    """ReDoc loads its JavaScript from the pinned `redoc` release, with no remote favicon and no Google Fonts."""
+    text = client.get('/api/redoc').text
+
+    assert f'<script src="{docs.REDOC_JS_URL}"> </script>' in text
+    assert f'<link rel="shortcut icon" href="{docs.FAVICON_URL}">' in text
+
+
+@pytest.mark.parametrize('url', HTML_URLS)
+def test_docs_pages_load_only_exact_cdn_releases(client: TestClient, url: str) -> None:
+    """Every remote URL a docs page names is an exact-version `cdn.jsdelivr.net` asset, so nothing floats."""
+    text = client.get(url).text
+
+    assert [external for external in EXTERNAL_URL.findall(text) if not PINNED_CDN_URL.fullmatch(external)] == []
+    assert 'fastapi.tiangolo.com' not in text
+    assert 'fonts.googleapis.com' not in text
 
 
 def test_redoc_prefixes_the_root_path() -> None:

@@ -21,3 +21,4 @@ Index of b-end agent memories, one line per entry.
 - [ruff over pylint](feedback_ruff-over-pylint.md) — ruff owns any check it has a rule for (preview by code); pylint keeps the rest; naming in ruff; tests W0621 via plugin
 - [Lambda logging format](lambda-logging-format.md) — text vs JSON format; run summary logs `extra` `summary`/`failed_connections`; test via `vars(record)`
 - [FastAPI app settings](fastapi-app-settings.md) — redirect_slashes=False (Host-derived 307 leaves CloudFront origin); operationId = route.name
+- [FastAPI docs CDN pinning](fastapi-docs-cdn-pinning.md) — exact jsdelivr releases ≥2 weeks old; favicon `data:,` not ''; helpers allow no SRI; redoc stays 2.x

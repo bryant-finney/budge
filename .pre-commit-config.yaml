@@ -55,6 +55,7 @@ repos:
     rev: v0.9.3
     hooks:
       - id: taplo-format
+        exclude: ^src/back-end/uv\.lock$
 
   - repo: https://github.com/shellcheck-py/shellcheck-py
     rev: v0.11.0.1-1
@@ -96,3 +97,57 @@ repos:
         entry: pnpm -C src/infrastructure run check
         files: *infrastructure-inputs
         pass_filenames: false
+
+  # back end (src/back-end).
+  - repo: local
+    hooks:
+      # ruff: `--project` keeps the cwd at the repo root, where pre-commit's filenames are relative to; ruff finds
+      # `src/back-end/pyproject.toml` and `tests/ruff.toml` per file. `check --fix` runs before `format`, per ruff
+      - id: ruff-check
+        name: ruff check (src/back-end)
+        language: python
+        additional_dependencies: &uv [uv==0.13.6]
+        entry: uv run -q --project src/back-end --locked ruff check --fix --force-exclude
+        types_or: [python, pyi]
+        files: ^src/back-end/
+        # one ruff run (it parallelizes itself), not one `uv run` per batch of files
+        require_serial: true
+      - id: ruff-format
+        name: ruff format (src/back-end)
+        language: python
+        additional_dependencies: *uv
+        entry: uv run -q --project src/back-end --locked ruff format --force-exclude
+        types_or: [python, pyi]
+        files: ^src/back-end/
+        require_serial: true
+      # type checkers: `--directory` makes `src/back-end` the cwd so each finds its pyproject.toml config, and each
+      # checks the whole project once (`pass_filenames: false`): per-file runs give false positives
+      - id: mypy
+        name: mypy (src/back-end)
+        language: python
+        additional_dependencies: *uv
+        entry: uv run -q --directory src/back-end --locked mypy
+        files: &back-end-inputs ^src/back-end/(.*\.pyi?|pyproject\.toml|uv\.lock)$
+        pass_filenames: false
+      - id: pyright
+        name: pyright (src/back-end)
+        language: python
+        additional_dependencies: *uv
+        entry: uv run -q --directory src/back-end --locked pyright
+        files: *back-end-inputs
+        pass_filenames: false
+      - id: ty
+        name: ty (src/back-end)
+        language: python
+        additional_dependencies: *uv
+        entry: uv run -q --directory src/back-end --locked ty check
+        files: *back-end-inputs
+        pass_filenames: false
+      - id: pylint
+        name: pylint (src/back-end)
+        language: python
+        additional_dependencies: *uv
+        entry: uv run -q --directory src/back-end --locked pylint --exit-zero budge tests
+        files: *back-end-inputs
+        pass_filenames: false
+        verbose: true

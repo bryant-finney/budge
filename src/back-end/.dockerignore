@@ -1,0 +1,27 @@
+# The image copies only `budge/` (and bind-mounts `pyproject.toml` and `uv.lock` to install dependencies); keep
+# everything else, local state above all, out of the build context.
+
+# local environments and secrets: none of these belong in an image (spec §12)
+.venv/
+.env*
+.envrc
+
+# tests and their tooling
+tests/
+conftest.py
+reports/
+.coverage*
+htmlcov/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+
+# bytecode: the image compiles its own
+**/__pycache__/
+**/*.pyc
+
+# written by hatchling's `version` hook on `uv sync`/`uv build`; gitignored, so whether it exists depends on the host
+budge/_version.py
+
+# build output
+dist/

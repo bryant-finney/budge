@@ -28,7 +28,8 @@ from budge.api.auth import (
     get_google_jwks,
     read_session_token,
 )
-from budge.api.config import AuthSettings
+from budge.api.config import AuthSettings, get_secret_store
+from budge.aws import SecretsManagerSecretStore
 from tests.auth import (
     ALLOWED_SUB,
     GOOGLE_KEY,
@@ -316,6 +317,17 @@ def test_session_check_rejects_bad_cookies(token: str) -> None:
 def test_session_check_rejects_no_cookie(anonymous_client: TestClient) -> None:
     """No cookie at all: `401 unauthenticated`, so the SPA shows sign-in."""
     assert_error(anonymous_client.get(PROTECTED_URL), HTTPStatus.UNAUTHORIZED, 'unauthenticated')
+
+
+def test_session_check_refuses_no_cookie_before_reading_the_store() -> None:
+    """A request without a cookie is `401` even when the secret store fails; with one, the failure is a `500`."""
+    application = configure(create_app())
+    application.dependency_overrides[get_secret_store] = SecretsManagerSecretStore  # every method raises (M2 stub)
+
+    with client_for(application, raise_server_exceptions=False) as test_client:
+        assert_error(test_client.get(PROTECTED_URL), HTTPStatus.UNAUTHORIZED, 'unauthenticated')
+        test_client.cookies.set(SESSION_COOKIE, session_token())
+        assert_error(test_client.get(PROTECTED_URL), HTTPStatus.INTERNAL_SERVER_ERROR, 'internal_error')
 
 
 def test_session_check_rejects_a_sub_removed_from_the_allowlist() -> None:

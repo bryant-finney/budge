@@ -237,14 +237,14 @@ def get_google_jwks() -> jwt.PyJWKClient:
 
 
 def get_session_key(store: Annotated[SecretStore, Depends(get_secret_store)]) -> str:
-    """Return the session-signing key from the secret store. A dependency of sign-in and `require_session`."""
+    """Return the session-signing key from the secret store. A dependency of sign-in."""
     return store.get_session_signing_key()
 
 
 def require_session(
     token: Annotated[str | None, Security(session_cookie)],
     settings: Annotated[AuthSettings, Depends(get_auth_settings)],
-    key: Annotated[str, Depends(get_session_key)],
+    store: Annotated[SecretStore, Depends(get_secret_store)],
 ) -> SessionClaims:
     """Require a valid session whose `sub` is still allowlisted, and return its claims.
 
@@ -252,10 +252,13 @@ def require_session(
     a session except the few on `budge.api.routes.open_router`. It is a named function so tests can replace it through
     `app.dependency_overrides[require_session]`.
 
+    A request without the cookie is refused before the secret store is read, so it is a `401` even when the store
+    can't be reached.
+
     Args:
         token: The `budge_session` cookie, if the request has one.
         settings: The allowlist.
-        key: The session-signing key.
+        store: The secret store that holds the session-signing key.
 
     Returns:
         The session's claims.
@@ -264,19 +267,16 @@ def require_session(
         APIError: `401 unauthenticated` for a missing, malformed, tampered or expired cookie; `403 not_allowlisted`
             once the session's `sub` is no longer on the allowlist.
 
+    >>> from budge.aws import SecretsManagerSecretStore
     >>> settings = AuthSettings(google_client_id='id', allowed_subs=frozenset({'1234'}))
-    >>> key = 'k' * 32
-    >>> token = issue_session_token('1234', key=key, lifetime=BROWSER_SESSION_LIFETIME)
-    >>> require_session(token, settings, key).sub
-    '1234'
-    >>> require_session(None, settings, key)
+    >>> require_session(None, settings, SecretsManagerSecretStore())
     Traceback (most recent call last):
     ...
     budge.api.errors.APIError: 401: Sign in to continue.
     """
     if token is None:
         raise unauthenticated('Sign in to continue.')
-    claims = read_session_token(token, key=key)
+    claims = read_session_token(token, key=store.get_session_signing_key())
     if claims.sub not in settings.allowed_subs:
         raise not_allowlisted()
     return claims

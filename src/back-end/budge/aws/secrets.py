@@ -26,3 +26,7 @@ class SecretsManagerSecretStore(SecretStore):
     @override
     def delete_access_token(self, connection_id: str) -> None:
         raise NotImplementedError(_MILESTONE_2)
+
+    @override
+    def get_session_signing_key(self) -> str:
+        raise NotImplementedError(_MILESTONE_2)

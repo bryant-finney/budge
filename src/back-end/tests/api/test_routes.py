@@ -39,29 +39,12 @@ def request_path(path: str) -> str:
     return PATH_PARAM.sub('1', path)
 
 
-def test_open_router_holds_only_the_health_check() -> None:
-    """Only `GET /api/health` is public (spec §8), so making any other operation public has to change this test.
+def test_open_router_holds_only_health_and_sign_in() -> None:
+    """Only `GET /api/health` and `POST /api/auth/session` are public (spec §8); any other has to change this test.
 
-    The auth PR (#29) adds `POST /api/auth/session` here and nothing else: `DELETE /api/auth/session` (sign-out) still
-    requires a session, so it stays on `protected_router`.
+    `DELETE /api/auth/session` (sign-out) still requires a session, so it stays on `protected_router`.
     """
-    assert OPEN_OPERATIONS == {('GET', '/api/health')}
-
-
-def test_only_docs_are_protected_until_auth() -> None:
-    """Delete in #29: while `require_session` admits every request, no feature route may sit behind it.
-
-    Until the auth PR (#29) fills in `require_session`, every route on `protected_router` is public in practice. Only
-    the docs routes are accepted there for now, so merging a feature route before #29 has to change this test.
-    """
-    protected = set(APP_OPERATIONS) - OPEN_OPERATIONS
-
-    assert protected == {
-        ('GET', '/api/openapi.json'),
-        ('GET', '/api/docs'),
-        ('GET', '/api/docs/oauth2-redirect'),
-        ('GET', '/api/redoc'),
-    }
+    assert OPEN_OPERATIONS == {('GET', '/api/health'), ('POST', '/api/auth/session')}
 
 
 def test_route_walk_finds_every_route() -> None:
@@ -88,23 +71,36 @@ def test_session_gates_every_route_but_the_open_ones(denied_client: TestClient, 
 
 
 @pytest.mark.parametrize(('method', 'path'), APP_OPERATIONS)
-def test_require_session_admits_requests_until_auth(client: TestClient, method: str, path: str) -> None:
-    """The `require_session` stub admits every request until the auth PR (#29) fills it in.
+def test_allowlisted_session_reaches_every_route(client: TestClient, method: str, path: str) -> None:
+    """A signed-in, allowlisted session passes the session check on every route.
 
-    Admitted means not refused for want of a session; a future route may still reject an empty request body.
+    Passing means not refused for want of a session; a route may still reject an empty request body or content type.
     """
     status = client.request(method, request_path(path)).status_code
 
     assert status not in {HTTPStatus.UNAUTHORIZED, HTTPStatus.FORBIDDEN}
 
 
-def test_overrides_stay_on_their_own_app(denied_client: TestClient) -> None:
-    """Overriding `require_session` on one app leaves the module-level `app` and other new apps open."""
+@pytest.mark.parametrize(('method', 'path'), APP_OPERATIONS)
+def test_real_session_check_gates_every_route_but_the_open_ones(
+    anonymous_client: TestClient, method: str, path: str
+) -> None:
+    """Without a cookie, the real `require_session` answers `401 unauthenticated` everywhere but the open routes."""
+    response = anonymous_client.request(method, request_path(path))
+
+    if (method, path) in OPEN_OPERATIONS:
+        assert response.status_code != HTTPStatus.UNAUTHORIZED
+    else:
+        assert response.status_code == HTTPStatus.UNAUTHORIZED
+        assert response.json()['error']['code'] == 'unauthenticated'
+
+
+def test_overrides_stay_on_their_own_app(denied_client: TestClient, client: TestClient) -> None:
+    """Overriding `require_session` on one app leaves the module-level `app` and other new apps unchanged."""
     assert denied_client.get('/api/docs').status_code == HTTPStatus.UNAUTHORIZED
+    assert client.get('/api/docs').status_code == HTTPStatus.OK
     assert not app.dependency_overrides
-    for application in (app, create_app()):
-        with TestClient(application) as test_client:
-            assert test_client.get('/api/docs').status_code == HTTPStatus.OK
+    assert not create_app().dependency_overrides
 
 
 def test_request_path_fills_path_parameters() -> None:

@@ -13,7 +13,9 @@ from mangum import Mangum
 from mangum.types import LambdaContext
 
 from budge.api.app import create_app
+from budge.api.auth import SESSION_COOKIE
 from budge.api.handler import handler
+from tests.auth import configure, google_credential, session_token
 
 pytestmark = pytest.mark.usefixtures('current_event_loop')
 
@@ -91,3 +93,44 @@ def test_handler_client_is_the_cloudfront_edge(
         'viewer_address': '198.51.100.7:52814',
         'user_agent': 'curl/8.7.1',
     }
+
+
+def test_handler_sets_the_session_cookie(apigw_v2_get_health: dict[str, object], lambda_context: LambdaContext) -> None:
+    """Sign-in through API Gateway: the JSON body goes in, and the cookie comes out in payload 2.0's `cookies` array."""
+    event = _with_path(apigw_v2_get_health, '/api/auth/session')
+    request_context = event['requestContext']
+    headers = event['headers']
+    assert isinstance(request_context, dict)
+    assert isinstance(headers, dict)
+    request_context['http']['method'] = 'POST'
+    headers['content-type'] = 'application/json'
+    event['body'] = json.dumps({'credential': google_credential(), 'remember_me': True})
+    event['rawQueryString'] = ''
+    event['cookies'] = []
+
+    response = Mangum(configure(create_app()), lifespan='off')(event, lambda_context)
+
+    assert response['statusCode'] == HTTPStatus.NO_CONTENT
+    [cookie] = response['cookies']
+    assert cookie.startswith(f'{SESSION_COOKIE}=')
+    assert 'Max-Age=2592000' in cookie
+    assert 'HttpOnly' in cookie
+    assert 'Path=/api' in cookie
+    assert 'SameSite=strict' in cookie
+    assert 'Secure' in cookie
+
+
+@pytest.mark.parametrize(
+    ('cookies', 'status'),
+    [([], HTTPStatus.UNAUTHORIZED), ([f'{SESSION_COOKIE}=garbage'], HTTPStatus.UNAUTHORIZED), (None, HTTPStatus.OK)],
+)
+def test_handler_reads_the_session_cookie(
+    apigw_v2_get_health: dict[str, object], lambda_context: LambdaContext, cookies: list[str] | None, status: int
+) -> None:
+    """The session check reads `budge_session` from payload 2.0's `cookies` array (`None`: a valid session)."""
+    event = _with_path(apigw_v2_get_health, '/api/openapi.json')
+    event['cookies'] = [f'{SESSION_COOKIE}={session_token()}', 'theme=dark'] if cookies is None else cookies
+
+    response = Mangum(configure(create_app()), lifespan='off')(event, lambda_context)
+
+    assert response['statusCode'] == status

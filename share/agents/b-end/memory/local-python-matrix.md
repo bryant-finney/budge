@@ -19,6 +19,20 @@ metadata:
   commands as possibly unverifiable git. Put loops in a script in the session scratchpad and run it with `bash <path>`.
   Use `gh ... --jq` only in simple, unpiped commands.
 
+  - It also refuses (2026-10-27, #29) `docker run ... sh -c '...'`, `git` chained with `&&`/`$(git ...)`, some
+    `python3 - <<EOF` heredoc edits (others pass; the Edit tool always works), and any `cd` into another worktree; `EnterWorktree` into another worktree is refused
+    too. `git worktree add <path>` from your own worktree works, but you can't work inside the new worktree. When asked
+    for one worktree per branch, stack the branches in your own worktree and report the deviation.
+
+- **Doctest-only runs need `--no-cov`** since `fail_under = 100` (#29): `pytest budge` alone now exits 1 on coverage.
+  Run `pytest --no-cov budge` to check for the Mangum-loop `ResourceWarning` ([[mangum-event-loop]]).
+
+- **`tests/test_package.py` runs `uv build --offline`**, which needs each interpreter's build dependencies (e.g. a
+  cp312 `markupsafe` wheel for `uv-dynamic-versioning`'s jinja2) already in the uv cache. On a cold cache a matrix leg
+  errors with "Packages were unavailable because the network was disabled". Warm it once with an online
+  `UV_PYTHON=<v> uv build --out-dir <scratch> .`, then rerun. The rsync copy has no `.git`, so set
+  `UV_DYNAMIC_VERSIONING_BYPASS=0.0.0` there.
+
 - `taplo-format` (taplo-pre-commit v0.9.3) and `check-toml` do match `uv.lock` (identify tags: `toml`, `uv-lock`), but
   leave uv 0.13's output unchanged, so they pass today.
 

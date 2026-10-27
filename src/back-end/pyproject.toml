@@ -9,6 +9,8 @@ dependencies = [
   "fastapi~=0.143.3",
   "mangum~=0.22.0",
   "pydantic~=2.14",
+  # Google ID tokens (RS256, verified against Google's JWKS) and the HS256 `budge_session` cookie (spec §8)
+  "pyjwt[crypto]~=2.15",
   # `typing_extensions.override` until the 3.11 floor rises to 3.12 (`typing.override`); direct, not via pydantic
   "typing-extensions~=4.16",
 ]
@@ -40,7 +42,7 @@ exclude_also = [
   '^\s*\.\.\.\s*$',
   'raise NotImplementedError',
 ]
-fail_under = 90
+fail_under = 100
 show_missing = true
 
 [tool.coverage.run]

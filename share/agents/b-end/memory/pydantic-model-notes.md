@@ -27,4 +27,4 @@ metadata:
   `list` for `recurring_outflow_ids`, which strict mode rejects for a `frozenset`. JSON round-trips still pass. Build
   test models from typed field values (as `tests/factories.py` does), never from a python-mode dump.
 
-Related: [[lambda-logging-format]].
+Related: [[lambda-logging-format]], [[fastapi-app-settings]].

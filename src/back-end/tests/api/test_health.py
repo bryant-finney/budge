@@ -38,6 +38,19 @@ def test_routes_are_only_served_under_the_api_prefix(client: TestClient, path: s
     assert response.status_code == HTTPStatus.NOT_FOUND
 
 
+@pytest.mark.parametrize('path', ['/api/health/', '/api/docs/', '/api/openapi.json/', '/api/redoc/'])
+def test_trailing_slash_is_not_redirected(client: TestClient, path: str) -> None:
+    """A trailing slash gets a same-origin `404`, not Starlette's `307` to the slashless path.
+
+    Starlette builds that redirect's `Location` from the `Host` header, which behind CloudFront is the API Gateway
+    domain (spec §4), so following it would leave the app's origin.
+    """
+    response = client.get(path, follow_redirects=False)
+
+    assert response.status_code == HTTPStatus.NOT_FOUND
+    assert 'location' not in response.headers
+
+
 def test_every_api_route_is_under_the_api_prefix() -> None:
     """Every route in the module-level app's OpenAPI document lives under `/api`.
 
@@ -51,11 +64,12 @@ def test_every_api_route_is_under_the_api_prefix() -> None:
 
 
 def test_openapi_document_describes_health(client: TestClient) -> None:
-    """`/api/openapi.json` lists `/api/health` with the `HealthResponse` schema."""
+    """`/api/openapi.json` lists `/api/health` as `get_health`, with the `HealthResponse` schema."""
     response = client.get('/api/openapi.json')
 
     assert response.status_code == HTTPStatus.OK
     document = response.json()
+    assert document['paths']['/api/health']['get']['operationId'] == 'get_health'
     health = document['paths']['/api/health']['get']['responses']['200']
     assert health['content']['application/json']['schema'] == {'$ref': '#/components/schemas/HealthResponse'}
     assert document['components']['schemas']['HealthResponse']['properties']['ok']['const'] is True

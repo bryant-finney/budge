@@ -7,6 +7,20 @@ from fastapi.testclient import TestClient
 
 from budge.api.app import app
 
+HTTP_METHODS = frozenset({'get', 'put', 'post', 'delete', 'options', 'head', 'patch', 'trace'})
+"""The keys of an OpenAPI path item that hold operations; the rest (`parameters`, `summary`, ...) don't."""
+
+OPERATIONS = sorted(
+    (method, path)
+    for path, path_item in app.openapi()['paths'].items()
+    for method in path_item
+    if method in HTTP_METHODS
+)
+"""Every `(method, path)` operation in the module-level app's OpenAPI document."""
+
+DOCSTRING_MARKERS = ('>>>', 'Args:', 'Returns:', 'Raises:', 'Yields:', 'Examples:')
+"""Text that marks a Python docstring (doctests and Google-style sections), never meant for API readers."""
+
 
 def test_health_returns_ok(client: TestClient) -> None:
     """`GET /api/health` returns `200 {"ok": true}`."""
@@ -45,3 +59,28 @@ def test_openapi_document_describes_health(client: TestClient) -> None:
     health = document['paths']['/api/health']['get']['responses']['200']
     assert health['content']['application/json']['schema'] == {'$ref': '#/components/schemas/HealthResponse'}
     assert document['components']['schemas']['HealthResponse']['properties']['ok']['const'] is True
+
+
+def test_operation_walk_finds_the_health_check() -> None:
+    """The walk reads the document's operations, so the parametrized check below can't pass vacuously."""
+    assert ('get', '/api/health') in OPERATIONS
+
+
+@pytest.mark.parametrize(('method', 'path'), OPERATIONS)
+def test_operation_descriptions_hold_no_docstring_markup(method: str, path: str) -> None:
+    """No operation's OpenAPI `description` carries doctests or Google-style docstring sections.
+
+    FastAPI publishes a path operation function's docstring as its `description` unless the route passes
+    `description=`, so a route function's doctest would otherwise show up in Swagger UI and ReDoc.
+    """
+    description: str = app.openapi()['paths'][path][method].get('description', '')
+
+    for marker in DOCSTRING_MARKERS:
+        assert marker not in description, f'{method.upper()} {path}: {description!r}'
+
+
+def test_health_operation_description() -> None:
+    """`GET /api/health` is described for API readers only, without its function's doctest."""
+    description = app.openapi()['paths']['/api/health']['get']['description']
+
+    assert description == 'Report that the API is up. Unauthenticated, so the deploy smoke test can call it.'

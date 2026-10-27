@@ -17,6 +17,6 @@ Index of b-end agent memories, one line per entry.
 - [Three type checkers](project_type-checkers.md) — mypy, pyright and ty all run strict (user, 2026-10-20); a change passes all three
 - [Starlette TestClient and httpx2](starlette-testclient-httpx2.md) — TestClient needs `httpx2`; list routes with `iter_route_contexts`; overrides per app
 - [Mangum event loop](mangum-event-loop.md) — conftest owns Mangum's import-time loop; async tests unset it; run the full matrix
-- [Pydantic model notes](pydantic-model-notes.md) — field docstrings become OpenAPI text; models.py stays a leaf; FiniteFloat; strict mode on, python-mode dumps don't round-trip
+- [Pydantic model notes](pydantic-model-notes.md) — field and route docstrings become OpenAPI text (routes pass `description=`); leaf models.py; FiniteFloat; strict
 - [ruff over pylint](feedback_ruff-over-pylint.md) — ruff owns any check it has a rule for (preview by code); pylint keeps the rest; naming in ruff; tests W0621 via plugin
 - [Lambda logging format](lambda-logging-format.md) — text vs JSON format; run summary logs `extra` `summary`/`failed_connections`; test via `vars(record)`

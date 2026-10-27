@@ -20,7 +20,14 @@ class HealthResponse(BaseModel):
     """Always `true`: the API is up and serving requests."""
 
 
-@router.get('/health', response_model=HealthResponse)
+# FastAPI publishes a route function's docstring as the operation's OpenAPI `description` (doctest and all), so pass
+# `description=` explicitly. A `\f` in the docstring would truncate it too, but ruff's D301 flags it and its `r"""`
+# autofix silently disables the truncation. An empty `description=` falls back to the docstring.
+@router.get(
+    '/health',
+    response_model=HealthResponse,
+    description='Report that the API is up. Unauthenticated, so the deploy smoke test can call it.',
+)
 async def get_health() -> HealthResponse:
     """Report that the API is up. Unauthenticated, so the deploy smoke test can call it.
 

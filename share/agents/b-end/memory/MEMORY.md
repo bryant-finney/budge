@@ -15,7 +15,7 @@ Index of b-end agent memories, one line per entry.
 - [Explicit over implicit](feedback_explicit-over-implicit.md) — protocol impls subclass with `@override`; complete `__all__` (`tests/test_exports.py`), loggers exempt
 - [Strict and rigorous](feedback_strict-and-rigorous.md) — strict types/lint/format; fix data to fit strict types, never loosen them
 - [Three type checkers](project_type-checkers.md) — mypy, pyright and ty all run strict (user, 2026-10-20); a change passes all three
-- [Starlette TestClient and httpx2](starlette-testclient-httpx2.md) — TestClient needs `httpx2` (dev group since 2026-10-18); FastAPI route listing
+- [Starlette TestClient and httpx2](starlette-testclient-httpx2.md) — TestClient needs `httpx2`; list routes with `iter_route_contexts`; overrides per app
 - [Mangum event loop](mangum-event-loop.md) — conftest owns Mangum's import-time loop; async tests unset it; run the full matrix
 - [Pydantic model notes](pydantic-model-notes.md) — field docstrings become OpenAPI text; models.py stays a leaf; FiniteFloat; strict mode on, python-mode dumps don't round-trip
 - [ruff over pylint](feedback_ruff-over-pylint.md) — ruff owns any check it has a rule for (preview by code); pylint keeps the rest; naming in ruff; tests W0621 via plugin

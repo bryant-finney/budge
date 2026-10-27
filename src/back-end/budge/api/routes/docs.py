@@ -1,22 +1,17 @@
 """The OpenAPI document, Swagger UI and ReDoc, served by the app's own routes rather than FastAPI's built-in ones (§8).
 
-The routes are the built-in ones rebuilt on an `APIRouter` so that one hook, `DOCS_DEPENDENCIES`, applies a dependency
-to all four of them. The docs are exposed in every environment; the auth PR gates them by adding the `budge_session`
-cookie + allowlist dependency to `DOCS_DEPENDENCIES` (spec §8: every route except `POST /auth/session` and
-`GET /health` requires a valid session). `create_app` includes this router under `/api` with that hook, and none of the
-routes appear in the OpenAPI document itself. Swagger UI and ReDoc load their JavaScript (and Swagger UI its CSS) from
-`cdn.jsdelivr.net`, FastAPI's defaults.
+The routes are the built-in ones rebuilt on an `APIRouter`, which `budge.api.routes.protected_router` includes under
+`/api`, so all four require a session like every other route but `POST /auth/session` and `GET /health` (spec §8).
+`budge.api.auth.require_session` admits every request until the auth PR fills it in, so for now the docs are public.
+None of the routes appear in the OpenAPI document itself. Swagger UI and ReDoc load their JavaScript (and Swagger UI
+its CSS) from `cdn.jsdelivr.net`, FastAPI's defaults.
 """
-
-from collections.abc import Sequence
 
 from fastapi import APIRouter, FastAPI, Request
 from fastapi.openapi.docs import get_redoc_html, get_swagger_ui_html, get_swagger_ui_oauth2_redirect_html
-from fastapi.params import Depends
 from fastapi.responses import HTMLResponse, JSONResponse
 
 __all__ = [
-    'DOCS_DEPENDENCIES',
     'DOCS_PATH',
     'OAUTH2_REDIRECT_PATH',
     'OPENAPI_PATH',
@@ -40,15 +35,8 @@ OAUTH2_REDIRECT_PATH = '/docs/oauth2-redirect'
 REDOC_PATH = '/redoc'
 """ReDoc's path, relative to the `/api` prefix."""
 
-DOCS_DEPENDENCIES: Sequence[Depends] = ()
-"""The auth hook: dependencies all four docs routes require, applied by `create_app` when it includes `router`.
-
-Empty until the auth PR adds the `budge_session` session dependency here (spec §8), so for now the docs are public.
-`GET /api/health` is on a different router and never picks these up.
-"""
-
 router = APIRouter(include_in_schema=False)
-"""The docs routes, which `create_app` includes under the `/api` prefix with `DOCS_DEPENDENCIES`."""
+"""The docs routes, which `budge.api.routes.protected_router` includes under the `/api` prefix."""
 
 
 def _root_path(request: Request) -> str:

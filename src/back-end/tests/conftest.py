@@ -1,17 +1,21 @@
-"""Shared pytest fixtures: the API test client, recorded Lambda events, and a Lambda context double."""
+"""Shared pytest fixtures: the API test clients, recorded Lambda events, and a Lambda context double."""
 
 import asyncio
 import dataclasses
 import importlib
 import json
 from collections.abc import Iterator
+from http import HTTPStatus
 from pathlib import Path
+from typing import NoReturn
 
 import pytest
+from fastapi import HTTPException
 from fastapi.testclient import TestClient
 from mangum.types import LambdaCognitoIdentity, LambdaContext, LambdaMobileClientContext
 
 from budge.api.app import create_app
+from budge.api.auth import require_session
 
 EVENTS_DIR = Path(__file__).parent / 'events'
 """Recorded (or docs-derived) Lambda event payloads."""
@@ -58,6 +62,23 @@ def client() -> Iterator[TestClient]:
     `filterwarnings = error`) if only `httpx` is installed.
     """
     with TestClient(create_app()) as test_client:
+        yield test_client
+
+
+def _deny_session() -> NoReturn:
+    """Stand in for a failed session check, as the auth PR's `require_session` will fail one (spec §8)."""
+    raise HTTPException(status_code=HTTPStatus.UNAUTHORIZED)
+
+
+@pytest.fixture
+def denied_client() -> Iterator[TestClient]:
+    """A client for a fresh app whose `require_session` rejects every request with `401`.
+
+    The override is set on that app alone, so the module-level `app` and other `create_app()` apps stay open.
+    """
+    application = create_app()
+    application.dependency_overrides[require_session] = _deny_session
+    with TestClient(application) as test_client:
         yield test_client
 
 

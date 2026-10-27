@@ -1,11 +1,8 @@
 """Tests for the OpenAPI document and Swagger UI routes in `budge.api.routes.docs` (spec §8)."""
 
-from collections.abc import Iterator
 from http import HTTPStatus
-from typing import NoReturn
 
 import pytest
-from fastapi import Depends, FastAPI, HTTPException
 from fastapi.testclient import TestClient
 
 from budge.api.app import app, create_app
@@ -17,29 +14,12 @@ DOCS_URLS = [
 """Every docs route's full path."""
 
 
-def _deny() -> NoReturn:
-    """Stand in for the auth PR's session dependency by rejecting every request."""
-    raise HTTPException(status_code=HTTPStatus.UNAUTHORIZED)
-
-
-@pytest.fixture
-def gated_client() -> Iterator[TestClient]:
-    """A client for an app whose docs hook holds a dependency that rejects every request."""
-    with TestClient(create_app(docs_dependencies=[Depends(_deny)])) as test_client:
-        yield test_client
-
-
 def test_builtin_doc_routes_are_off() -> None:
     """FastAPI's own doc routes are disabled, so `budge.api.routes.docs` alone serves the docs."""
     assert app.openapi_url is None
     assert app.docs_url is None
     assert app.redoc_url is None
     assert app.swagger_ui_oauth2_redirect_url is None
-
-
-def test_docs_hook_is_empty_until_auth() -> None:
-    """The docs are public until the auth PR adds its session dependency to the hook (spec §8)."""
-    assert not docs.DOCS_DEPENDENCIES
 
 
 def test_openapi_document_is_the_apps_schema(client: TestClient) -> None:
@@ -129,24 +109,14 @@ def test_redoc_prefixes_the_root_path() -> None:
 
 
 @pytest.mark.parametrize('url', DOCS_URLS)
-def test_docs_hook_gates_every_docs_route(gated_client: TestClient, url: str) -> None:
-    """A dependency in the docs hook applies to every docs route."""
-    assert gated_client.get(url).status_code == HTTPStatus.UNAUTHORIZED
+def test_session_gates_every_docs_route(denied_client: TestClient, url: str) -> None:
+    """The docs routes sit on `protected_router`, so each one requires a session (spec §8)."""
+    assert denied_client.get(url).status_code == HTTPStatus.UNAUTHORIZED
 
 
-def test_docs_hook_leaves_health_open(gated_client: TestClient) -> None:
-    """The docs hook doesn't reach `GET /api/health`, which stays unauthenticated (spec §8)."""
-    response = gated_client.get('/api/health')
+def test_session_leaves_health_open(denied_client: TestClient) -> None:
+    """`GET /api/health` sits on `open_router`, so it stays unauthenticated when sessions fail (spec §8)."""
+    response = denied_client.get('/api/health')
 
     assert response.status_code == HTTPStatus.OK
     assert response.json() == {'ok': True}
-
-
-def test_docs_hook_does_not_change_the_module_router() -> None:
-    """Building a gated app leaves the shared docs router, and so the default app, ungated."""
-    gated: FastAPI = create_app(docs_dependencies=[Depends(_deny)])
-
-    assert gated.openapi() == app.openapi()
-    assert not docs.router.dependencies
-    with TestClient(create_app()) as test_client:
-        assert test_client.get('/api/docs').status_code == HTTPStatus.OK

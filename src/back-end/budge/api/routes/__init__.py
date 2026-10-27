@@ -1,23 +1,36 @@
-"""The API's routes, all mounted under one `/api` router (spec §4, §8).
+"""The API's routes, split between two routers under one `/api` prefix (spec §4, §8).
 
 CloudFront forwards `/api/...` paths to API Gateway unchanged, so declaring the prefix in FastAPI itself makes paths
 identical on AWS and under local uvicorn, and Mangum needs no base-path setting.
+
+Spec §8 requires a session for every request except `POST /auth/session` and `GET /health`. FastAPI router
+dependencies accumulate down through included routers and have no per-route opt-out, so the few public routes can't be
+excluded from a router that requires a session; they sit on a separate router instead. `create_app` includes both.
 """
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 
-from budge.api.routes import health
+from budge.api.auth import require_session
+from budge.api.routes import docs, health
 
-__all__ = ['API_PREFIX', 'api_router']
+__all__ = ['API_PREFIX', 'open_router', 'protected_router']
 
 API_PREFIX = '/api'
 """The path prefix every route is served under."""
 
-api_router = APIRouter(prefix=API_PREFIX)
-"""The router for the API's own routes; each feature router is included here.
+protected_router = APIRouter(prefix=API_PREFIX, dependencies=[Depends(require_session)])
+"""The router for every API route that requires a session, which is every route not on `open_router`.
 
-The docs routes (`budge.api.routes.docs`) are not: `create_app` includes them under the same prefix itself, so it can
-apply their auth hook.
+Each feature router, and the docs routes (`budge.api.routes.docs`), is included here, so each route requires
+`require_session`.
 """
 
-api_router.include_router(health.router)
+open_router = APIRouter(prefix=API_PREFIX)
+"""The router for the unauthenticated routes: `GET /api/health`, and `POST /api/auth/session` once the auth PR adds it.
+
+Adding a route here makes it public, so do it deliberately: `tests/api/test_routes.py` pins this router's paths, so
+the change has to show up in a test, too.
+"""
+
+protected_router.include_router(docs.router)
+open_router.include_router(health.router)

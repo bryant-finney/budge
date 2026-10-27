@@ -4,28 +4,24 @@
 development runs under uvicorn as `budge.api.app:app` (milestone 2).
 """
 
-from collections.abc import Sequence
-
 from fastapi import FastAPI
-from fastapi.params import Depends
 
 import budge
-from budge.api.routes import API_PREFIX, api_router, docs
+from budge.api.routes import open_router, protected_router
 
 __all__ = ['app', 'create_app']
 
 
-def create_app(*, docs_dependencies: Sequence[Depends] = docs.DOCS_DEPENDENCIES) -> FastAPI:
+def create_app() -> FastAPI:
     """Build the API application.
+
+    Every route comes from one of two routers under the `/api` prefix (`budge.api.routes`): `open_router`, the only
+    unauthenticated routes, and `protected_router`, whose routes all require `budge.api.auth.require_session`
+    (spec §8). Tests replace that dependency per app through `app.dependency_overrides[require_session]`.
 
     The OpenAPI document, Swagger UI (with its OAuth2 redirect page) and ReDoc are served under the `/api` prefix too:
     CloudFront routes only `/api/*` to the API, so FastAPI's default `/openapi.json` would be unreachable once deployed.
-    FastAPI's built-in doc routes are off; `budge.api.routes.docs` serves those four routes from a router whose
-    dependencies are `docs_dependencies`, the hook the auth PR fills (spec §8). `GET /api/health` never gets them.
-
-    Args:
-        docs_dependencies: Dependencies all four docs routes require. Defaults to the hook,
-            `budge.api.routes.docs.DOCS_DEPENDENCIES`.
+    FastAPI's built-in doc routes are off; `budge.api.routes.docs` serves those four routes on `protected_router`.
 
     Returns:
         A new FastAPI application with every route under `/api`.
@@ -41,8 +37,8 @@ def create_app(*, docs_dependencies: Sequence[Depends] = docs.DOCS_DEPENDENCIES)
         redoc_url=None,
         swagger_ui_oauth2_redirect_url=None,
     )
-    app.include_router(api_router)
-    app.include_router(docs.router, prefix=API_PREFIX, dependencies=docs_dependencies)
+    app.include_router(open_router)
+    app.include_router(protected_router)
     return app
 
 

@@ -8,7 +8,7 @@ from pydantic import BaseModel, ConfigDict
 __all__ = ['HealthResponse', 'get_health', 'router']
 
 router = APIRouter(tags=['health'])
-"""Health routes; included under the `/api` prefix by `budge.api.routes.api_router`."""
+"""Health routes; included under the `/api` prefix by `budge.api.routes.open_router`, so they need no session."""
 
 
 class HealthResponse(BaseModel):

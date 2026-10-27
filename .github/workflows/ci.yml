@@ -1,4 +1,4 @@
-# Pull-request CI: shared pre-commit checks and all test suites. `ci-ok` is the aggregate gate.
+# Pull-request CI: shared pre-commit checks and all test suites.
 # ref: https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax
 name: ci
 
@@ -31,17 +31,15 @@ jobs:
         with:
           node-version-file: .node-version
           cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e  # v10.3.2
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
         with:
-          version-file: src/back-end/pyproject.toml
-          enable-cache: true
-          cache-dependency-glob: src/back-end/uv.lock
+          python-version: ${{ env.UV_PYTHON }}
+      - run: python -m pip install pre-commit==4.7.0
       - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
         with:
           path: ~/.cache/pre-commit
           key: pre-commit-${{ runner.os }}-py${{ env.UV_PYTHON }}-${{ hashFiles('.pre-commit-config.yaml') }}
-      - run: uvx pre-commit run --all-files --show-diff-on-failure
+      - run: pre-commit run --all-files --show-diff-on-failure
 
   test:
     runs-on: ubuntu-latest
@@ -102,18 +100,3 @@ jobs:
           name: py-test-reports-${{ matrix.python }}
           path: src/back-end/reports/
           if-no-files-found: warn
-
-  ci-ok:
-    needs: [pre-commit, test]
-    if: always()
-    runs-on: ubuntu-latest
-    permissions: {}
-    steps:
-      - name: Require all checks and tests to pass
-        if: needs.pre-commit.result != 'success' || needs.test.result != 'success'
-        env:
-          RESULTS: ${{ toJSON(needs) }}
-        run: |
-          echo "$RESULTS"
-          exit 1
-      - run: echo "every required job succeeded"

@@ -69,9 +69,15 @@ repos:
       - id: actionlint
 
   # infra (src/infrastructure) plus the shared Prettier hook for both TS packages.
-  # language: system: needs Node 24 + pnpm on PATH and `pnpm install --frozen-lockfile` first.
+  # language: system: needs Node 24 + pnpm on PATH.
   - repo: local
     hooks:
+      - id: pnpm-install
+        name: install locked pnpm workspace
+        language: system
+        entry: pnpm install --frozen-lockfile
+        always_run: true
+        pass_filenames: false
       - id: prettier
         name: prettier (src/front-end, src/infrastructure)
         language: system

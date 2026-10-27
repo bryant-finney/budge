@@ -1,6 +1,6 @@
 ---
 name: pyright-gotchas
-description: pyright quirks in budge (contextmanager return type, nodenv node lookup, silent hang when pyright is missing from .venv, reportPrivateImportUsage only from repo root) and what each checker does or does not enforce about __all__
+description: pyright quirks in budge (contextmanager return type, HTTPStatus 422 name on 3.11, declared-object narrowing, nodenv, silent hang when pyright is missing from .venv, private-import from repo root) and __all__ enforcement
 metadata:
   type: feedback
 ---
@@ -10,6 +10,14 @@ metadata:
 - **`@contextlib.contextmanager` must return `Generator[T, None, None]`, not `Iterator[T]`.** pyright 1.1.414
   strict reports `reportDeprecated` for `-> Iterator[None]` (typeshed deprecates that overload). Use the
   three-argument `Generator` form, which also works on the 3.11 floor.
+
+- **`HTTPStatus.UNPROCESSABLE_CONTENT` only exists from 3.13** (#29, 2026-10-27). The checkers target 3.11, so all
+  three report it. Use `fastapi.status.HTTP_422_UNPROCESSABLE_CONTENT`. Starlette's `HTTP_422_UNPROCESSABLE_ENTITY` is
+  deprecated.
+
+- **A declared `x: object = y` still narrows to `y`'s type**, so a later `isinstance(x, str)` is
+  `reportUnnecessaryIsInstance` (and mypy `redundant-expr`) when `y` is typed `str` but can hold anything at runtime
+  (Starlette's `HTTPException.detail`). `x = cast('object', y)` doesn't narrow.
 
 - **The PyPI `pyright` wrapper runs `node` from `PATH`.** The nodenv shim resolves the nearest `.node-version`
   walking up from the cwd. On 2026-10-17 that was a Node (`24.22.0`) that wasn't installed, and pyright died with

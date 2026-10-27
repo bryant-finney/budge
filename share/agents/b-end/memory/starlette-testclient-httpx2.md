@@ -1,6 +1,6 @@
 ---
 name: starlette-testclient-httpx2
-description: Starlette 1.8's TestClient needs httpx2 (httpx warns, fatal under filterwarnings=error); FastAPI 0.143 route listing via iter_route_contexts; dependency_overrides stay per app
+description: Starlette 1.8's TestClient needs httpx2; route listing via iter_route_contexts; overrides per app; https base_url for Secure cookies, constructor-only raise_server_exceptions, jar cookies at path /
 metadata:
   type: reference
 ---
@@ -28,5 +28,15 @@ metadata:
   context carries the including app as `dependency_overrides_provider`.
 - `docs_url` alone leaves Swagger's OAuth2 redirect at `/docs/oauth2-redirect`, outside `/api`. Set
   `swagger_ui_oauth2_redirect_url` too.
+
+## Cookies and server errors (learned on #29, 2026-10-27)
+
+- The session cookie is `Secure`, so the jar drops it over `http://testserver`. `tests.auth.client_for` uses
+  `base_url='https://testserver'`.
+- Cookies passed as `TestClient(cookies=...)` sit in the jar at path `/`. A server `Set-Cookie: ...; Path=/api; Max-Age=0` is a different cookie, so it can't clear them. A sign-out test must sign in through the app first, so the
+  server sets the cookie it later clears.
+- `raise_server_exceptions` only takes effect in the constructor; setting the attribute on a built client does nothing.
+  Pass `raise_server_exceptions=False` to see the app's `500` envelope instead of the raised exception.
+- Per-request `cookies=` is deprecated in httpx (a fatal warning here). Set cookies on the client or the jar.
 
 Related: [[mangum-event-loop]].

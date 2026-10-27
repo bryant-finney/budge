@@ -400,6 +400,12 @@ template = '''"""The `budge` version, written at build time by hatchling's `vers
 __version__: str = '{version}'
 '''
 
+# hatchling's sdist otherwise ships every file git doesn't ignore: the rootdir `conftest.py`, `tests/`, `.envrc` and
+# `uv.lock` are development files, not the package. `tests/` can't run without the rootdir conftest anyway. The version
+# hook's `budge/_version.py` still ships (its `artifacts` entry), and hatchling always adds `pyproject.toml`/`PKG-INFO`
+[tool.hatch.build.targets.sdist]
+only-include = ["budge"]
+
 [tool.hatch.build.targets.wheel]
 # flat layout: the package lives at `src/back-end/budge/`, not under a nested `src/`
 packages = ["budge"]

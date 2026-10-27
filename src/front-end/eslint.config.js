@@ -1,9 +1,3 @@
-// ESLint flat config: typed typescript-eslint rules for .ts and .svelte, plus eslint-plugin-svelte.
-//
-// ref: https://sveltejs.github.io/eslint-plugin-svelte/user-guide/
-// ref: https://typescript-eslint.io/getting-started/typed-linting/
-//
-// pattern: formatting is prettier's job alone, so eslint-config-prettier comes last
 import js from '@eslint/js';
 import prettier from 'eslint-config-prettier/flat';
 import svelte from 'eslint-plugin-svelte';
@@ -29,8 +23,6 @@ export default defineConfig(
       },
     },
     rules: {
-      // AGENT.md: no `any`, no unexplained non-null assertions, no bare ts-comments.
-      // strictTypeChecked enables these; restating them pins the contract.
       '@typescript-eslint/no-explicit-any': 'error',
       '@typescript-eslint/no-non-null-assertion': 'error',
       '@typescript-eslint/ban-ts-comment': [
@@ -47,7 +39,6 @@ export default defineConfig(
     },
   },
   {
-    // config files sit outside tsconfig.json's program and run under Node
     files: ['*.js'],
     extends: [ts.configs.disableTypeChecked],
     languageOptions: { globals: globals.node },

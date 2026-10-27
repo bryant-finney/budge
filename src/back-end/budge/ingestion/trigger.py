@@ -10,8 +10,7 @@ from typing import Protocol
 __all__ = ['IngestionTrigger']
 
 
-# The trigger boundary deliberately exposes one operation.
-class IngestionTrigger(Protocol):  # pylint: disable=too-few-public-methods
+class IngestionTrigger(Protocol):
     """Starts an asynchronous ingestion run (spec §7 onboarding step 5, §8 sync routes)."""
 
     def trigger(self, connection_id: str | None = None) -> None:

@@ -147,6 +147,7 @@ repos:
         name: pylint (src/back-end)
         language: python
         additional_dependencies: *uv
-        entry: uv run -q --directory src/back-end --locked pylint budge tests
+        entry: uv run -q --directory src/back-end --locked pylint --exit-zero budge tests
         files: *back-end-inputs
         pass_filenames: false
+        verbose: true

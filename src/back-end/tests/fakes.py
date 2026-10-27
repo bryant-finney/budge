@@ -143,8 +143,7 @@ class FakeSecretStore(SecretStore):
         self.tokens.pop(connection_id, None)
 
 
-# This fake implements the trigger boundary's single operation.
-class FakeIngestionTrigger(IngestionTrigger):  # pylint: disable=too-few-public-methods
+class FakeIngestionTrigger(IngestionTrigger):
     """A `budge.ingestion.IngestionTrigger` that records each request instead of starting a run."""
 
     calls: list[str | None]

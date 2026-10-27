@@ -1,0 +1,17 @@
+# Dependabot version updates: keeps the SHA-pinned actions in .github/workflows/ current.
+# npm and uv are deliberately left out for now; b-end and f-end can propose them.
+#
+# ref: https://docs.github.com/en/code-security/dependabot/working-with-dependabot/dependabot-options-reference
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    # wait a week after a release before proposing it, like pnpm's minimumReleaseAge gate
+    cooldown:
+      default-days: 7
+    # one PR for every action bump
+    groups:
+      github-actions:
+        patterns: ["*"]

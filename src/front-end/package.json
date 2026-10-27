@@ -2,14 +2,29 @@
   "name": "front-end",
   "private": true,
   "description": "budge's single-page app (SvelteKit + TypeScript)",
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
   "imports": {
     "#lib": "./lib/index.ts",
     "#lib/*": "./lib/*"
   },
   "scripts": {
-    "check": "tsc --noEmit"
+    "dev": "vite dev",
+    "build": "vite build",
+    "preview": "vite preview",
+    "prepare": "svelte-kit sync || echo ''",
+    "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --fail-on-warnings"
   },
   "devDependencies": {
-    "typescript": "catalog:"
+    "@sveltejs/adapter-static": "^4.0.0",
+    "@sveltejs/kit": "^3.1.0",
+    "@sveltejs/vite-plugin-svelte": "^7.3.1",
+    "@types/node": "catalog:",
+    "svelte": "^5.57.1",
+    "svelte-check": "^4.7.7",
+    "typescript": "catalog:",
+    "vite": "^8.3.5"
   }
 }

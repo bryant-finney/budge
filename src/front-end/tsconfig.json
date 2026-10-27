@@ -1,17 +1,19 @@
 {
-  "extends": "../../tsconfig.base.json",
+  "extends": [
+    "$app/tsconfig",
+    "../../tsconfig.base.json"
+  ],
   "compilerOptions": {
-    "target": "esnext",
-    "lib": [
-      "esnext",
-      "DOM",
-      "DOM.Iterable"
-    ],
-    "module": "esnext",
-    "moduleResolution": "bundler",
-    "verbatimModuleSyntax": true
+    "forceConsistentCasingInFileNames": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitReturns": true
   },
   "include": [
-    "lib"
+    "*.ts",
+    "lib",
+    "routes"
+  ],
+  "exclude": [
+    "service-worker"
   ]
 }

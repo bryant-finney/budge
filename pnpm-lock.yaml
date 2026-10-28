@@ -241,6 +241,9 @@ importers:
 
   src/infrastructure:
     dependencies:
+      '@pulumi/aws':
+        specifier: 7.51.1
+        version: 7.51.1(typescript@6.0.3)
       '@pulumi/pulumi':
         specifier: 3.269.0
         version: 3.269.0(typescript@6.0.3)
@@ -593,6 +596,9 @@ packages:
 
   '@protobufjs/utf8@1.1.2':
     resolution: {integrity: sha512-b1UQwcEZ4yCnMCD8DAL1VlbvBJE9/IX4FTIp7BG1xYpf29SLazLSrqUkj4w7Y5y7cCVP6E5tcqqcI0xemPkHug==}
+
+  '@pulumi/aws@7.51.1':
+    resolution: {integrity: sha512-uJBvElDsU2UVZOwFT3VBprUhc1i1WeHi8MAbbw4mag4okzZDfarHwfSimoMiBkO4XfdQScdY7rDI0g6xIZiosA==}
 
   '@pulumi/pulumi@3.269.0':
     resolution: {integrity: sha512-budgf3lN9Iuf+Uu8+evbTw1LiZFa9GKgKdHBQQdDRv2IsD5oG8snyzvyNQp+ziD4B3ukyLaou+nHXsnVuqlT8A==}
@@ -1445,6 +1451,11 @@ packages:
 
   merge-stream@2.0.0:
     resolution: {integrity: sha512-abv/qOcuPfk3URPfDzmZU1LKmuw8kT+0nIHvKrKgFrwifol/doWcdA4ZqsWQ8ENrFKkd67Mfpo/LovbIUsbt3w==}
+
+  mime@2.6.0:
+    resolution: {integrity: sha512-USPkMeET31rOMiarsBNIHZKLGgvKc/LrjofAnBlOttf5ajRvqiRA8QsenbcooctK6d6Ts6aqZXBA+XbkKthiQg==}
+    engines: {node: '>=4.0.0'}
+    hasBin: true
 
   mimic-fn@2.1.0:
     resolution: {integrity: sha512-OqbOk5oEQeAZ8WXWydlu9HJjz9WVdEIvamMCcXmuqUYjTknH/sqsWvhQ3vgwKFRR1HpjvNBKQ37nbJgYzGqGcg==}
@@ -2448,6 +2459,15 @@ snapshots:
 
   '@protobufjs/utf8@1.1.2': {}
 
+  '@pulumi/aws@7.51.1(typescript@6.0.3)':
+    dependencies:
+      '@pulumi/pulumi': 3.269.0(typescript@6.0.3)
+      mime: 2.6.0
+    transitivePeerDependencies:
+      - supports-color
+      - ts-node
+      - typescript
+
   '@pulumi/pulumi@3.269.0(typescript@6.0.3)':
     dependencies:
       '@grpc/grpc-js': 1.14.6
@@ -3241,6 +3261,8 @@ snapshots:
       - supports-color
 
   merge-stream@2.0.0: {}
+
+  mime@2.6.0: {}
 
   mimic-fn@2.1.0: {}
 

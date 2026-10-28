@@ -12,6 +12,8 @@ a subagent. Paths below are relative to the repository root.
 Read the applicable role and memory index before starting work, then consult relevant linked notes.
 Follow the shared role's memory guidance subject to higher-priority session instructions. Keep shared
 knowledge in `share/agents/<name>/memory/`; the `.codex/agent-memory/` links point to those same files.
+Notes that apply to every agent live in [`share/agents/_memory/`](share/agents/_memory/MEMORY.md); a
+pre-commit hook copies its index into each agent's `MEMORY.md`, so edit only the shared index.
 
 When delegating, use the matching custom agent in `.codex/agents/`, give it explicit file ownership,
 and tell it to preserve other agents' edits. Coordinate API and infrastructure changes across layers.

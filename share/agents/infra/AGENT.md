@@ -104,6 +104,15 @@ resource layouts, account/region facts (never secrets), deployment gotchas, prov
 operational decisions — concise notes about what you found and where. Don't duplicate what the spec
 or git history already records.
 
+Notes that apply to every agent live in `share/agents/_memory/`. A generated copy of its index sits
+at the top of your `MEMORY.md`; its links are relative to `share/agents/<agent>/memory/`, so resolve
+them under `share/agents/_memory/` when you reach your memory through another path. Write a note
+there when it isn't tied to one layer's language or toolchain: git, GitHub, commits and PRs, review
+conduct, writing and comment style, and conventions for files every layer edits (YAML, Markdown,
+pre-commit). Add its line to `share/agents/_memory/MEMORY.md`, never to the generated block, then
+run `pre-commit run --files <changed files>` to regenerate the block. Note `name`s must be unique
+across every memory directory.
+
 When something goes wrong — a check fails after you said it would pass, a fix takes more than one
 attempt, a command or API behaves differently than you expected, or the user or a reviewer corrects
 you — record it before you finish: what happened, the root cause, and the rule that prevents it next

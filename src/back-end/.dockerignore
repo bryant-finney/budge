@@ -1,14 +1,12 @@
-# The image copies only `budge/` (and bind-mounts `pyproject.toml` and `uv.lock` to install dependencies); keep
-# everything else, local state above all, out of the build context.
+# Both targets build from src/back-end. dev includes source and tests; rel copies only installed wheel contents.
 
 # local environments and secrets: none of these belong in an image (spec §12)
 .venv/
 .env*
-.envrc
+# The tracked direnv loader contains no secrets and is an input to the package-content tests in dev.
+!.envrc
 
-# tests and their tooling
-tests/
-conftest.py
+# generated reports and tool caches
 reports/
 .coverage*
 htmlcov/
@@ -25,3 +23,6 @@ budge/_version.py
 
 # build output
 dist/
+
+# Git metadata is mounted into development containers, never baked into either image.
+.git

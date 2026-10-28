@@ -152,9 +152,6 @@ repos:
         pass_filenames: false
         verbose: true
 
-  # front-end (src/front-end). Prettier is the shared `prettier` hook above (#14).
-  # Hook ids are a CI contract: CI's pre-commit job SKIPs front-end-eslint/-svelte-check (#15).
-  # pass_filenames: false: pre-commit passes repo-root paths, which don't resolve under -C.
   - repo: local
     hooks:
       - id: front-end-eslint

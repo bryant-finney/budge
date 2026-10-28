@@ -1,0 +1,250 @@
+#!/usr/bin/env bash
+# Check (or, for the owner only, apply) the GitHub repo settings that rules.md doesn't own: repo
+# fields, Dependabot and secret scanning, Actions permissions, CODEOWNERS errors, and labels.
+# Rulesets and the merge settings live in share/skills/apply-repo-rules/rules.md; `check` runs
+# that skill's own read-only `check` and includes its result, so each setting has one owner.
+#
+# Desired state, beside this script (strict JSON):
+#   repo.json         one entry per endpoint under repos/<repo>: `settings` (dotted paths into
+#                     the GET response, applied with `write`), or `enabled` for an endpoint that
+#                     answers 2xx when the feature is on and 404 when it's off
+#   labels.json       labels that must exist, with their descriptions (checked, never applied)
+#   unavailable.json  "<item> <setting>" -> reason, for settings the plan doesn't offer; they
+#                     print SKIP instead of FAIL. Empty under the public-repo plan (option B, #17)
+#
+# Uses only `gh` (`gh api --jq`); the delegated apply-repo-rules.sh also needs `jq`.
+set -euo pipefail
+
+usage() {
+  cat <<'EOF'
+usage: repo-settings.sh [check [REF]]
+       repo-settings.sh apply --yes
+
+  check  (default) compare the live settings with the desired state; read-only. REF (a branch
+         or commit) is where CODEOWNERS and rules.md are read; it defaults to main
+  apply  PATCH/PUT the settings in repo.json, then check. Never touches rulesets, rules.md's
+         merge settings, or labels. Only the repo owner runs it; agents and CI never do
+
+The token must belong to a repo admin (the owner's `gh auth`): the Actions, Dependabot and
+security settings aren't readable otherwise, and GITHUB_TOKEN can't be granted that access, so
+this runs locally only.
+
+exit status:
+  0   no drift
+  1   drift (a FAIL line)
+  2   a desired-state file is missing or isn't valid
+  5   a GitHub API call failed, or the token can't read admin settings
+  64  usage
+EOF
+}
+
+# The target is fixed, not read from git remotes or gh's config (as in apply-repo-rules.sh).
+repo=bryant-finney/budge
+host=github.com
+here=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)
+root=$(cd "$here/../../.." && pwd -P)
+rules=$root/share/skills/apply-repo-rules/apply-repo-rules.sh
+
+die() {
+  echo "repo-settings: $2" >&2
+  exit "$1"
+}
+
+# api ARGS...: `gh api` on $host, whatever GH_HOST says; exit 5 if it fails
+api() {
+  # name only the path: the other arguments include the spliced desired state
+  gh api --hostname "$host" "$@" || die 5 "gh api $1 failed"
+}
+
+# desired NAME: print a desired-state file; exit 2 if it's missing
+desired() {
+  [[ -f $here/$1 ]] || die 2 "$here/$1 is missing"
+  cat "$here/$1"
+}
+
+# load: read and validate the desired state into $repo_json, $labels_json and $unavailable_json.
+# jq runs inside `gh api --jq`, so each file is spliced into the jq program as a literal; any
+# cheap GET serves as its input.
+load() {
+  repo_json=$(desired repo.json) || exit "$?"
+  labels_json=$(desired labels.json) || exit "$?"
+  unavailable_json=$(desired unavailable.json) || exit "$?"
+  gh api --hostname "$host" "repos/$repo" --jq "
+    ($repo_json) as \$r | ($labels_json) as \$l | ($unavailable_json) as \$u
+    | if (\$r | type) == \"array\"
+        and all(\$r[]; (.endpoint | type) == \"string\"
+          and ((.settings | type) == \"object\" and (.write == \"PATCH\" or .write == \"PUT\")
+            or (.enabled | type) == \"boolean\"))
+        and (\$l | type) == \"array\" and all(\$l[]; (.name | type) == \"string\")
+        and (\$u | type) == \"object\"
+      then empty else error(\"invalid desired state\") end" >/dev/null 2>&1 \
+    || die 2 "repo.json, labels.json or unavailable.json isn't valid (or GitHub isn't reachable)"
+}
+
+# require_admin: the admin-only fields read as null or 404 to anyone else, which would look like
+# drift, so refuse instead of guessing
+require_admin() {
+  local who admin
+  who=$(api user --jq .login) || exit "$?"
+  admin=$(api "repos/$repo" --jq .permissions.admin) || exit "$?"
+  [[ $admin == true ]] \
+    || die 5 "$who isn't an admin of $repo, so the admin-only settings can't be read; run this as the owner"
+}
+
+# check_item INDEX: compare entry INDEX of repo.json with the live settings
+check_item() {
+  local item kind endpoint label err
+  item="($repo_json)[$1]"
+  endpoint=$(api "repos/$repo" --jq "$item.endpoint") || exit "$?"
+  label="repo$endpoint"
+  kind=$(api "repos/$repo" --jq "$item | if .settings then \"settings\" else \"enabled\" end") \
+    || exit "$?"
+  if [[ $kind == settings ]]; then
+    api "repos/$repo$endpoint" --jq "
+      . as \$live | ($unavailable_json) as \$u
+      | $item.settings | to_entries[]
+      | \"$label \(.key)\" as \$id | (.key | split(\".\")) as \$path | (\$live | getpath(\$path)) as \$got
+      | if \$u[\$id] then \"SKIP \(\$id) (unavailable: \(\$u[\$id]))\"
+        elif \$got == .value then \"OK   \(\$id)\"
+        else \"FAIL \(\$id) (want \(.value | tojson), got \(\$got | tojson))\" end"
+    return
+  fi
+  local want got id="$label enabled"
+  want=$(api "repos/$repo" --jq "$item.enabled") || exit "$?"
+  if [[ -n $(api "repos/$repo" --jq "($unavailable_json) as \$u | \$u[\"$id\"] // empty") ]]; then
+    api "repos/$repo" --jq "($unavailable_json) as \$u | \"SKIP $id (unavailable: \(\$u[\"$id\"]))\""
+    return
+  fi
+  if err=$(gh api --hostname "$host" "repos/$repo$endpoint" --silent 2>&1); then
+    got=true
+  elif [[ $err == *"HTTP 404"* ]]; then
+    got=false
+  else
+    die 5 "gh api repos/$repo$endpoint failed: $err"
+  fi
+  if [[ $got == "$want" ]]; then
+    echo "OK   $id"
+  else
+    echo "FAIL $id (want $want, got $got)"
+  fi
+}
+
+# check_codeowners REF: GitHub's CODEOWNERS errors at REF must be an empty list
+check_codeowners() {
+  local out
+  if out=$(gh api --hostname "$host" "repos/$repo/codeowners/errors?ref=$1" \
+    --jq '.errors | if length == 0 then "OK   codeowners (no errors)"
+      else "FAIL codeowners: \(length) error(s)", (.[] | "  \(.path):\(.line) \(.message)") end' \
+    2>&1); then
+    echo "$out"
+  elif [[ $out == *"HTTP 404"* ]]; then
+    echo "FAIL codeowners: no CODEOWNERS file at $1"
+  else
+    die 5 "gh api repos/$repo/codeowners/errors failed: $out"
+  fi
+}
+
+# check_labels: every label in labels.json exists with its description
+check_labels() {
+  local names name out
+  names=$(api "repos/$repo" --jq "($labels_json)[].name") || exit "$?"
+  while IFS= read -r name; do
+    if out=$(gh api --hostname "$host" "repos/$repo/labels/$name" \
+      --jq "($labels_json | map(select(.name == \"$name\"))[0].description) as \$want
+        | if .description == \$want then \"OK   label $name\"
+          else \"FAIL label $name (want \(\$want | tojson), got \(.description | tojson))\" end" \
+      2>&1); then
+      echo "$out"
+    elif [[ $out == *"HTTP 404"* ]]; then
+      echo "FAIL label $name: missing"
+    else
+      die 5 "gh api repos/$repo/labels/$name failed: $out"
+    fi
+  done <<<"$names"
+}
+
+check() {
+  local ref=${1:-main} n i out drift=0 status=0
+  echo "repo:    $repo"
+  echo "desired: $here/{repo,labels,unavailable}.json; CODEOWNERS and rules.md at $ref"
+  n=$(api "repos/$repo" --jq "($repo_json) | length") || exit "$?"
+  out=$(
+    for ((i = 0; i < n; i++)); do check_item "$i" || exit "$?"; done
+    check_codeowners "$ref" || exit "$?"
+    check_labels || exit "$?"
+  ) || exit "$?"
+  echo "$out"
+  [[ $out != *FAIL* ]] || drift=1
+
+  # Rulesets and merge settings: rules.md's own check, read-only. Its `check` with no ref fetches
+  # main from GitHub; with a ref it reads rules.md at that commit.
+  echo
+  echo "rulesets and merge settings (apply-repo-rules.sh check):"
+  if [[ $ref == main ]]; then
+    "$rules" check || status=$?
+  else
+    "$rules" check "$ref" || status=$?
+  fi
+  case $status in
+    0) ;;
+    1) drift=1 ;;
+    *) exit "$status" ;;
+  esac
+  return "$drift"
+}
+
+# apply: write each repo.json entry, then check. Owner only; never run by agents or CI.
+apply() {
+  local n i item endpoint write body want
+  n=$(api "repos/$repo" --jq "($repo_json) | length") || exit "$?"
+  for ((i = 0; i < n; i++)); do
+    item="($repo_json)[$i]"
+    endpoint=$(api "repos/$repo" --jq "$item.endpoint") || exit "$?"
+    write=$(api "repos/$repo" --jq "$item.write // empty") || exit "$?"
+    if [[ -n $write ]]; then
+      # nest the dotted keys (security_and_analysis.secret_scanning.status) into a request body
+      body=$(api "repos/$repo" --jq \
+        "reduce ($item.settings | to_entries[]) as \$e ({}; setpath(\$e.key | split(\".\"); \$e.value))") \
+        || exit "$?"
+      echo "$write repos/$repo$endpoint"
+      api --method "$write" "repos/$repo$endpoint" --input - --silent <<<"$body"
+    else
+      want=$(api "repos/$repo" --jq "$item.enabled") || exit "$?"
+      if [[ $want == true ]]; then write=PUT; else write=DELETE; fi
+      echo "$write repos/$repo$endpoint"
+      api --method "$write" "repos/$repo$endpoint" --silent
+    fi
+  done
+  echo
+  check main
+}
+
+main() {
+  local command=check ref=
+  case "${1:-check}" in
+    check)
+      [[ $# -le 2 ]] || { usage >&2; exit 64; }
+      ref=${2:-}
+      ;;
+    apply)
+      [[ $# -eq 2 && $2 == --yes ]] || { usage >&2; exit 64; }
+      command=apply
+      ;;
+    -h | --help)
+      usage
+      exit 0
+      ;;
+    *)
+      usage >&2
+      exit 64
+      ;;
+  esac
+  load
+  require_admin
+  if [[ $command == apply ]]; then apply; else check "$ref"; fi
+}
+
+# sourcing the script (to test a function) doesn't run it
+if [[ ${BASH_SOURCE[0]} == "$0" ]]; then
+  main "$@"
+fi

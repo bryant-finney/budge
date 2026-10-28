@@ -9,3 +9,4 @@ Index of infra agent memories, one line per entry.
 - [Pulumi mock test harness](pulumi-mock-test-harness.md) — drain `setMocks` RPCs with `runtime.disconnect()` before asserting resources
 - [Restacking across worktrees](git-worktree-restack.md) — `--update-refs` can't move a branch checked out in another worktree; use `--onto`
 - [Required checks: one aggregator](required-checks-aggregator.md) — require only `ci-ok` (always(), skipped=fail), never per-matrix contexts
+- [YAML key order](yaml-key-order.md) — sort object keys alphabetically; workflows lead with `name`, `on`, `permissions`; lists keep order

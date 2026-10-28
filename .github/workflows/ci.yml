@@ -1,5 +1,16 @@
 # ref: https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax
-# pattern: object keys are sorted alphabetically
+# pattern: name, on, permissions first; all other object keys sorted alphabetically
+name: ci
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
+  push:
+    branches: [main]
+  workflow_call:
+
+permissions: {}
+
 concurrency:
   cancel-in-progress: true
   group: ci-${{ github.workflow }}-${{ github.ref }}
@@ -103,14 +114,3 @@ jobs:
             suite: python
           - python: "3.15"
             suite: python
-
-name: ci
-
-on:
-  pull_request:
-    types: [opened, synchronize, reopened, edited]
-  push:
-    branches: [main]
-  workflow_call:
-
-permissions: {}

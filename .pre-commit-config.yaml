@@ -156,3 +156,24 @@ repos:
         files: *back-end-inputs
         pass_filenames: false
         verbose: true
+
+  - repo: local
+    hooks:
+      - id: front-end-eslint
+        name: eslint (src/front-end)
+        language: system
+        entry: pnpm -C src/front-end run lint
+        # also on dependency, tsconfig and tool-config changes: typed linting reads them
+        files: &front-end-inputs |
+          (?x)^(
+            src/front-end/(.*\.(ts|js|svelte)|(package|tsconfig)\.json)
+            |pnpm-lock\.yaml
+            |tsconfig\.base\.json
+          )$
+        pass_filenames: false
+      - id: front-end-svelte-check
+        name: svelte-check (src/front-end)
+        language: system
+        entry: pnpm -C src/front-end run check
+        files: *front-end-inputs
+        pass_filenames: false

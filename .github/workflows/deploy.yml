@@ -1,0 +1,62 @@
+# Deploy `main` to the `prod` stack. DISABLED until milestone 5: the job runs only when the repo
+# variable DEPLOY_ENABLED is 'true', and it isn't set, so every run shows the job as skipped.
+# The permissions, concurrency and environment are final, so they can be reviewed now; each step
+# is a no-op `echo` naming its milestone-5 replacement, in the order spec §12 defines.
+#
+# ref: https://docs.github.com/en/actions/how-tos/secure-your-work/security-harden-deployments/oidc-in-aws
+#
+# pattern: no action is referenced yet; when milestone 5 adds one, pin it to a full commit SHA
+# with its version in a comment, as in ci.yml
+name: deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# deploys queue and are never cancelled midway; Pulumi's S3 backend lock also refuses
+# concurrent `pulumi up`s
+concurrency:
+  group: deploy-prod
+  cancel-in-progress: false
+
+permissions: {}
+
+jobs:
+  # TODO(M5): run the CI checks first, as a preceding job:
+  #   ci:
+  #     uses: ./.github/workflows/ci.yml
+  #     permissions:
+  #       contents: read
+  # and add `needs: ci` below
+  deploy:
+    if: vars.DEPLOY_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    # the GitHub environment is created in milestone 5
+    environment: prod
+    permissions:
+      contents: read
+      # GitHub OIDC: exchanged for the deploy role's short-lived AWS credentials
+      id-token: write
+    steps:
+      - name: Run the CI checks
+        run: |
+          echo "TODO(M5): replace with a preceding job, 'uses: ./.github/workflows/ci.yml'"
+      - name: Assume the deploy role via OIDC
+        run: |
+          echo "TODO(M5): replace with aws-actions/configure-aws-credentials (role-to-assume, us-east-1)"
+      - name: Build the linux/arm64 backend image
+        run: |
+          echo "TODO(M5): built by @pulumi/docker-build inside 'pulumi up' (next step)"
+      - name: pulumi up
+        run: |
+          echo "TODO(M5): replace with 'pulumi up --stack prod --yes'"
+      - name: Deploy the SPA
+        run: |
+          echo "TODO(M5): replace with a sync of src/front-end/build to the SPA bucket"
+          echo "  hashed assets: 'Cache-Control: max-age=31536000, immutable'"
+          echo "  index.html: 'Cache-Control: no-cache'"
+          echo "  then a CloudFront invalidation of /index.html"
+      - name: Smoke-test the API
+        run: |
+          echo "TODO(M5): replace with 'GET /api/health' through CloudFront"

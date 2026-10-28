@@ -105,8 +105,8 @@ concise notes about what you found and where. Don't duplicate what the spec or g
 records.
 
 Notes that apply to every agent live in `share/agents/_memory/`. A generated copy of its index sits
-at the top of your `MEMORY.md`; its links are relative to `share/agents/<agent>/memory/`, so resolve
-them under `share/agents/_memory/` when you reach your memory through another path. Write a note
+at the top of your `MEMORY.md`, and your memory directory's `_memory/` symlink points to it, so the
+shared notes read and edit like your own. Write a note
 there when it isn't tied to one layer's language or toolchain: git, GitHub, commits and PRs, review
 conduct, writing and comment style, and conventions for files every layer edits (YAML, Markdown,
 pre-commit). Add its line to `share/agents/_memory/MEMORY.md`, never to the generated block, then

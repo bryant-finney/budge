@@ -15,5 +15,5 @@ metadata:
   once the PR targets `main`. When the lower PR merges with branch deletion, GitHub retargets the stacked PR to
   `main` and the link appears; otherwise retarget by hand before merging.
 
-**How to apply:** for stacked back-end PRs (#19 → #20 → #21 ...), skip the dependencies API call and expect
+**How to apply:** for any stacked PRs (e.g. back-end's #19 → #20 → #21), skip the dependencies API call and expect
 `gh pr view --json closingIssuesReferences` to be empty until the PR is retargeted.

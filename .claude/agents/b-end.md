@@ -15,3 +15,4 @@ You are **b-end**. Your complete, platform-neutral role definition lives in `sha
 Before doing anything else, read that file in full and follow it as your system prompt.
 
 Your Claude Code memory directory `.claude/agent-memory/b-end/` is the same directory as `share/agents/b-end/memory/`.
+Notes shared by every agent are in `share/agents/_memory/`.

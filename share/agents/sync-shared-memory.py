@@ -25,7 +25,7 @@ def shared_entries(errors: list[str]) -> list[str]:
     notes = {path.name for path in SHARED.glob("*.md")} - {INDEX}
     errors += [f"{SHARED / INDEX}: links missing note {target}" for target in sorted(targets - notes)]
     errors += [f"{SHARED / note}: not listed in {INDEX}" for note in sorted(notes - targets)]
-    return [ENTRY.sub(lambda m: m[0].replace(f"({m['target']})", f"(../../_memory/{m['target']})"), line) for line in lines]
+    return [ENTRY.sub(lambda m: m[0].replace(f"({m['target']})", f"(_memory/{m['target']})"), line) for line in lines]
 
 
 def check_unique_names(memory_dirs: list[Path], errors: list[str]) -> None:
@@ -43,6 +43,11 @@ def main() -> int:
     agent_dirs = sorted(AGENTS.glob("*/memory"))
     block = "\n".join([BEGIN, "", "Shared with every agent; these notes live in `share/agents/_memory/`.", "", *shared_entries(errors), "", END])
     check_unique_names([SHARED, *agent_dirs], errors)
+
+    # agents reach their memory through .claude/agent-memory/<agent>/ too, where ../../ resolves elsewhere
+    for link in (directory / "_memory" for directory in agent_dirs):
+        if not link.is_symlink() or link.resolve() != SHARED:
+            errors.append(f"{link}: must be a symlink to ../../_memory")
 
     changed = False
     for index in (directory / INDEX for directory in agent_dirs):

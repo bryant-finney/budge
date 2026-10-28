@@ -43,20 +43,20 @@ together.
 |     | `include`     | `~DEFAULT_BRANCH`, `refs/heads/main` |
 |     | `exclude`     | none                                 |
 
-|     | Rule                     | Parameter                              | Value                                                                                                                                                                                                                                                                                                                                                                                                   |
-| --- | ------------------------ | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-|     | `deletion`               |                                        |                                                                                                                                                                                                                                                                                                                                                                                                         |
-|     | `non_fast_forward`       |                                        |                                                                                                                                                                                                                                                                                                                                                                                                         |
-|     | `required_signatures`    |                                        |                                                                                                                                                                                                                                                                                                                                                                                                         |
-|     | `pull_request`           | `allowed_merge_methods`                | `["merge"]`                                                                                                                                                                                                                                                                                                                                                                                             |
-| ❌  | `pull_request`           | `dismiss_stale_reviews_on_push`        | `false`                                                                                                                                                                                                                                                                                                                                                                                                 |
-| ✅  | `pull_request`           | `require_code_owner_review`            | `true`                                                                                                                                                                                                                                                                                                                                                                                                  |
-| ✅  | `pull_request`           | `require_last_push_approval`           | `true`                                                                                                                                                                                                                                                                                                                                                                                                  |
-|     | `pull_request`           | `required_approving_review_count`      | `0`                                                                                                                                                                                                                                                                                                                                                                                                     |
-| ✅  | `pull_request`           | `required_review_thread_resolution`    | `true`                                                                                                                                                                                                                                                                                                                                                                                                  |
-|     | `required_status_checks` | `required_status_checks`               | `[{"context":"pre-commit","integration_id":15368},{"context":"test (typescript)","integration_id":15368},{"context":"test (python, 3.11)","integration_id":15368},{"context":"test (python, 3.12)","integration_id":15368},{"context":"test (python, 3.13)","integration_id":15368},{"context":"test (python, 3.14)","integration_id":15368},{"context":"test (python, 3.15)","integration_id":15368}]` |
-| ✅  | `required_status_checks` | `strict_required_status_checks_policy` | `true`                                                                                                                                                                                                                                                                                                                                                                                                  |
-| ❌  | `required_status_checks` | `do_not_enforce_on_create`             | `false`                                                                                                                                                                                                                                                                                                                                                                                                 |
+|     | Rule                     | Parameter                              | Value                                          |
+| --- | ------------------------ | -------------------------------------- | ---------------------------------------------- |
+|     | `deletion`               |                                        |                                                |
+|     | `non_fast_forward`       |                                        |                                                |
+|     | `required_signatures`    |                                        |                                                |
+|     | `pull_request`           | `allowed_merge_methods`                | `["merge"]`                                    |
+| ❌  | `pull_request`           | `dismiss_stale_reviews_on_push`        | `false`                                        |
+| ✅  | `pull_request`           | `require_code_owner_review`            | `true`                                         |
+| ✅  | `pull_request`           | `require_last_push_approval`           | `true`                                         |
+|     | `pull_request`           | `required_approving_review_count`      | `0`                                            |
+| ✅  | `pull_request`           | `required_review_thread_resolution`    | `true`                                         |
+|     | `required_status_checks` | `required_status_checks`               | `[{"context":"ci-ok","integration_id":15368}]` |
+| ✅  | `required_status_checks` | `strict_required_status_checks_policy` | `true`                                         |
+| ❌  | `required_status_checks` | `do_not_enforce_on_create`             | `false`                                        |
 
 |     | Bypass           | Actor ID | Mode     |
 | --- | ---------------- | -------- | -------- |
@@ -64,12 +64,15 @@ together.
 
 Why:
 
-- **Require each CI job directly.** `pre-commit` and every `test` matrix entry run on all pull
-  requests, without path filters or job-level skip conditions. GitHub Actions (integration
-  `15368`) must report every named check on a branch that is up to date with `main`; a failed,
-  cancelled or missing matrix entry blocks merging. Keep the contexts synchronized with the
-  workflow matrix when adding or retiring a Python version. Apply these rules only after the
-  workflow and this desired state merge to `main` and the named checks have reported there.
+- **Require `ci-ok` only.** The `ci-ok` job in `.github/workflows/ci.yml` needs every other CI
+  job and fails unless each one succeeded, so one context from GitHub Actions (integration
+  `15368`) covers `pre-commit` and every `test` matrix entry. Requiring the matrix contexts
+  directly (`test (python, 3.12)`, ...) would mean editing this table with every matrix change,
+  and a context that no longer reports would leave every PR pending. `ci-ok` runs `if: always()`
+  because GitHub counts a skipped required check as passing; it treats a skipped, cancelled, or
+  failed job as failure. Keep it that way: add new jobs to its `needs`, and never give it a
+  `name:` (that renames the context), a path filter, or a skip condition. Apply these rules only
+  after the workflow and this desired state merge to `main` and `ci-ok` has reported there.
 - **Merge commits only.** Squash or rebase rewrites a parent's commits, so the retargeted child
   shows them again and conflicts. No `required_linear_history`, deliberately: it forbids merge
   commits.

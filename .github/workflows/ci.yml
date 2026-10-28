@@ -1,4 +1,5 @@
-# Pull-request CI: shared pre-commit checks and all test suites.
+# Pull-request CI: shared pre-commit checks and all test suites. `ci-ok` aggregates every job and
+# is the single required status check on `main` (share/skills/apply-repo-rules/rules.md).
 # ref: https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax
 name: ci
 
@@ -100,3 +101,23 @@ jobs:
           name: py-test-reports-${{ matrix.python }}
           path: src/back-end/reports/
           if-no-files-found: warn
+
+  # The one required status check. Matrix contexts are named per entry (`test (python, 3.12)`), so
+  # requiring them directly means editing the ruleset with every matrix change. `needs.test.result`
+  # is already the aggregate over every matrix entry. `always()` keeps this job from being skipped:
+  # GitHub counts a skipped required check as passing. Any result other than `success` fails it,
+  # `skipped` included: no needed job has an `if:` or path filter, so a skip means something
+  # upstream broke. Add every new job to `needs`; never give this job a `name:`, path filter, or
+  # other skip condition.
+  ci-ok:
+    needs: [pre-commit, test]
+    if: always()
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+      - name: Require every needed job to succeed
+        env:
+          RESULTS: ${{ toJSON(needs) }}
+        run: |
+          jq '.' <<<"$RESULTS"
+          jq --exit-status 'all(.[]; .result == "success")' <<<"$RESULTS"

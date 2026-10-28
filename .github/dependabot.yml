@@ -1,0 +1,34 @@
+# Dependabot version updates for GitHub Actions, the pnpm workspace and the uv project.
+#
+# ref: https://docs.github.com/en/code-security/dependabot/working-with-dependabot/dependabot-options-reference
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    # wait a week after a release before proposing it, like pnpm's minimumReleaseAge gate
+    cooldown:
+      default-days: 7
+    # one PR for every action bump
+    groups:
+      github-actions:
+        patterns: ["*"]
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    groups:
+      pnpm:
+        patterns: ["*"]
+  - package-ecosystem: uv
+    directory: /src/back-end
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    groups:
+      uv:
+        patterns: ["*"]

@@ -1,6 +1,6 @@
 # Shared memory
 
-Index of memories that apply to every agent, one line per entry. `share/agents/sync-shared-memory.py` copies these
+Index of memories that apply to every agent, one line per entry. `bin/sync-shared-memory` copies these
 lines into each agent's `MEMORY.md`.
 
 - [CI runs every hook](ci-runs-every-hook.md) — CI never SKIPs a pre-commit hook; hooks install their own tools; fixers exit non-zero

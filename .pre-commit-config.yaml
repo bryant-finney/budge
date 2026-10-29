@@ -30,8 +30,8 @@ repos:
       - id: shared-agent-memory
         name: sync shared agent memory index
         language: python
-        entry: python share/agents/sync-shared-memory.py
-        files: ^share/agents/
+        entry: bin/sync-shared-memory
+        files: ^(bin/sync-shared-memory$|share/agents/)
         pass_filenames: false
 
   - repo: https://github.com/hukkin/mdformat

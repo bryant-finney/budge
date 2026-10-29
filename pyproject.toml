@@ -1,0 +1,6 @@
+# Root tooling only; the application remains its own project in src/back-end.
+[tool.uv-dynamic-versioning]
+bump = true
+fallback-version = "0.0.0"
+style = "pep440"
+vcs = "git"

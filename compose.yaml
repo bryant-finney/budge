@@ -1,81 +1,84 @@
+# pattern: keys are sorted alphabetically
 name: ${COMPOSE_PROJECT_NAME:-budge}
 
 services:
   api:
     build:
-      context: ./src/back-end
-      target: dev
-      platforms: ['${BUDGE_PLATFORM:-linux/arm64}']
       args:
         BUDGE_VERSION: ${BUDGE_VERSION:-0.0.0}
+      context: ./src/back-end
+      dockerfile: Containerfile
+      platforms: ['${BUDGE_PLATFORM:-linux/arm64}']
+      target: ${BUDGE_BUILD_TARGET:-dev}
       x-bake:
         output: type=docker
-    image: ${BUDGE_IMAGE_PREFIX:-ghcr.io/bryant-finney}/dev/budge:${BUDGE_IMAGE_TAG:-0.0.0}
-    platform: ${BUDGE_PLATFORM:-linux/arm64}
-    entrypoint: []
     command: [uvicorn, 'budge.api.app:app', --host, 0.0.0.0, --port, '8000']
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: []
     environment: &backend-environment
       AWS_ACCESS_KEY_ID: ${MINIO_ROOT_USER:-budge-local}
-      AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD:-budge-local-password}
       AWS_DEFAULT_REGION: ${AWS_REGION:-us-east-1}
       AWS_EC2_METADATA_DISABLED: 'true'
       AWS_ENDPOINT_URL_S3: ${BUDGE_S3_ENDPOINT:-http://minio:9000}
+      AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD:-budge-local-password}
       PLAID_ENV: ${PLAID_ENV:-sandbox}
+    healthcheck:
+      interval: 5s
+      retries: 12
+      test: [CMD, python3, -c, 'import urllib.request; urllib.request.urlopen("http://127.0.0.1:8000/api/health")']
+      timeout: 3s
+    image: ${BUDGE_IMAGE_PREFIX:-ghcr.io/bryant-finney}/${BUDGE_BUILD_TARGET:-dev}/budge:${BUDGE_IMAGE_TAG:-0.0.0}
+    platform: ${BUDGE_PLATFORM:-linux/arm64}
     ports:
       - ${BUDGE_BIND_HOST:-127.0.0.1}:${BUDGE_API_PORT:-8000}:8000
-    depends_on:
-      minio:
-        condition: service_healthy
-    healthcheck:
-      test: [CMD, python3, -c, 'import urllib.request; urllib.request.urlopen("http://127.0.0.1:8000/api/health")']
-      interval: 5s
-      timeout: 3s
-      retries: 12
 
   ingestion:
-    profiles: [lambda]
     build:
-      context: ./src/back-end
-      target: rel
-      platforms: ['${BUDGE_PLATFORM:-linux/arm64}']
       args:
         BUDGE_VERSION: ${BUDGE_VERSION:-0.0.0}
+      context: ./src/back-end
+      dockerfile: Containerfile
+      platforms: ['${BUDGE_PLATFORM:-linux/arm64}']
+      target: rel
       x-bake:
         output: type=docker
-    image: ${BUDGE_IMAGE_PREFIX:-ghcr.io/bryant-finney}/rel/budge:${BUDGE_IMAGE_TAG:-0.0.0}
-    platform: ${BUDGE_PLATFORM:-linux/arm64}
-    environment: *backend-environment
-    ports:
-      - ${BUDGE_BIND_HOST:-127.0.0.1}:${BUDGE_INGESTION_PORT:-9002}:8080
     depends_on:
       minio:
         condition: service_healthy
+    environment: *backend-environment
+    image: ${BUDGE_IMAGE_PREFIX:-ghcr.io/bryant-finney}/rel/budge:${BUDGE_IMAGE_TAG:-0.0.0}
+    platform: ${BUDGE_PLATFORM:-linux/arm64}
+    ports:
+      - ${BUDGE_BIND_HOST:-127.0.0.1}:${BUDGE_INGESTION_PORT:-9002}:8080
+    profiles: [lambda]
 
   minio:
     build:
-      context: ./etc/compose
-      dockerfile: minio.Dockerfile
-      platforms: ['${BUDGE_PLATFORM:-linux/arm64}']
       args:
         MINIO_COMMIT: ${MINIO_COMMIT:-9e49d5e7a648f00e26f2246f4dc28e6b07f8c84a}
+      context: ./src/minio
+      dockerfile: Containerfile
+      platforms: ['${BUDGE_PLATFORM:-linux/arm64}']
       x-bake:
         output: type=docker
-    image: ${BUDGE_IMAGE_PREFIX:-ghcr.io/bryant-finney}/dev/minio:${MINIO_RELEASE:-RELEASE.2025-10-15T17-29-55Z}
-    platform: ${BUDGE_PLATFORM:-linux/arm64}
     command: [server, /data, --console-address, ':9001']
     environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-budge-local}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-budge-local-password}
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-budge-local}
+    healthcheck:
+      interval: 5s
+      retries: 12
+      test: [CMD, wget, -q, -O, /dev/null, 'http://127.0.0.1:9000/minio/health/live']
+      timeout: 3s
+    image: ${BUDGE_IMAGE_PREFIX:-ghcr.io/bryant-finney}/dev/minio:${MINIO_RELEASE:-RELEASE.2025-10-15T17-29-55Z}
+    platform: ${BUDGE_PLATFORM:-linux/arm64}
     ports:
       - ${BUDGE_BIND_HOST:-127.0.0.1}:${MINIO_API_PORT:-9000}:9000
       - ${BUDGE_BIND_HOST:-127.0.0.1}:${MINIO_CONSOLE_PORT:-9001}:9001
     volumes:
       - minio-data:/data
-    healthcheck:
-      test: [CMD, wget, -q, -O, /dev/null, 'http://127.0.0.1:9000/minio/health/live']
-      interval: 5s
-      timeout: 3s
-      retries: 12
 
 volumes:
   minio-data:

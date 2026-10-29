@@ -53,7 +53,7 @@ together.
 | ❌  | `pull_request`           | `dismiss_stale_reviews_on_push`        | `false`                                        |
 | ✅  | `pull_request`           | `require_code_owner_review`            | `true`                                         |
 | ✅  | `pull_request`           | `require_last_push_approval`           | `true`                                         |
-|     | `pull_request`           | `required_approving_review_count`      | `0`                                            |
+|     | `pull_request`           | `required_approving_review_count`      | `1`                                            |
 | ✅  | `pull_request`           | `required_review_thread_resolution`    | `true`                                         |
 |     | `required_status_checks` | `required_status_checks`               | `[{"context":"ci-ok","integration_id":15368}]` |
 | ✅  | `required_status_checks` | `strict_required_status_checks_policy` | `true`                                         |
@@ -77,15 +77,15 @@ Why:
 - **Merge commits only.** Squash or rebase rewrites a parent's commits, so the retargeted child
   shows them again and conflicts. No `required_linear_history`, deliberately: it forbids merge
   commits.
-- **`required_approving_review_count: 0`.** Set when the owner authored every PR and couldn't
-  approve their own. The bot authors PRs now, so the owner can approve them. Until this is 1,
-  only `require_code_owner_review` asks for an approval, and only for paths CODEOWNERS assigns.
+- **`required_approving_review_count: 1`.** The bot authors PRs and can't approve its own, so
+  every PR needs the owner's approval before the bot can merge it, with or without CODEOWNERS. It
+  was `0` while the owner authored every PR and couldn't approve their own (owner, 2026-10-29).
 - **`require_code_owner_review`.** CODEOWNERS (#17) gives every path to `@bryant-finney`, so the
   owner's approval gates every bot PR that touches an owned path. Without a CODEOWNERS file on
   `main`, the rule asks for nothing.
-- **`require_last_push_approval`.** GitHub doesn't document it with 0 approvals. The bot has no
-  bypass, so if it blocks a PR, only the owner can merge it. After an `apply`, confirm open PRs
-  are still mergeable.
+- **`require_last_push_approval`.** Someone other than the last pusher must approve the latest
+  push. The bot pushes, so the owner approves after the bot's last push; a push after that
+  approval needs a new one.
 - **Bypass `always`.** The owner can bypass-merge PRs and can also push directly to `main`. The
   owner switched from `pull_request` mode in the web UI (2026-10-17) after that mode rejected a
   direct push of `2a5f0cd`, as designed: `pull_request` mode only bypasses rules when merging a

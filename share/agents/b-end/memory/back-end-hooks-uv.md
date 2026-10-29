@@ -1,18 +1,13 @@
 ---
-name: feedback_ci-runs-every-hook
-description: CI enforces every pre-commit hook (no SKIP); back-end hooks are `language: python` + pinned uv running `uv run -q --locked`; pre-commit's VIRTUAL_ENV makes uv warn
+name: back-end-hooks-uv
+description: back-end pre-commit hooks are `language: python` + pinned uv running `uv run -q --locked`, so CI can run them; pre-commit's VIRTUAL_ENV makes uv warn
 metadata:
   type: feedback
 ---
 
-# CI runs every pre-commit hook
+# Back-end hooks run through pinned uv
 
-Pre-commit is the enforcement point: CI runs every hook and never `SKIP`s one. Design hooks so a clean checkout with only
-pre-commit (plus the toolchain CI already sets up) can run them.
-
-**Why:** on PR #30 (2026-10-27) I proposed that #32's CI skip the back-end hooks because they were `language: system`
-and needed uv on PATH. The owner asked "why do the hooks need `uv`? CI should enforce the `pre-commit` hooks, not skip
-them".
+CI runs every pre-commit hook ([[ci-runs-every-hook]]), so the back-end hooks can't rely on uv being on PATH.
 
 **How to apply:**
 

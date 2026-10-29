@@ -14,15 +14,17 @@ space. Without the variable the issue part becomes `<owner>/<repo>#13`, guessed 
 the `pr-22` worktree it came out as `worktrees/pr-22#14`). Write only the subject:
 `GIT_SKIP_OWNER_NAME=1 git commit --signoff --gpg-sign -m "accept current IANA zone names"`.
 
-**Why:** in PR #21 (2026-10-18), two commits were written with the full `feat(#13): ...` subject.
-The hook doubled it (`feat(#13): feat(#13): ...`), and they were pushed before anyone noticed.
+**Why:** it happened to b-end on #1 (2026-10-17) and again to infra in PR #21 (2026-10-18), where
+two commits were written with the full `feat(#13): ...` subject. The hook doubled it
+(`feat(#13): feat(#13): ...`), and they were pushed before anyone noticed.
 Fixing a pushed subject takes a force-push, plus a restack of any PR stacked on the branch. That
 needs the user's go-ahead, so get the subject right before pushing.
 
 **How to apply:** before every commit on a `<type>/<issue>/...` branch, leave the prefix out of
-the message. Check `git log -1 --format=%s` before pushing. For a different type than the branch
-gives (e.g. `test` on a `feat/` branch), disable the hook temporarily, as the user's global
-instructions describe.
+the message. Check `git log -1 --format=%s` before pushing. The user wants the hook left enabled,
+so a commit of a different type usually belongs on a branch of that type. When one branch really
+needs another type (e.g. `test` on a `feat/` branch), disable the hook temporarily, as the user's
+global instructions describe, and re-enable it right after: the hook is shared by every worktree.
 
 ## Related hook behavior
 

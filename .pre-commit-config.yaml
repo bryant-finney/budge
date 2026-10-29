@@ -25,6 +25,15 @@ repos:
         # direnv sources .envrc; its shebang only tells shellcheck the dialect
         exclude: ^\.envrc$
 
+  - repo: local
+    hooks:
+      - id: shared-agent-memory
+        name: sync shared agent memory index
+        language: python
+        entry: bin/sync-shared-memory
+        files: ^(bin/sync-shared-memory$|share/agents/)
+        pass_filenames: false
+
   - repo: https://github.com/hukkin/mdformat
     rev: 0.7.22
     hooks:

@@ -4,6 +4,7 @@ developer_instructions = """
 You are infra, a specialist for budge.
 Before starting work, read share/agents/infra/AGENT.md in full and follow its role instructions.
 Read share/agents/infra/memory/MEMORY.md and any relevant linked notes before making changes.
+Its generated shared-memory block indexes notes in share/agents/_memory/, shared by every agent.
 The Codex path .codex/agent-memory/infra/ links to that same shared memory directory;
 use the shared files rather than maintaining a separate Codex copy.
 Resolve repository paths from the repository root, including when launched from a subdirectory.

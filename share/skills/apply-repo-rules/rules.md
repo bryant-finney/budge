@@ -6,13 +6,14 @@ together.
 
 ## Context
 
-- One human, `bryant-finney` (repo admin). Agents run as that account with the same GPG key, so
-  GitHub can't tell them apart from the owner. These rules stop accidents by anyone without the
-  bypass. The owner's bypass on ruleset `main` is `always`, so for the owner's account, agents
-  included, that ruleset stops nothing on `main`; only the agents' instructions do. Ruleset
-  `main-history` has no bypass, so nobody can force-push or delete `main`.
-- Agents open stacked PRs. When a parent merges, GitHub deletes its head branch
-  (`delete_branch_on_merge`) and so retargets the child to `main`.
+- Two accounts. `bryant-finney`, the owner and only human, is the repo admin. Agents act as
+  `bryant-finney-bot`, a `write` collaborator that signs with its own GPG key. The owner's bypass
+  on ruleset `main` is `always`, so that ruleset stops nothing the owner does on `main`. The bot
+  has no bypass, so every rule here binds it. Ruleset `main-history` has no bypass, so nobody can
+  force-push or delete `main`.
+- Agents open stacked PRs as the bot, and the bot merges them once the owner approves. When a
+  parent merges, GitHub deletes its head branch (`delete_branch_on_merge`) and so retargets the
+  child to `main`.
 - Feature branches and non-`v*` tags are deliberately unprotected: agents force-push rebased
   stacks, and signing is required at the merge into `main`, except through the owner's bypass.
 
@@ -76,21 +77,22 @@ Why:
 - **Merge commits only.** Squash or rebase rewrites a parent's commits, so the retargeted child
   shows them again and conflicts. No `required_linear_history`, deliberately: it forbids merge
   commits.
-- **`required_approving_review_count: 0`.** An author can't approve their own PR, and the only
-  human authors every PR. Raise it to 1 when a write collaborator is added.
-- **`require_code_owner_review`.** CODEOWNERS gives every path to `@bryant-finney` alone, so every
-  PR merges **only through the owner's admin bypass**. The owner accepted this (2026-10-17).
-- **`require_last_push_approval`.** GitHub doesn't document it with 0 approvals. If it blocks PRs,
-  the bypass still merges them. After an `apply`, confirm open PRs are still mergeable.
+- **`required_approving_review_count: 0`.** Set when the owner authored every PR and couldn't
+  approve their own. The bot authors PRs now, so the owner can approve them. Until this is 1,
+  only `require_code_owner_review` asks for an approval, and only for paths CODEOWNERS assigns.
+- **`require_code_owner_review`.** CODEOWNERS (#17) gives every path to `@bryant-finney`, so the
+  owner's approval gates every bot PR that touches an owned path. Without a CODEOWNERS file on
+  `main`, the rule asks for nothing.
+- **`require_last_push_approval`.** GitHub doesn't document it with 0 approvals. The bot has no
+  bypass, so if it blocks a PR, only the owner can merge it. After an `apply`, confirm open PRs
+  are still mergeable.
 - **Bypass `always`.** The owner can bypass-merge PRs and can also push directly to `main`. The
   owner switched from `pull_request` mode in the web UI (2026-10-17) after that mode rejected a
   direct push of `2a5f0cd`, as designed: `pull_request` mode only bypasses rules when merging a
-  PR. The bypass covers every rule in this ruleset, so the owner, and any agent running as the
-  owner, can also push unsigned commits. Force-pushing and deleting `main` stay blocked by
-  ruleset `main-history`. Agents must not push to `main`: the "Merging and pushing" rule in each
-  agent's `AGENT.md` (`b-end`, `f-end`, and `infra`) forbids it and anything that works only
-  because of the bypass. A session that loads none of those agents has no such guard. To enforce
-  it again, change the Bypass mode above to `pull_request` in a PR and run `apply` after it
+  PR. The bypass covers every rule in this ruleset, so the owner can also push unsigned commits.
+  Force-pushing and deleting `main` stay blocked by ruleset `main-history`. The bot has no bypass,
+  so GitHub stops it from pushing to `main` or merging around these rules. To hold the owner to
+  them too, change the Bypass mode above to `pull_request` in a PR and run `apply` after it
   merges; then a hotfix goes through a PR.
 - **Never add GitHub Actions or a workflow token as a bypass actor.**
 

@@ -15,6 +15,16 @@ these GitHub settings. In Claude Code, this skill's `allowed-tools` frontmatter 
 needs the user's approval. Other hosts ignore `allowed-tools`, so their users approve each
 command by hand.
 
+The script acts as `gh`'s active account. Agents act as `bryant-finney-bot`, a `write`
+collaborator, so for them:
+
+- `check` works, but GitHub hides bypass actors from non-admins. The script skips comparing them
+  and prints `NOTE ... bypass actors not compared`. Only an admin's `check` verifies the Bypass
+  tables.
+- `apply` and `apply-ref` refuse with exit 6 before writing anything. Only the owner,
+  `bryant-finney`, can write rulesets and repo settings. Ask the user to run `apply`. Switch `gh`
+  to `bryant-finney` only if the user says so, and switch straight back to the bot afterwards.
+
 A pre-approval covers a command string, not the code it runs, so the script limits what it
 trusts:
 
@@ -39,7 +49,7 @@ needs approval again.
 | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------- |
 | `share/skills/apply-repo-rules/apply-repo-rules.sh check`           | Read-only. Compares the live settings with `rules.md` on `main`: `OK`/`FAIL` per ruleset and for repo settings, with a diff.          | None (pre-approved)                          |
 | `share/skills/apply-repo-rules/apply-repo-rules.sh check <ref>`     | The same, against `rules.md` at `<ref>`, such as `HEAD` on a PR branch.                                                               | None (pre-approved)                          |
-| `share/skills/apply-repo-rules/apply-repo-rules.sh apply`           | Converges GitHub to `rules.md` on `main`, then runs `check`. Creates and updates; never deletes.                                      | None: merging is the approval (pre-approved) |
+| `share/skills/apply-repo-rules/apply-repo-rules.sh apply`           | Converges GitHub to `rules.md` on `main`, then runs `check`. Creates and updates; never deletes. Admin only.                          | None: merging is the approval (pre-approved) |
 | `share/skills/apply-repo-rules/apply-repo-rules.sh apply-ref <ref>` | The same as `apply`, from `<ref>`. It skips the check that this directory matches `main`, so the user's approval covers the code too. | The user's, every time (not pre-approved)    |
 
 | Exit | Meaning                                                                                    | What to do                                              |
@@ -50,18 +60,21 @@ needs approval again.
 | 3    | `main` can't be fetched from GitHub.                                                       | Retry once, then report. Never use a cached `main`.     |
 | 4    | `apply` refused: this directory differs from the `main` commit it would apply.             | Run it from a checkout of current `main`, or report it. |
 | 5    | A GitHub API call failed, or two rulesets share a name.                                    | Report the error. Live state is unknown.                |
+| 6    | `apply` refused: `gh`'s active account isn't a repo admin.                                 | Ask the user to run it. Don't switch accounts unasked.  |
 | 64   | Usage error.                                                                               | Run the command exactly as written above.               |
 
 ## Changing a rule
 
 1. Edit the tables in `rules.md` and their "Why" notes in a PR. Run `check HEAD` to preview the
    diff against the live settings.
-2. After the user merges the PR, run `apply`.
+2. After the user merges the PR, `apply` it: the user runs it, or tells you to switch `gh` to
+   `bryant-finney` for it and back to the bot afterwards.
 3. Report the `check` output verbatim.
 
 ## Emergency path
 
-Only for when a ruleset must be off for everyone. It needs the user's go-ahead every time.
+Only for when a ruleset must be off for everyone. It needs the user's go-ahead every time, and
+the owner's account: the bot can't change rulesets.
 
 1. Disable the ruleset: `PUT repos/bryant-finney/budge/rulesets/<id>` with
    `enforcement=disabled`.
@@ -82,3 +95,5 @@ re-enables disabled ones and restores merge settings.
 | Editing the skill and running `apply` to test it                | `apply` refuses (exit 4) and runs only merged code. Preview with `check HEAD`, and let the user merge before `apply`.                    |
 | `FAIL rulesets not in rules.md`                                 | Report it. Removing a ruleset is the user's call (the emergency path), so the script never deletes.                                      |
 | `check` shows `enforcement` `disabled`                          | The user may be partway through the emergency path. Ask before running `apply`, which turns enforcement back on.                         |
+| Reading `bypass_actors: []` as drift or as no bypass            | Non-admins get an empty list. The script skips it with a `NOTE`; a hand-run `gh api` as the bot shows `[]` whatever the live value.      |
+| Switching `gh` to `bryant-finney` to get past exit 6            | Only when the user says to, for that run. Switch back to `bryant-finney-bot` right after.                                                |

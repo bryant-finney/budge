@@ -1,0 +1,28 @@
+# Both targets build from src/back-end. dev includes source and tests; rel copies only installed wheel contents.
+
+# local environments and secrets: none of these belong in an image (spec §12)
+.venv/
+.env*
+# The tracked direnv loader contains no secrets and is an input to the package-content tests in dev.
+!.envrc
+
+# generated reports and tool caches
+reports/
+.coverage*
+htmlcov/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+
+# bytecode: the image compiles its own
+**/__pycache__/
+**/*.pyc
+
+# written by hatchling's `version` hook on `uv sync`/`uv build`; gitignored, so whether it exists depends on the host
+budge/_version.py
+
+# build output
+dist/
+
+# Git metadata is mounted into development containers, never baked into either image.
+.git

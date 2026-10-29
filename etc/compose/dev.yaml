@@ -1,0 +1,12 @@
+services:
+  api:
+    command: [uv, run, --frozen, uvicorn, 'budge.api.app:app', --host, 0.0.0.0, --port, '8000', --reload]
+    volumes:
+      - source: ${BUDGE_REPO_ROOT:-.}
+        target: ${BUDGE_REPO_ROOT:-/workspace}
+        type: bind
+      - read_only: true
+        source: ${BUDGE_GIT_COMMON_DIR:-./.git}
+        target: ${BUDGE_GIT_COMMON_DIR:-/workspace/.git}
+        type: bind
+    working_dir: ${BUDGE_REPO_ROOT:-/workspace}/src/back-end

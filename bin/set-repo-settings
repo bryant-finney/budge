@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# Check (or, for the owner only, apply) the GitHub repo settings that rules.md doesn't own: repo
+# set-repo-settings: check (or, for the owner only, apply) settings rules.md doesn't own: repo
 # fields, Dependabot and secret scanning, Actions permissions, CODEOWNERS errors, and labels.
 # Rulesets and the merge settings live in share/skills/apply-repo-rules/rules.md; `check` runs
 # that skill's own read-only `check` and includes its result, so each setting has one owner.
 #
-# Desired state, beside this script (strict JSON):
+# Desired state in .github/repo-settings (strict JSON):
 #   repo.json         one entry per endpoint under repos/<repo>: `settings` (dotted paths into
 #                     the GET response, applied with `write`), or `enabled` for an endpoint that
 #                     answers 2xx when the feature is on and 404 when it's off
@@ -17,8 +17,8 @@ set -euo pipefail
 
 usage() {
   cat <<'EOF'
-usage: repo-settings.sh [check [REF]]
-       repo-settings.sh apply --yes
+usage: set-repo-settings [check [REF]]
+       set-repo-settings apply --yes
 
   check  (default) compare the live settings with the desired state; read-only. REF (a branch
          or commit) is where CODEOWNERS and rules.md are read; it defaults to main
@@ -28,6 +28,8 @@ usage: repo-settings.sh [check [REF]]
 The token must belong to a repo admin (the owner's `gh auth`): the Actions, Dependabot and
 security settings aren't readable otherwise, and GITHUB_TOKEN can't be granted that access, so
 this runs locally only.
+
+Desired state: .github/repo-settings/{repo,labels,unavailable}.json
 
 exit status:
   0   no drift
@@ -41,12 +43,12 @@ EOF
 # The target is fixed, not read from git remotes or gh's config (as in apply-repo-rules.sh).
 repo=bryant-finney/budge
 host=github.com
-here=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)
-root=$(cd "$here/../../.." && pwd -P)
+root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)
+desired_dir=$root/.github/repo-settings
 rules=$root/share/skills/apply-repo-rules/apply-repo-rules.sh
 
 die() {
-  echo "repo-settings: $2" >&2
+  echo "set-repo-settings: $2" >&2
   exit "$1"
 }
 
@@ -58,8 +60,8 @@ api() {
 
 # desired NAME: print a desired-state file; exit 2 if it's missing
 desired() {
-  [[ -f $here/$1 ]] || die 2 "$here/$1 is missing"
-  cat "$here/$1"
+  [[ -f $desired_dir/$1 ]] || die 2 "$desired_dir/$1 is missing"
+  cat "$desired_dir/$1"
 }
 
 # load: read and validate the desired state into $repo_json, $labels_json and $unavailable_json.
@@ -166,7 +168,7 @@ check_labels() {
 check() {
   local ref=${1:-main} n i out drift=0 status=0
   echo "repo:    $repo"
-  echo "desired: $here/{repo,labels,unavailable}.json; CODEOWNERS and rules.md at $ref"
+  echo "desired: $desired_dir/{repo,labels,unavailable}.json; CODEOWNERS and rules.md at $ref"
   n=$(api "repos/$repo" --jq "($repo_json) | length") || exit "$?"
   out=$(
     for ((i = 0; i < n; i++)); do check_item "$i" || exit "$?"; done

@@ -1,9 +1,6 @@
 # syntax=docker/dockerfile:1
 
-# Build from the repository root; rel is the default, lean Lambda image:
-#   docker buildx build --platform linux/arm64 --load -t budge-backend:rel src/back-end
-#   docker buildx build --platform linux/arm64 --target dev --load -t budge-backend:dev src/back-end
-# See CONTAINERS.md for development mounts and handler overrides.
+# compose.yaml configures both targets; bin/compose supplies the package version.
 
 FROM ghcr.io/astral-sh/uv:0.13.5@sha256:32a7bb39b496babbd997b0a39a4d66c126bdaf5661b302bf6f06abda8deca6ff AS uv
 
@@ -30,11 +27,12 @@ RUN --mount=from=uv,source=/uv,target=/bin/uv \
 
 FROM dependencies AS build
 
+ARG BUDGE_VERSION=0.0.0
 COPY pyproject.toml uv.lock ./
 COPY budge/ ./budge/
 RUN --mount=from=uv,source=/uv,target=/bin/uv \
     --mount=type=cache,target=/root/.cache/uv \
-    uv build --wheel --out-dir /dist \
+    UV_DYNAMIC_VERSIONING_BYPASS="${BUDGE_VERSION}" uv build --wheel --out-dir /dist \
     && uv pip install --python /opt/budge/bin/python --no-deps /dist/*.whl \
     && site_packages="$(/opt/budge/bin/python -c 'import sysconfig; print(sysconfig.get_path("purelib"))')" \
     && cp -a "${site_packages}/." "${LAMBDA_TASK_ROOT}/"
@@ -46,7 +44,8 @@ RUN microdnf install -y git-core-2.50.1-1.amzn2023.0.1 nodejs24-24.20.0-1.amzn20
 COPY --from=uv /uv /uvx /usr/local/bin/
 WORKDIR /workspace/src/back-end
 COPY . ./
-RUN uv sync --frozen --all-groups && ln -s /opt/budge .venv
+ARG BUDGE_VERSION=0.0.0
+RUN UV_DYNAMIC_VERSIONING_BYPASS="${BUDGE_VERSION}" uv sync --frozen --all-groups && ln -s /opt/budge .venv
 ENV PATH="/opt/budge/bin:${PATH}"
 ENTRYPOINT []
 CMD ["/bin/bash"]

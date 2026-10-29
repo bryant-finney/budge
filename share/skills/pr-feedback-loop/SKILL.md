@@ -15,7 +15,8 @@ Claude Code, or another agent host; adapt tool names to the host's actual capabi
 2. Record the interval, repository, next poll time, and authorized actions. A request to handle
    feedback permits scoped fixes, signed commits, pushes, and feedback replies. Merge only when
    the user requested it; retain authorization across polls without asking again. A skill alone
-   grants no permission to mutate GitHub or bypass host approvals.
+   grants no permission to mutate GitHub or bypass host approvals. Act on GitHub as
+   `bryant-finney-bot` (see [GitHub operations](references/github.md)).
 3. Use an available recurring scheduler and verify the saved task. Otherwise, run an immediate
    scan and use interruptible waits in the current session. Report the actual mode and next poll
    time: an in-session wait is not a saved schedule and ends when the session ends. If neither is

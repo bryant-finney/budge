@@ -1,8 +1,11 @@
 # GitHub operations
 
-Prefer a connected GitHub tool when it supports the operation and has the required permission.
-If integration permissions are insufficient, report the failure and use an already authorized,
-authenticated `gh` CLI. Do not treat an approval-review rejection as an integration limitation.
+Act on GitHub as `bryant-finney-bot`. Before any write, confirm `gh api user -q .login` prints
+`bryant-finney-bot`, and run `gh auth switch --user bryant-finney-bot` if it doesn't. Make every
+write (replies, thread resolution, reviews, merges) with the `gh` CLI. A connected GitHub tool may
+be signed in as the owner, `bryant-finney`, so use it only for reads. The bot can't approve its
+own PRs; only the owner's approval counts. Do not treat an approval-review rejection as an
+integration limitation.
 
 ## Read complete activity
 

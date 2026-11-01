@@ -1,6 +1,8 @@
 # Back-end containers
 
-From the repository root, start the API and persistent MinIO with live source edits:
+Live source edits need the `etc/compose/dev.yaml` overlay. `direnv allow` sets
+`COMPOSE_FILE=compose.yaml:etc/compose/dev.yaml` in `.env` unless `COMPOSE_FILE` is already there, so from the
+repository root these commands start the API and persistent MinIO with that overlay:
 
 ```sh
 direnv allow
@@ -8,6 +10,14 @@ docker compose up --build --wait
 docker compose run --rm api uv run --frozen pytest
 docker compose down
 ```
+
+To name the overlay on the command line instead, pass both files:
+
+```sh
+docker compose -f compose.yaml -f etc/compose/dev.yaml up --build --wait
+```
+
+`-f` replaces `COMPOSE_FILE`, so also pass any other overlay you added there.
 
 `.envrc` seeds `.env` from `etc/base.env` and refreshes `BUDGE_VERSION`, `BUDGE_IMAGE_VERSION`, and checkout paths.
 The root `pyproject.toml` configures `uv-dynamic-versioning`; its CLI resolves the latest matching Git tag
@@ -20,8 +30,8 @@ Compose names each stack after its checkout directory, so differently named work
 with separate networks and data volumes. Set `COMPOSE_PROJECT_NAME` in `.env` or pass `docker compose -p <name>`
 to choose a project name explicitly. MinIO data stays in its named volume after `down`.
 
-To expose the API, Lambda emulator, and MinIO on the host, append `:etc/compose/ports.yaml` to `COMPOSE_FILE`
-in `.env`, then run:
+To expose the API, Lambda emulator, and MinIO on the host and keep live source edits, set
+`COMPOSE_FILE=compose.yaml:etc/compose/dev.yaml:etc/compose/ports.yaml` in `.env`, then run:
 
 ```sh
 docker compose --profile lambda up --build --wait
@@ -45,14 +55,15 @@ The image version falls back from `BUDGE_IMAGE_VERSION` to `BUDGE_VERSION`, then
 `BUDGE_IMAGE_VERSION` environment variable overrides the generated value. Existing `.env` files keep local
 settings while `.envrc` replaces the old generated `BUDGE_IMAGE_TAG` with `BUDGE_IMAGE_VERSION`.
 
-The default `dev` image has source, tests, uv, Git, Node, and development tools. `COMPOSE_FILE` selects the
-`etc/compose/dev.yaml` overlay, which mounts the checkout and read-only Git common directory at their real absolute
-paths, including linked worktrees, and runs uvicorn with reload. The virtual environment stays at `/opt/budge`.
-The base `docker compose -f compose.yaml …` also runs without this overlay. `podman compose …` uses a compatible
+The default `dev` image has source, tests, uv, Git, Node, and development tools. `COMPOSE_FILE`, or
+`docker compose -f compose.yaml -f etc/compose/dev.yaml …`, selects the `etc/compose/dev.yaml` overlay, which mounts
+the checkout and read-only Git common directory at their real absolute paths, including linked worktrees, and runs
+uvicorn with reload. The virtual environment stays at `/opt/budge`. The base `docker compose -f compose.yaml …` also
+runs without this overlay, but then has no source mounts or reload. `podman compose …` uses a compatible
 Compose provider. No Docker-only runtime attributes are required. `BUDGE_BUILD_TARGET` defaults to `dev` and
 selects the API build target and matching image namespace. For example,
 `BUDGE_BUILD_TARGET=rel docker compose -f compose.yaml build api` builds the Lambda image. The API service
-and development overlay run `dev`; the lean `rel` image has no uv or development ASGI server. Use
+and `etc/compose/dev.yaml` overlay run `dev`; the lean `rel` image has no uv or development ASGI server. Use
 `ingestion` for its Lambda emulator; that service always builds `rel`. The build files are
 `src/back-end/Containerfile` and `src/minio/Containerfile`.
 
@@ -74,7 +85,8 @@ Dependabot updates the tag and digest on each Containerfile's upstream `FROM` li
 bump: `MINIO_COMMIT` (both `ARG` defaults and the `compose.yaml` default), `MINIO_RELEASE` in `compose.yaml`, the
 release named in the MinIO Containerfile's comment, and the `microdnf` package versions.
 
-The current API/AWS adapters are skeletons: this stack verifies health, source reload, and S3 availability;
-Secrets Manager seeding and application storage wiring remain milestone 2 work.
+The current API/AWS adapters are skeletons: this stack verifies health, source reload (with the
+`etc/compose/dev.yaml` overlay), and S3 availability; Secrets Manager seeding and application storage wiring remain
+milestone 2 work.
 MinIO enforces conditional writes but ignores `DeleteObject`'s `If-Match`: the future lease adapter must use the
 owner re-check fallback described in design spec §12 for local lease release.

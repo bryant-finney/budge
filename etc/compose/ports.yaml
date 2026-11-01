@@ -1,0 +1,11 @@
+services:
+  api:
+    ports:
+      - ${BUDGE_BIND_HOST:-127.0.0.1}:${BUDGE_API_PORT:-8000}:8000
+  ingestion:
+    ports:
+      - ${BUDGE_BIND_HOST:-127.0.0.1}:${BUDGE_INGESTION_PORT:-9002}:8080
+  minio:
+    ports:
+      - ${BUDGE_BIND_HOST:-127.0.0.1}:${MINIO_API_PORT:-9000}:9000
+      - ${BUDGE_BIND_HOST:-127.0.0.1}:${MINIO_CONSOLE_PORT:-9001}:9001

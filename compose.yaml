@@ -1,6 +1,4 @@
 # pattern: keys are sorted alphabetically
-name: ${COMPOSE_PROJECT_NAME:-budge}
-
 services:
   api:
     build:
@@ -31,10 +29,9 @@ services:
       retries: 12
       test: [CMD, python3, -c, 'import urllib.request; urllib.request.urlopen("http://127.0.0.1:8000/api/health")']
       timeout: 3s
-    image: ${BUDGE_IMAGE_PREFIX:-ghcr.io/bryant-finney}/${BUDGE_BUILD_TARGET:-dev}/budge:${BUDGE_IMAGE_TAG:-0.0.0}
+    image: "${BUDGE_IMAGE_PREFIX:-ghcr.io/bryant-finney}/${BUDGE_BUILD_TARGET:-dev}/budge:\
+      ${BUDGE_IMAGE_VERSION:-${BUDGE_VERSION:-0.0.0}}"
     platform: ${BUDGE_PLATFORM:-linux/arm64}
-    ports:
-      - ${BUDGE_BIND_HOST:-127.0.0.1}:${BUDGE_API_PORT:-8000}:8000
 
   ingestion:
     build:
@@ -52,10 +49,8 @@ services:
       minio:
         condition: service_healthy
     environment: *backend-environment
-    image: ${BUDGE_IMAGE_PREFIX:-ghcr.io/bryant-finney}/rel/budge:${BUDGE_IMAGE_TAG:-0.0.0}
+    image: ${BUDGE_IMAGE_PREFIX:-ghcr.io/bryant-finney}/rel/budge:${BUDGE_IMAGE_VERSION:-${BUDGE_VERSION:-0.0.0}}
     platform: ${BUDGE_PLATFORM:-linux/arm64}
-    ports:
-      - ${BUDGE_BIND_HOST:-127.0.0.1}:${BUDGE_INGESTION_PORT:-9002}:8080
     profiles: [lambda]
 
   minio:
@@ -78,9 +73,6 @@ services:
       timeout: 3s
     image: ${BUDGE_IMAGE_PREFIX:-ghcr.io/bryant-finney}/dev/minio:${MINIO_RELEASE:-RELEASE.2025-10-15T17-29-55Z}
     platform: ${BUDGE_PLATFORM:-linux/arm64}
-    ports:
-      - ${BUDGE_BIND_HOST:-127.0.0.1}:${MINIO_API_PORT:-9000}:9000
-      - ${BUDGE_BIND_HOST:-127.0.0.1}:${MINIO_CONSOLE_PORT:-9001}:9001
     volumes:
       - minio-data:/data
 

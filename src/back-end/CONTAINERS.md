@@ -19,7 +19,11 @@ image prefix, architecture, or MinIO development credentials there. Endpoints st
 environments, so they cannot redirect host AWS/Pulumi commands. Services bind only to loopback by default.
 MinIO's console is at `http://127.0.0.1:9001`; data stays in its named volume after `down`.
 
-Both image builds receive the same tag-derived package version as the back end's version configuration.
+Both image builds run `uv-dynamic-versioning` against the checkout's Git history without a version override.
+The build context is the repository root; `.dockerignore` excludes local environments, credentials, caches,
+and Git metadata. Compose supplies the common Git directory as a read-only named build context.
+`.envrc` resolves that directory and the relative worktree Git path (`.` in a normal clone).
+Only the build commands mount this context; neither image retains Git metadata.
 Images are `ghcr.io/bryant-finney/dev/budge:<version>` and `ghcr.io/bryant-finney/rel/budge:<version>`.
 Release versions such as `1.2.3` are unchanged; development versions replace `+` with `-` in the OCI tag only,
 because OCI tags cannot contain `+`. The installed package retains the exact version.

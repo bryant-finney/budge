@@ -4,10 +4,12 @@ name: ${COMPOSE_PROJECT_NAME:-budge}
 services:
   api:
     build:
+      additional_contexts:
+        git-common: ${BUDGE_GIT_COMMON_DIR:-./.git}
       args:
-        BUDGE_VERSION: ${BUDGE_VERSION:-0.0.0}
-      context: ./src/back-end
-      dockerfile: Containerfile
+        BUDGE_GIT_DIR: ${BUDGE_GIT_DIR:-.}
+      context: .
+      dockerfile: src/back-end/Containerfile
       platforms: ['${BUDGE_PLATFORM:-linux/arm64}']
       target: ${BUDGE_BUILD_TARGET:-dev}
       x-bake:
@@ -36,10 +38,12 @@ services:
 
   ingestion:
     build:
+      additional_contexts:
+        git-common: ${BUDGE_GIT_COMMON_DIR:-./.git}
       args:
-        BUDGE_VERSION: ${BUDGE_VERSION:-0.0.0}
-      context: ./src/back-end
-      dockerfile: Containerfile
+        BUDGE_GIT_DIR: ${BUDGE_GIT_DIR:-.}
+      context: .
+      dockerfile: src/back-end/Containerfile
       platforms: ['${BUDGE_PLATFORM:-linux/arm64}']
       target: rel
       x-bake:

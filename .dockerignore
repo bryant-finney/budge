@@ -1,0 +1,26 @@
+# The backend builds from the repository root so Git can inspect the complete source tree.
+# Git history is supplied separately through read-only named build contexts.
+.git
+**/.git
+.claude/worktrees/
+
+# Local environments, credentials and caches never belong in an image.
+**/.env*
+!**/.envrc
+**/.venv/
+**/.direnv/
+**/.aws/
+**/node_modules/
+**/.svelte-kit/
+**/.pulumi/
+**/.cache/
+**/reports/
+**/.coverage*
+**/htmlcov/
+**/.mypy_cache/
+**/.pytest_cache/
+**/.ruff_cache/
+**/__pycache__/
+**/*.pyc
+**/dist/
+src/back-end/budge/_version.py

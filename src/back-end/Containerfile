@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-# compose.yaml configures both targets; .envrc supplies the tag-derived package version.
+# compose.yaml supplies the repository and read-only Git contexts for both targets.
 
 FROM ghcr.io/astral-sh/uv:0.13.5@sha256:32a7bb39b496babbd997b0a39a4d66c126bdaf5661b302bf6f06abda8deca6ff AS uv
 
@@ -21,31 +21,35 @@ RUN python3 -m venv --without-pip /opt/budge
 WORKDIR /build
 RUN --mount=from=uv,source=/uv,target=/bin/uv \
     --mount=type=cache,target=/root/.cache/uv \
-    --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
-    --mount=type=bind,source=uv.lock,target=uv.lock \
+    --mount=type=bind,source=src/back-end/pyproject.toml,target=pyproject.toml \
+    --mount=type=bind,source=src/back-end/uv.lock,target=uv.lock \
     uv sync --frozen --no-dev --no-install-project
 
 FROM dependencies AS build
 
-ARG BUDGE_VERSION=0.0.0
-COPY pyproject.toml uv.lock ./
-COPY budge/ ./budge/
+ARG BUDGE_GIT_DIR=.
+RUN microdnf install -y git-core-2.50.1-1.amzn2023.0.1 && microdnf clean all
+WORKDIR /workspace/src/back-end
 RUN --mount=from=uv,source=/uv,target=/bin/uv \
     --mount=type=cache,target=/root/.cache/uv \
-    UV_DYNAMIC_VERSIONING_BYPASS="${BUDGE_VERSION}" uv build --wheel --out-dir /dist \
+    --mount=type=bind,target=/workspace,rw \
+    --mount=type=bind,from=git-common,target=/git \
+    GIT_DIR="/git/${BUDGE_GIT_DIR}" GIT_WORK_TREE=/workspace uv build --wheel --out-dir /dist \
     && uv pip install --python /opt/budge/bin/python --no-deps /dist/*.whl \
     && site_packages="$(/opt/budge/bin/python -c 'import sysconfig; print(sysconfig.get_path("purelib"))')" \
     && cp -a "${site_packages}/." "${LAMBDA_TASK_ROOT}/"
 
 FROM dependencies AS dev
 
+ARG BUDGE_GIT_DIR=.
 RUN microdnf install -y git-core-2.50.1-1.amzn2023.0.1 nodejs24-24.20.0-1.amzn2023.0.1 \
     && microdnf clean all
 COPY --from=uv /uv /uvx /usr/local/bin/
+COPY . /workspace/
 WORKDIR /workspace/src/back-end
-COPY . ./
-ARG BUDGE_VERSION=0.0.0
-RUN UV_DYNAMIC_VERSIONING_BYPASS="${BUDGE_VERSION}" uv sync --frozen --all-groups && ln -s /opt/budge .venv
+RUN --mount=type=bind,from=git-common,target=/git \
+    GIT_DIR="/git/${BUDGE_GIT_DIR}" GIT_WORK_TREE=/workspace uv sync --frozen --all-groups \
+    && ln -s /opt/budge .venv
 ENV PATH="/opt/budge/bin:${PATH}"
 ENTRYPOINT []
 CMD ["/bin/bash"]

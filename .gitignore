@@ -68,7 +68,7 @@ node_modules/
 .pytest_cache/
 .python-version
 .testmondata*
-.venv/
+.venv
 __pycache__/
 dist/
 # written by hatchling's `version` build hook on every build and `uv sync` (see src/back-end/pyproject.toml)

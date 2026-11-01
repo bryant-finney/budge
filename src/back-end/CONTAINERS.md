@@ -70,6 +70,10 @@ Git metadata are baked into `rel`. MinIO is built from an immutable upstream sou
 is [source-only](https://github.com/minio/minio#source-only-distribution), and historical official image tags are
 unavailable. Its first build downloads Go dependencies and compiles the server; subsequent builds reuse that layer.
 
+Dependabot updates the tag and digest on each Containerfile's upstream `FROM` lines. Everything else is a manual
+bump: `MINIO_COMMIT` (both `ARG` defaults and the `compose.yaml` default), `MINIO_RELEASE` in `compose.yaml`, the
+release named in the MinIO Containerfile's comment, and the `microdnf` package versions.
+
 The current API/AWS adapters are skeletons: this stack verifies health, source reload, and S3 availability;
 Secrets Manager seeding and application storage wiring remain milestone 2 work.
 MinIO enforces conditional writes but ignores `DeleteObject`'s `If-Match`: the future lease adapter must use the

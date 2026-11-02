@@ -1,4 +1,4 @@
-# compose.yaml and etc/compose/dev.yaml extend this file when BUDGE_BUILD_TARGET is dev or unset.
+# compose.yaml and etc/compose/volumes.yaml extend this file when BUDGE_BUILD_TARGET is dev or unset.
 services:
   api:
     command: ${BUDGE_API_COMMAND:-uvicorn budge.api.app:app --host 0.0.0.0 --port 8080}

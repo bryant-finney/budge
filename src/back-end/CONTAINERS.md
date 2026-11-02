@@ -1,7 +1,7 @@
 # Back-end containers
 
-Live source edits need the `etc/compose/dev.yaml` overlay. `direnv allow` sets
-`COMPOSE_FILE=compose.yaml:etc/compose/dev.yaml` in `.env` unless `COMPOSE_FILE` is already there, so from the
+Live source edits need the `etc/compose/volumes.yaml` overlay. `direnv allow` sets
+`COMPOSE_FILE=compose.yaml:etc/compose/volumes.yaml` in `.env` unless `COMPOSE_FILE` is already there, so from the
 repository root these commands start the API and persistent MinIO with that overlay:
 
 ```sh
@@ -14,7 +14,7 @@ docker compose down
 To name the overlay on the command line instead, pass both files:
 
 ```sh
-docker compose -f compose.yaml -f etc/compose/dev.yaml up --build --wait
+docker compose -f compose.yaml -f etc/compose/volumes.yaml up --build --wait
 ```
 
 `-f` replaces `COMPOSE_FILE`, so also pass any other overlay you added there.
@@ -31,7 +31,7 @@ with separate networks and data volumes. Set `COMPOSE_PROJECT_NAME` in `.env` or
 to choose a project name explicitly. MinIO data stays in its named volume after `down`.
 
 To expose the API, Lambda emulator, and MinIO on the host and keep live source edits, set
-`COMPOSE_FILE=compose.yaml:etc/compose/dev.yaml:etc/compose/ports.yaml` in `.env`, then run:
+`COMPOSE_FILE=compose.yaml:etc/compose/volumes.yaml:etc/compose/ports.yaml` in `.env`, then run:
 
 ```sh
 docker compose --profile lambda up --build --wait
@@ -56,14 +56,14 @@ Release versions such as `1.2.3` are unchanged; development versions replace `+`
 because OCI tags cannot contain `+`. The installed package retains the exact version.
 The image version falls back from `BUDGE_IMAGE_VERSION` to `BUDGE_VERSION`, then `0.0.0`; an explicit
 `BUDGE_IMAGE_VERSION` environment variable overrides the generated value. Existing `.env` files keep local
-settings while `.envrc` replaces the old generated `BUDGE_IMAGE_TAG` with `BUDGE_IMAGE_VERSION` and drops the old
-generated `BUDGE_GIT_DIR`.
+settings while `.envrc` replaces the old generated `BUDGE_IMAGE_TAG` with `BUDGE_IMAGE_VERSION`, drops the old
+generated `BUDGE_GIT_DIR`, and updates the volumes overlay's former path in `COMPOSE_FILE`.
 
 The default `dev` image has source, tests, uv, Git, Node, and development tools. `COMPOSE_FILE`, or
-`docker compose -f compose.yaml -f etc/compose/dev.yaml …`, selects the `etc/compose/dev.yaml` overlay, which mounts
-the checkout and read-only Git common directory into `api` at their real absolute paths, including linked worktrees,
-and runs uvicorn with reload. It also mounts `src/back-end` read-only into `ingestion`, which picks up source edits
-after `docker compose restart ingestion`. The virtual environment stays at `/opt/budge`. The base
+`docker compose -f compose.yaml -f etc/compose/volumes.yaml …`, selects the `etc/compose/volumes.yaml` overlay, which
+mounts the checkout and read-only Git common directory into `api` at their real absolute paths, including linked
+worktrees, and runs uvicorn with reload. It also mounts `src/back-end` read-only into `ingestion`, which picks up
+source edits after `docker compose restart ingestion`. The virtual environment stays at `/opt/budge`. The base
 `docker compose -f compose.yaml …` also runs without this overlay, but then has no source mounts or reload.
 `podman compose …` uses a compatible Compose provider. No Docker-only runtime attributes are required. The build
 files are `src/back-end/Containerfile` and `src/minio/Containerfile`.
@@ -127,7 +127,7 @@ release named in the MinIO Containerfile's comment, and the `microdnf` package v
 archived and the pinned commit is its last release, so there's no newer MinIO release to move to.
 
 The current API/AWS adapters are skeletons: this stack verifies health, source reload (with the
-`etc/compose/dev.yaml` overlay), and S3 availability; Secrets Manager seeding and application storage wiring remain
+`etc/compose/volumes.yaml` overlay), and S3 availability; Secrets Manager seeding and application storage wiring remain
 milestone 2 work.
 MinIO enforces conditional writes but ignores `DeleteObject`'s `If-Match`: the future lease adapter must use the
 owner re-check fallback described in design spec §12 for local lease release.

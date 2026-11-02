@@ -10,3 +10,5 @@ Index of infra agent memories, one line per entry.
 - [Restacking across worktrees](git-worktree-restack.md) — `--update-refs` can't move a branch checked out in another worktree; use `--onto`
 - [Required checks: one aggregator](required-checks-aggregator.md) — require only `ci-ok` (always(), skipped=fail), never per-matrix contexts
 - [YAML key order](yaml-key-order.md) — sort object keys alphabetically; workflows lead with `name`, `on`, `permissions`; lists keep order
+- [Dependabot docker cooldown](dependabot-docker-cooldown.md) — publication dates come only from Docker Hub; compare digests before moving an image
+- [Full Docker disk stops MinIO](docker-disk-full-minio.md) — "drive path full" means check `df` in a container; never prune the shared daemon

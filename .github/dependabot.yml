@@ -37,7 +37,8 @@ updates:
     directory: /src/back-end
     schedule:
       interval: weekly
-    # Dependabot has no publication date for ghcr.io or public.ecr.aws, so these images skip the cooldown
+    # Dependabot reads publication dates only from Docker Hub. public.ecr.aws/lambda/python has no multi-platform image
+    # there, so it alone skips the cooldown.
     cooldown:
       default-days: 7
     groups:

@@ -38,14 +38,15 @@ services:
       context: .
       dockerfile: src/back-end/Containerfile
       platforms: ['${BUDGE_PLATFORM:-linux/arm64}']
-      target: rel
+      target: ${BUDGE_BUILD_TARGET:-rel}
       x-bake:
         output: type=docker
     depends_on:
       minio:
         condition: service_healthy
     environment: *backend-environment
-    image: ${BUDGE_IMAGE_PREFIX:-ghcr.io/bryant-finney}/rel/budge:${BUDGE_IMAGE_VERSION:-${BUDGE_VERSION:-0.0.0}}
+    image: "${BUDGE_IMAGE_PREFIX:-ghcr.io/bryant-finney}/${BUDGE_BUILD_TARGET:-rel}/budge:\
+      ${BUDGE_IMAGE_VERSION:-${BUDGE_VERSION:-0.0.0}}"
     platform: ${BUDGE_PLATFORM:-linux/arm64}
     profiles: [lambda]
 

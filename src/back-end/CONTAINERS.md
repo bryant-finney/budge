@@ -63,11 +63,12 @@ The default `dev` image has source, tests, uv, Git, Node, and development tools.
 the checkout and read-only Git common directory at their real absolute paths, including linked worktrees, and runs
 uvicorn with reload. The virtual environment stays at `/opt/budge`. The base `docker compose -f compose.yaml …` also
 runs without this overlay, but then has no source mounts or reload. `podman compose …` uses a compatible
-Compose provider. No Docker-only runtime attributes are required. `BUDGE_BUILD_TARGET` defaults to `dev` and
-selects the API build target and matching image namespace. For example,
+Compose provider. No Docker-only runtime attributes are required. `BUDGE_BUILD_TARGET` selects the build target and
+matching image namespace of both back-end services; unset, `api` builds `dev` and `ingestion` builds `rel`. For example,
 `BUDGE_BUILD_TARGET=rel docker compose -f compose.yaml build api` builds the Lambda image. The API service
 and `etc/compose/dev.yaml` overlay run `dev`; the lean `rel` image has no uv or development ASGI server. Use
-`ingestion` for its Lambda emulator; that service always builds `rel`. The build files are
+`ingestion` for its Lambda emulator, which runs only on `rel`: `dev` has no Lambda entry point, so with
+`BUDGE_BUILD_TARGET=dev`, including a line left in an older `.env`, the service exits at once. The build files are
 `src/back-end/Containerfile` and `src/minio/Containerfile`.
 
 Both builds use standard Compose fields. Docker can delegate to Buildx (`COMPOSE_BAKE=true`), or read the resolved

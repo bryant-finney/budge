@@ -87,7 +87,8 @@ unavailable. Its first build downloads Go dependencies and compiles the server; 
 
 Dependabot updates the tag and digest on each Containerfile's upstream `FROM` lines. Everything else is a manual
 bump: `MINIO_COMMIT` (both `ARG` defaults and the `compose.yaml` default), `MINIO_RELEASE` in `compose.yaml`, the
-release named in the MinIO Containerfile's comment, and the `microdnf` package versions.
+release named in the MinIO Containerfile's comment, and the `microdnf` package versions. Upstream `minio/minio` is
+archived and the pinned commit is its last release, so there's no newer MinIO release to move to.
 
 The current API/AWS adapters are skeletons: this stack verifies health, source reload (with the
 `etc/compose/dev.yaml` overlay), and S3 availability; Secrets Manager seeding and application storage wiring remain

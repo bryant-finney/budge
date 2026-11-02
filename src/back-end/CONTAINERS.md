@@ -45,15 +45,18 @@ in `.env` to configure these bindings; choose different host ports when exposing
 
 Both image builds run `uv-dynamic-versioning` against the checkout's Git history without a version override.
 The build context is the repository root; `.dockerignore` excludes local environments, credentials, caches,
-and Git metadata. Compose supplies the common Git directory as a read-only named build context.
-`.envrc` resolves that directory and the relative worktree Git path (`.` in a normal clone).
-Only the build commands mount this context; neither image retains Git metadata.
+and Git metadata, keeping only an empty root `.git` entry. Compose supplies the common Git directory
+(`BUDGE_GIT_COMMON_DIR`, resolved by `.envrc`) as a read-only named build context, because a linked worktree's `.git`
+is a file pointing outside the build context. The build reads that file to find the worktree's directory under the
+common one, so it versions the worktree's own HEAD. Only the build commands mount these; neither image retains Git
+metadata.
 Images are `ghcr.io/bryant-finney/dev/budge:<version>` and `ghcr.io/bryant-finney/rel/budge:<version>`.
 Release versions such as `1.2.3` are unchanged; development versions replace `+` with `-` in the OCI tag only,
 because OCI tags cannot contain `+`. The installed package retains the exact version.
 The image version falls back from `BUDGE_IMAGE_VERSION` to `BUDGE_VERSION`, then `0.0.0`; an explicit
 `BUDGE_IMAGE_VERSION` environment variable overrides the generated value. Existing `.env` files keep local
-settings while `.envrc` replaces the old generated `BUDGE_IMAGE_TAG` with `BUDGE_IMAGE_VERSION`.
+settings while `.envrc` replaces the old generated `BUDGE_IMAGE_TAG` with `BUDGE_IMAGE_VERSION` and drops the old
+generated `BUDGE_GIT_DIR`.
 
 The default `dev` image has source, tests, uv, Git, Node, and development tools. `COMPOSE_FILE`, or
 `docker compose -f compose.yaml -f etc/compose/dev.yaml …`, selects the `etc/compose/dev.yaml` overlay, which mounts

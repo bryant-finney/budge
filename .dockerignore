@@ -1,7 +1,9 @@
 # The backend builds from the repository root so Git can inspect the complete source tree.
-# Git history is supplied separately through read-only named build contexts.
-.git
+# Git history is supplied separately through a read-only named build context.
 **/.git
+# Only the root entry stays, emptied: in a linked worktree it's the file naming that worktree's Git directory.
+!.git
+.git/*
 .claude/worktrees/
 
 # Local environments, credentials and caches never belong in an image.

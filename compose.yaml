@@ -4,8 +4,6 @@ services:
     build:
       additional_contexts:
         git-common: ${BUDGE_GIT_COMMON_DIR:-./.git}
-      args:
-        BUDGE_GIT_DIR: ${BUDGE_GIT_DIR:-.}
       context: .
       dockerfile: src/back-end/Containerfile
       platforms: ['${BUDGE_PLATFORM:-linux/arm64}']
@@ -37,8 +35,6 @@ services:
     build:
       additional_contexts:
         git-common: ${BUDGE_GIT_COMMON_DIR:-./.git}
-      args:
-        BUDGE_GIT_DIR: ${BUDGE_GIT_DIR:-.}
       context: .
       dockerfile: src/back-end/Containerfile
       platforms: ['${BUDGE_PLATFORM:-linux/arm64}']

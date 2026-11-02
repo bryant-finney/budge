@@ -10,11 +10,9 @@ services:
       target: ${BUDGE_BUILD_TARGET:-dev}
       x-bake:
         output: type=docker
-    command: [uvicorn, 'budge.api.app:app', --host, 0.0.0.0, --port, '8000']
     depends_on:
       minio:
         condition: service_healthy
-    entrypoint: []
     environment: &backend-environment
       AWS_ACCESS_KEY_ID: ${MINIO_ROOT_USER:-budge-local}
       AWS_DEFAULT_REGION: ${AWS_REGION:-us-east-1}
@@ -22,10 +20,12 @@ services:
       AWS_ENDPOINT_URL_S3: ${BUDGE_S3_ENDPOINT:-http://minio:9000}
       AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD:-budge-local-password}
       PLAID_ENV: ${PLAID_ENV:-sandbox}
+    extends:
+      file: etc/compose/targets/${BUDGE_BUILD_TARGET:-dev}.yaml
+      service: api
     healthcheck:
       interval: 5s
       retries: 12
-      test: [CMD, python3, -c, 'import urllib.request; urllib.request.urlopen("http://127.0.0.1:8000/api/health")']
       timeout: 3s
     image: "${BUDGE_IMAGE_PREFIX:-ghcr.io/bryant-finney}/${BUDGE_BUILD_TARGET:-dev}/budge:\
       ${BUDGE_IMAGE_VERSION:-${BUDGE_VERSION:-0.0.0}}"
@@ -38,14 +38,16 @@ services:
       context: .
       dockerfile: src/back-end/Containerfile
       platforms: ['${BUDGE_PLATFORM:-linux/arm64}']
-      target: ${BUDGE_BUILD_TARGET:-rel}
+      target: ${BUDGE_BUILD_TARGET:-dev}
       x-bake:
         output: type=docker
+    command: ${BUDGE_INGESTION_COMMAND:-budge.ingestion.handler.handler}
     depends_on:
       minio:
         condition: service_healthy
+    entrypoint: ${BUDGE_INGESTION_ENTRYPOINT:-/lambda-entrypoint.sh}
     environment: *backend-environment
-    image: "${BUDGE_IMAGE_PREFIX:-ghcr.io/bryant-finney}/${BUDGE_BUILD_TARGET:-rel}/budge:\
+    image: "${BUDGE_IMAGE_PREFIX:-ghcr.io/bryant-finney}/${BUDGE_BUILD_TARGET:-dev}/budge:\
       ${BUDGE_IMAGE_VERSION:-${BUDGE_VERSION:-0.0.0}}"
     platform: ${BUDGE_PLATFORM:-linux/arm64}
     profiles: [lambda]

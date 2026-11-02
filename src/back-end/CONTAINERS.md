@@ -39,7 +39,8 @@ curl http://127.0.0.1:8000/api/health
 curl -X POST http://127.0.0.1:9002/2015-03-31/functions/function/invocations -d '{}'
 ```
 
-The ports overlay binds only to loopback by default. MinIO's console is at `http://127.0.0.1:9001`.
+The ports overlay binds only to loopback by default. The `api` container listens on port 8080 on both build targets.
+MinIO's console is at `http://127.0.0.1:9001`.
 Use `BUDGE_BIND_HOST`, `BUDGE_API_PORT`, `BUDGE_INGESTION_PORT`, `MINIO_API_PORT`, and `MINIO_CONSOLE_PORT`
 in `.env` to configure these bindings; choose different host ports when exposing concurrent stacks.
 
@@ -60,16 +61,49 @@ generated `BUDGE_GIT_DIR`.
 
 The default `dev` image has source, tests, uv, Git, Node, and development tools. `COMPOSE_FILE`, or
 `docker compose -f compose.yaml -f etc/compose/dev.yaml …`, selects the `etc/compose/dev.yaml` overlay, which mounts
-the checkout and read-only Git common directory at their real absolute paths, including linked worktrees, and runs
-uvicorn with reload. The virtual environment stays at `/opt/budge`. The base `docker compose -f compose.yaml …` also
-runs without this overlay, but then has no source mounts or reload. `podman compose …` uses a compatible
-Compose provider. No Docker-only runtime attributes are required. `BUDGE_BUILD_TARGET` selects the build target and
-matching image namespace of both back-end services; unset, `api` builds `dev` and `ingestion` builds `rel`. For example,
-`BUDGE_BUILD_TARGET=rel docker compose -f compose.yaml build api` builds the Lambda image. The API service
-and `etc/compose/dev.yaml` overlay run `dev`; the lean `rel` image has no uv or development ASGI server. Use
-`ingestion` for its Lambda emulator, which runs only on `rel`: `dev` has no Lambda entry point, so with
-`BUDGE_BUILD_TARGET=dev`, including a line left in an older `.env`, the service exits at once. The build files are
-`src/back-end/Containerfile` and `src/minio/Containerfile`.
+the checkout and read-only Git common directory into `api` at their real absolute paths, including linked worktrees,
+and runs uvicorn with reload. It also mounts `src/back-end` read-only into `ingestion`, which picks up source edits
+after `docker compose restart ingestion`. The virtual environment stays at `/opt/budge`. The base
+`docker compose -f compose.yaml …` also runs without this overlay, but then has no source mounts or reload.
+`podman compose …` uses a compatible Compose provider. No Docker-only runtime attributes are required. The build
+files are `src/back-end/Containerfile` and `src/minio/Containerfile`.
+
+## Build targets
+
+`BUDGE_BUILD_TARGET` selects the build target and image namespace of both `api` and `ingestion`, which share one image
+per target; unset, it's `dev`. It's the only setting a target needs, with or without the overlays:
+`BUDGE_BUILD_TARGET=rel docker compose up --build --wait` runs the lean image. Compose reads the `api` defaults from
+`etc/compose/targets/<target>.yaml`, so any other value fails with a `no such file or directory` error.
+
+| Service                        | `dev`                                              | `rel`                                               |
+| ------------------------------ | -------------------------------------------------- | --------------------------------------------------- |
+| `api`                          | uvicorn serving HTTP                               | Lambda emulator running `budge.api.handler.handler` |
+| `ingestion` (`lambda` profile) | Lambda emulator running the source in `/workspace` | Lambda emulator running the installed wheel         |
+
+`rel` has no development ASGI server, so its `api` answers Lambda invocations rather than HTTP routes. Send it an
+API Gateway event:
+
+```sh
+curl -X POST http://127.0.0.1:8000/2015-03-31/functions/function/invocations \
+  -d @src/back-end/tests/events/apigw-v2-get-health.json
+```
+
+On `rel`:
+
+- Every other path returns 404, including `/api/health`, so the Vite proxy can't reach the API. Use `dev` for front-end
+  work.
+- Source edits need a rebuild. There's no reload, and `api` and `ingestion` ignore the overlay's source mounts.
+- There's no uv, pytest, or Git, so `docker compose run --rm api uv run …` fails.
+
+The emulator handles one invocation at a time on either target. Overlapping invocations crash it, and the container
+exits with code 2. For that reason, the `rel` health check calls the handler only until it passes, then just checks
+that the emulator is listening.
+
+`BUDGE_API_ENTRYPOINT`, `BUDGE_API_COMMAND`, `BUDGE_INGESTION_ENTRYPOINT`, and `BUDGE_INGESTION_COMMAND` override a
+service's entry point and command. Compose splits each value into words. The health check doesn't change with them, so
+an `api` override still has to pass the target's check.
+
+## Images
 
 Both builds use standard Compose fields. Docker can delegate to Buildx (`COMPOSE_BAKE=true`), or read the resolved
 configuration directly; other providers ignore the optional `x-bake` local-output hint:
@@ -79,8 +113,10 @@ docker compose --profile lambda config | docker buildx bake -f - --load api inge
 docker compose --profile lambda up --build --wait
 ```
 
-`ingestion` uses the lean `rel` target and Lambda Runtime Interface Emulator. The image's default handler is
-`budge.ingestion.handler.handler`; the API Lambda selects `budge.api.handler.handler`. No development tools or
+`ingestion` runs the Lambda Runtime Interface Emulator through the base image's `/lambda-entrypoint.sh` on both
+targets. The `dev` stage sets `LAMBDA_TASK_ROOT` and `PYTHONPATH` so the runtime finds the source and the virtual
+environment's packages; `rel` needs neither, because its packages are in `/var/task`. The `rel` image's default handler
+is `budge.ingestion.handler.handler`; the API Lambda selects `budge.api.handler.handler`. No development tools or
 Git metadata are baked into `rel`. MinIO is built from an immutable upstream source commit: the community edition
 is [source-only](https://github.com/minio/minio#source-only-distribution), and historical official image tags are
 unavailable. Its first build downloads Go dependencies and compiles the server; subsequent builds reuse that layer.

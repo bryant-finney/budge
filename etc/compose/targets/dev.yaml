@@ -1,0 +1,11 @@
+# compose.yaml and etc/compose/dev.yaml extend this file when BUDGE_BUILD_TARGET is dev or unset.
+services:
+  api:
+    command: ${BUDGE_API_COMMAND:-uvicorn budge.api.app:app --host 0.0.0.0 --port 8080}
+    entrypoint: ${BUDGE_API_ENTRYPOINT:-}
+    healthcheck:
+      test: [CMD, python3, -c, 'import urllib.request; urllib.request.urlopen("http://127.0.0.1:8080/api/health")']
+
+  api-live:
+    command: ${BUDGE_API_COMMAND:-uv run --frozen uvicorn budge.api.app:app --host 0.0.0.0 --port 8080 --reload}
+    working_dir: ${BUDGE_REPO_ROOT:-/workspace}/src/back-end

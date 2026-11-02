@@ -1,7 +1,7 @@
 services:
   api:
     ports:
-      - ${BUDGE_BIND_HOST:-127.0.0.1}:${BUDGE_API_PORT:-8000}:8000
+      - ${BUDGE_BIND_HOST:-127.0.0.1}:${BUDGE_API_PORT:-8000}:8080
   ingestion:
     ports:
       - ${BUDGE_BIND_HOST:-127.0.0.1}:${BUDGE_INGESTION_PORT:-9002}:8080

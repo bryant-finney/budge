@@ -1,6 +1,8 @@
 services:
   api:
-    command: [uv, run, --frozen, uvicorn, 'budge.api.app:app', --host, 0.0.0.0, --port, '8000', --reload]
+    extends:
+      file: etc/compose/targets/${BUDGE_BUILD_TARGET:-dev}.yaml
+      service: api-live
     volumes:
       - source: ${BUDGE_REPO_ROOT:-.}
         target: ${BUDGE_REPO_ROOT:-/workspace}
@@ -9,4 +11,9 @@ services:
         source: ${BUDGE_GIT_COMMON_DIR:-./.git}
         target: ${BUDGE_GIT_COMMON_DIR:-/workspace/.git}
         type: bind
-    working_dir: ${BUDGE_REPO_ROOT:-/workspace}/src/back-end
+  ingestion:
+    volumes:
+      - read_only: true
+        source: ${BUDGE_REPO_ROOT:-.}/src/back-end
+        target: /workspace/src/back-end
+        type: bind

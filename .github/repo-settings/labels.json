@@ -1,0 +1,14 @@
+[
+  {
+    "name": "back-end",
+    "description": "src/back-end (b-end)"
+  },
+  {
+    "name": "front-end",
+    "description": "src/front-end (f-end)"
+  },
+  {
+    "name": "infrastructure",
+    "description": "src/infrastructure, CI/CD, root tooling (infra)"
+  }
+]

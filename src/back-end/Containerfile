@@ -52,8 +52,12 @@ RUN --mount=type=bind,source=.git,target=/workspace/.git \
     --mount=type=bind,from=git-common,target=/git \
     GIT_DIR="/git$(sed -n 's|^gitdir: .*\(/worktrees/.*\)|\1|p' /workspace/.git 2>/dev/null)" \
     GIT_WORK_TREE=/workspace uv sync --frozen --all-groups \
-    && ln -s /opt/budge .venv
-ENV PATH="/opt/budge/bin:${PATH}"
+    && ln -s /opt/budge .venv \
+    && ln -s "$(/opt/budge/bin/python -c 'import sysconfig; print(sysconfig.get_path("purelib"))')" /opt/budge/site-packages
+# The Lambda runtime uses the system Python, so point it at the source tree and the virtual environment's packages.
+ENV LAMBDA_TASK_ROOT=/workspace/src/back-end \
+    PATH="/opt/budge/bin:${PATH}" \
+    PYTHONPATH=/opt/budge/site-packages
 ENTRYPOINT []
 CMD ["/bin/bash"]
 

@@ -1,13 +1,11 @@
 # pattern: keys are sorted alphabetically
+# The rel images, from the Containerfile's last stage. COMPOSE_FILE adds etc/compose/targets/dev.yaml for dev mode.
 services:
   api:
     build:
-      args:
-        UV_DYNAMIC_VERSIONING_BYPASS: ${BUDGE_VERSION:-0.0.0}
       context: ./src/back-end
       dockerfile: Containerfile
       platforms: ['${BUDGE_PLATFORM:-linux/arm64}']
-      target: ${BUDGE_BUILD_TARGET:-dev}
       x-bake:
         output: type=docker
     depends_on:
@@ -20,26 +18,44 @@ services:
       AWS_ENDPOINT_URL_S3: ${BUDGE_S3_ENDPOINT:-http://minio:9000}
       AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD:-budge-local-password}
       PLAID_ENV: ${PLAID_ENV:-sandbox}
-    extends:
-      file: etc/compose/targets/${BUDGE_BUILD_TARGET:-dev}.yaml
-      service: api
     healthcheck:
       interval: 5s
       retries: 12
+      # The emulator crashes when invocations overlap, so only the first passing probe calls the handler; later probes
+      # check that the emulator is listening. A handler's failure is in the response body, not the HTTP status.
+      test:
+        - CMD
+        - python3
+        - -c
+        - |
+          import json, os, socket, sys, urllib.request
+          marker = '/tmp/budge-api-handler-passed'
+          if os.path.exists(marker):
+              socket.create_connection(('127.0.0.1', 8080), 2).close()
+              sys.exit()
+          event = {
+              'version': '2.0',
+              'rawPath': '/api/health',
+              'rawQueryString': '',
+              'headers': {},
+              'requestContext': {
+                  'http': {'method': 'GET', 'path': '/api/health', 'protocol': 'HTTP/1.1', 'sourceIp': '127.0.0.1'},
+              },
+          }
+          url = 'http://127.0.0.1:8080/2015-03-31/functions/function/invocations'
+          response = json.load(urllib.request.urlopen(url, json.dumps(event).encode()))
+          if response['statusCode'] != 200:
+              sys.exit(1)
+          open(marker, 'w').close()
       timeout: 3s
-    # a line break makes the image URI harder to read
-    # yamllint disable-line rule:line-length
-    image: "${BUDGE_IMAGE_PREFIX:-ghcr.io/bryant-finney}/${BUDGE_BUILD_TARGET:-dev}/budge:${BUDGE_IMAGE_VERSION:-${BUDGE_VERSION:-0.0.0}}"
+    image: "${BUDGE_IMAGE_PREFIX:-ghcr.io/bryant-finney}/rel/budge:${BUDGE_IMAGE_VERSION:-${BUDGE_VERSION:-0.0.0}}"
     platform: ${BUDGE_PLATFORM:-linux/arm64}
 
   ingestion:
     build:
-      args:
-        UV_DYNAMIC_VERSIONING_BYPASS: ${BUDGE_VERSION:-0.0.0}
       context: ./src/back-end
       dockerfile: Containerfile
       platforms: ['${BUDGE_PLATFORM:-linux/arm64}']
-      target: ${BUDGE_BUILD_TARGET:-dev}
       x-bake:
         output: type=docker
     command: budge.ingestion.handler.handler
@@ -47,12 +63,7 @@ services:
       minio:
         condition: service_healthy
     environment: *backend-environment
-    extends:
-      file: etc/compose/targets/${BUDGE_BUILD_TARGET:-dev}.yaml
-      service: ingestion
-    # a line break makes the image URI harder to read
-    # yamllint disable-line rule:line-length
-    image: "${BUDGE_IMAGE_PREFIX:-ghcr.io/bryant-finney}/${BUDGE_BUILD_TARGET:-dev}/budge:${BUDGE_IMAGE_VERSION:-${BUDGE_VERSION:-0.0.0}}"
+    image: "${BUDGE_IMAGE_PREFIX:-ghcr.io/bryant-finney}/rel/budge:${BUDGE_IMAGE_VERSION:-${BUDGE_VERSION:-0.0.0}}"
     platform: ${BUDGE_PLATFORM:-linux/arm64}
     profiles: [lambda]
 

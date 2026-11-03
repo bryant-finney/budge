@@ -70,8 +70,8 @@ def test_version_matches_distribution_metadata() -> None:
 def test_generated_version_module_matches_distribution_metadata() -> None:
     """The build hook writes `budge/_version.py` for editable installs too, with the distribution's version.
 
-    The module can only be missing from a build without Git: the `dev` image running a mounted source tree that the
-    host hasn't built yet.
+    The module can only be missing from a build without Git: the `dev` image running a mounted source tree where the
+    host's `.envrc` hasn't run yet.
     """
     installed: str = importlib.metadata.version('budge')
     if installed == FALLBACK_VERSION:
@@ -85,7 +85,7 @@ def test_generated_version_module_matches_distribution_metadata() -> None:
 def test_version_falls_back_without_generated_module(monkeypatch: pytest.MonkeyPatch) -> None:
     """Without the build-generated `budge/_version.py`, `__version__` is `'0.0.0'`.
 
-    That's the case when only the committed `budge/` source is copied into an image.
+    That's the case in a fresh clone with no direnv, on the host or in an image built from it.
     """
     # a `None` entry in `sys.modules` makes `import budge._version` raise `ModuleNotFoundError`
     monkeypatch.setitem(sys.modules, 'budge._version', None)

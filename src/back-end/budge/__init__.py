@@ -15,11 +15,11 @@ The installed distribution's version is exposed as `__version__`:
 >>> isinstance(budge.__version__, str)
 True
 
-The value comes from `budge/_version.py`, which every build and `uv sync` generates (and git ignores). Without that
-file, e.g. when only the committed `budge/` source is copied into an image, `__version__` is `'0.0.0'`, matching
-`fallback-version` in `pyproject.toml`, so importing never fails. A build without Git falls back to the same value, so
-it's a legitimate version: in the `dev` image, the installed metadata says `'0.0.0'` while the mounted source has the
-host's `budge/_version.py`.
+The value comes from `budge/_version.py`, which the host's `.envrc`, every build and `uv sync` generate (and git
+ignores), and which the images copy from the host. Without that file, as in a fresh clone with no direnv, `__version__`
+is `'0.0.0'`, matching `fallback-version` in `pyproject.toml`, so importing never fails. A build without Git falls back
+to the same value, so it's a legitimate version: in the `dev` image, the installed metadata says `'0.0.0'` while
+`budge/_version.py` has the host's version.
 """
 
 try:

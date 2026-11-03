@@ -19,5 +19,8 @@ virtual environment.
   source, so the build runs `compileall`.
 - `rel` is `FROM dependencies`, so that stage's uv settings are `ARG`, not `ENV`. Otherwise they'd show up in the image
   config. `FROM base` plus a copy of site-packages would duplicate the base's 50 MB.
+- BuildKit passes a stage's `ARG`s on to stages built `FROM` it. I assumed they ended with the stage, then saw `RUN |5 ...`
+  in `docker history` for `dev`, which declares four. Read that history line for what a `RUN` really gets. `ARG`s stay out of
+  `Config.Env`, so `rel` is still clean; check with `docker image inspect`.
 - `.dockerignore` keeps the host's `budge/_version.py` out, so a stale one can't reach an image.
 - See [[dev-image-no-uv-or-git]] for the `dev` side.

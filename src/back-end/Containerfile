@@ -45,8 +45,8 @@ COPY . ${LAMBDA_TASK_ROOT}/
 RUN --mount=from=uv,source=/uv,target=/bin/uv \
     --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --inexact --all-groups
-# Put the host's budge/_version.py back over the hook's. __init__.py is here so the wildcard can't match nothing.
-COPY budge/__init__.py budge/_version.py* ${LAMBDA_TASK_ROOT}/budge/
+# Restore the host's budge/_version.py over the hook's. With none, the tracked _version.pyi still matches the wildcard.
+COPY budge/_version.py* ${LAMBDA_TASK_ROOT}/budge/
 ENTRYPOINT []
 CMD ["uvicorn", "budge.api.app:app", "--host", "0.0.0.0", "--port", "8080", "--reload"]
 

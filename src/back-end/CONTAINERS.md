@@ -106,7 +106,9 @@ that the emulator is listening.
 
 `etc/compose/targets/<target>.yaml` hardcodes `api`'s command, and `compose.yaml` hardcodes `ingestion`'s handler. On
 `rel`, both use the Lambda base image's `/lambda-entrypoint.sh`. The `dev` image clears that entry point, so `api` runs
-uvicorn directly, and `etc/compose/targets/dev.yaml` sets it again for `ingestion`.
+uvicorn directly, and `etc/compose/targets/dev.yaml` sets it again for `ingestion`, which isn't a long-running service.
+The `dev` image's default command is the same uvicorn command as `api`'s. For a shell, name it:
+`docker compose run --rm api bash`.
 
 ## Images
 

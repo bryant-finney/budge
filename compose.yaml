@@ -27,8 +27,8 @@ services:
       interval: 5s
       retries: 12
       timeout: 3s
-    image: "${BUDGE_IMAGE_PREFIX:-ghcr.io/bryant-finney}/${BUDGE_BUILD_TARGET:-dev}/budge:\
-      ${BUDGE_IMAGE_VERSION:-${BUDGE_VERSION:-0.0.0}}"
+    # yamllint disable-line rule:line-length
+    image: "${BUDGE_IMAGE_PREFIX:-ghcr.io/bryant-finney}/${BUDGE_BUILD_TARGET:-dev}/budge:${BUDGE_IMAGE_VERSION:-${BUDGE_VERSION:-0.0.0}}"
     platform: ${BUDGE_PLATFORM:-linux/arm64}
 
   ingestion:
@@ -49,8 +49,8 @@ services:
     extends:
       file: etc/compose/targets/${BUDGE_BUILD_TARGET:-dev}.yaml
       service: ingestion
-    image: "${BUDGE_IMAGE_PREFIX:-ghcr.io/bryant-finney}/${BUDGE_BUILD_TARGET:-dev}/budge:\
-      ${BUDGE_IMAGE_VERSION:-${BUDGE_VERSION:-0.0.0}}"
+    # yamllint disable-line rule:line-length
+    image: "${BUDGE_IMAGE_PREFIX:-ghcr.io/bryant-finney}/${BUDGE_BUILD_TARGET:-dev}/budge:${BUDGE_IMAGE_VERSION:-${BUDGE_VERSION:-0.0.0}}"
     platform: ${BUDGE_PLATFORM:-linux/arm64}
     profiles: [lambda]
 

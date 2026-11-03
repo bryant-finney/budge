@@ -1,8 +1,7 @@
 # compose.yaml extends this file when BUDGE_BUILD_TARGET is rel.
 services:
   api:
-    command: ${BUDGE_API_COMMAND:-budge.api.handler.handler}
-    entrypoint: ${BUDGE_API_ENTRYPOINT:-/lambda-entrypoint.sh}
+    command: budge.api.handler.handler
     healthcheck:
       # The emulator crashes when invocations overlap, so only the first passing probe calls the handler; later probes
       # check that the emulator is listening. A handler's failure is in the response body, not the HTTP status.

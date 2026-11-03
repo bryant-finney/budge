@@ -66,7 +66,7 @@ files are `src/back-end/Containerfile` and `src/minio/Containerfile`.
 
 `BUDGE_BUILD_TARGET` selects the build target and image namespace of both `api` and `ingestion`, which share one image
 per target; unset, it's `dev`. It's the only setting a target needs, with or without the ports overlay:
-`BUDGE_BUILD_TARGET=rel docker compose up --build --wait` runs the lean image. Compose reads the `api` defaults from
+`BUDGE_BUILD_TARGET=rel docker compose up --build --wait` runs the lean image. Compose reads `api`'s settings from
 `etc/compose/targets/<target>.yaml`, so any other value fails with a `no such file or directory` error. Don't list a
 target file in `COMPOSE_FILE`: its settings would apply on every target, and its relative mount sources would resolve
 from the project directory instead of the file's own.
@@ -96,9 +96,9 @@ exits with code 2. For that reason, the `rel` health check calls the handler onl
 that the emulator is listening.
 
 `BUDGE_INGESTION_ENTRYPOINT` and `BUDGE_INGESTION_COMMAND` override `ingestion`'s entry point and command on either
-target. `BUDGE_API_ENTRYPOINT` and `BUDGE_API_COMMAND` do the same for `api` on `rel` only, because `dev` sets its
-command in `etc/compose/targets/dev.yaml` and takes its empty entry point from the image. Compose splits each value
-into words. The health check doesn't change with them, so an `api` override still has to pass the target's check.
+target, and Compose splits each value into words. `api` has no such variables: `etc/compose/targets/<target>.yaml`
+hardcodes its command, and its entry point comes from the image, which is empty on `dev` and the Lambda base image's
+`/lambda-entrypoint.sh` on `rel`.
 
 ## Images
 

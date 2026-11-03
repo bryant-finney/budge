@@ -17,3 +17,7 @@ rebuild. `git` in the container fails outright.
 **How to apply:** keep the mount in `etc/compose/targets/dev.yaml`. When a mount or environment
 change could affect the version, check the contents of `budge/_version.py` after `uv run`, and test from a
 clean host state, because a passing test run doesn't show this. Host `uv sync` restores the file.
+
+Unexplained: one `uv run --frozen pytest` from a fresh plain clone, with Git available, also wrote `0.0.0`
+that day. Eleven later `uv run` calls, five of them from fresh clones in the same sequence, wrote the right
+version, so the cause is unknown. If it recurs, capture `uv run -v` output before rerunning.

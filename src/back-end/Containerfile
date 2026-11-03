@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-# compose.yaml supplies the repository and read-only Git contexts for both targets.
+# compose.yaml supplies the repository and read-only Git contexts. Only the rel image's build stage uses Git.
 
 FROM docker.io/astral/uv:0.13.5@sha256:32a7bb39b496babbd997b0a39a4d66c126bdaf5661b302bf6f06abda8deca6ff AS uv
 
@@ -10,61 +10,56 @@ FROM public.ecr.aws/lambda/python:3.14@sha256:fc4e15a5e09e2c9b6184810ea0fdc87afe
 
 FROM base AS dependencies
 
-ENV UV_COMPILE_BYTECODE=1 \
+# Everything installs into the system Python. Its packages include the Lambda runtime's awslambdaric, which uv.lock
+# doesn't list, so `uv sync` needs --inexact or it uninstalls them. ARG keeps these settings out of the rel image's config.
+ARG UV_COMPILE_BYTECODE=1 \
     UV_LINK_MODE=copy \
     UV_NO_INSTALLER_METADATA=1 \
-    UV_PYTHON_DOWNLOADS=never \
-    UV_PROJECT_ENVIRONMENT=/opt/budge
-
-# Use a standard venv without uv's _virtualenv.pth bootstrap: only its installed packages are copied into rel.
-RUN python3 -m venv --without-pip /opt/budge
-WORKDIR /build
+    UV_PROJECT_ENVIRONMENT=/var/lang \
+    UV_PYTHON_DOWNLOADS=never
 RUN --mount=from=uv,source=/uv,target=/bin/uv \
     --mount=type=cache,target=/root/.cache/uv \
     --mount=type=bind,source=src/back-end/pyproject.toml,target=pyproject.toml \
     --mount=type=bind,source=src/back-end/uv.lock,target=uv.lock \
-    uv sync --frozen --no-dev --no-install-project
+    uv sync --frozen --inexact --no-dev --no-install-project
 
 FROM dependencies AS build
 
+ARG UV_LINK_MODE=copy \
+    UV_NO_INSTALLER_METADATA=1
 RUN microdnf install -y git-core-2.50.1-1.amzn2023.0.1 && microdnf clean all
-WORKDIR /workspace/src/back-end
+COPY src/back-end/ ${LAMBDA_TASK_ROOT}/
+# Editable, so the system Python holds the metadata and the code stays in one place, the task root.
 # In a linked worktree, `.git` is a file naming the worktree's directory under the common Git directory. Elsewhere it's
 # an empty directory that sed can't read, which leaves GIT_DIR at the common directory itself.
 RUN --mount=from=uv,source=/uv,target=/bin/uv \
     --mount=type=cache,target=/root/.cache/uv \
-    --mount=type=bind,target=/workspace,rw \
+    --mount=type=bind,source=.git,target=/mnt/.git \
     --mount=type=bind,from=git-common,target=/git \
-    GIT_DIR="/git$(sed -n 's|^gitdir: .*\(/worktrees/.*\)|\1|p' /workspace/.git 2>/dev/null)" \
-    GIT_WORK_TREE=/workspace uv build --wheel --out-dir /dist \
-    && uv pip install --python /opt/budge/bin/python --no-deps /dist/*.whl \
-    && site_packages="$(/opt/budge/bin/python -c 'import sysconfig; print(sysconfig.get_path("purelib"))')" \
-    && cp -a "${site_packages}/." "${LAMBDA_TASK_ROOT}/"
+    GIT_DIR="/git$(sed -n 's|^gitdir: .*\(/worktrees/.*\)|\1|p' /mnt/.git 2>/dev/null)" \
+    uv pip install --python /var/lang/bin/python --no-deps --editable . \
+    && python3 -m compileall -q budge
 
 FROM dependencies AS dev
 
-RUN microdnf install -y git-core-2.50.1-1.amzn2023.0.1 nodejs24-24.20.0-1.amzn2023.0.1 \
-    && microdnf clean all
-COPY --from=uv /uv /uvx /usr/local/bin/
-COPY --exclude=.git . /workspace/
-WORKDIR /workspace/src/back-end
-# Editable, so the checkout that etc/compose/targets/dev.yaml mounts at /workspace replaces the installed source.
-RUN --mount=type=bind,source=.git,target=/workspace/.git \
-    --mount=type=bind,from=git-common,target=/git \
-    uv sync --frozen --all-groups --no-install-project \
-    && GIT_DIR="/git$(sed -n 's|^gitdir: .*\(/worktrees/.*\)|\1|p' /workspace/.git 2>/dev/null)" \
-    GIT_WORK_TREE=/workspace uv pip install --python /opt/budge/bin/python --no-deps --editable . \
-    && ln -s /opt/budge .venv \
-    && ln -s "$(/opt/budge/bin/python -c 'import sysconfig; print(sysconfig.get_path("purelib"))')" /opt/budge/site-packages
-# The Lambda runtime uses the system Python, so point it at the source tree and the virtual environment's packages.
-ENV LAMBDA_TASK_ROOT=/workspace/src/back-end \
-    PATH="/opt/budge/bin:${PATH}" \
-    PYTHONPATH=/opt/budge/site-packages
+ARG UV_COMPILE_BYTECODE=1 \
+    UV_LINK_MODE=copy \
+    UV_PROJECT_ENVIRONMENT=/var/lang \
+    UV_PYTHON_DOWNLOADS=never
+RUN microdnf install -y nodejs24-24.20.0-1.amzn2023.0.1 && microdnf clean all
+COPY src/back-end/ ${LAMBDA_TASK_ROOT}/
+# Editable, so the source that etc/compose/targets/dev.yaml mounts over the task root replaces the installed copy.
+# There's no Git here, so the version is the 0.0.0 fallback; the host's uv-dynamic-versioning provides the real one.
+RUN --mount=from=uv,source=/uv,target=/bin/uv \
+    --mount=type=cache,target=/root/.cache/uv \
+    uv sync --frozen --inexact --all-groups
 ENTRYPOINT []
 CMD ["/bin/bash"]
 
-FROM base AS rel
+FROM dependencies AS rel
 
-COPY --from=build ${LAMBDA_TASK_ROOT} ${LAMBDA_TASK_ROOT}
+# Only the package: the tests, uv.lock and the other development files stop at the build stage.
+COPY --from=build ${LAMBDA_TASK_ROOT}/budge ${LAMBDA_TASK_ROOT}/budge
+COPY --from=build --parents /var/lang/lib/python3.*/site-packages/*budge* /
 
 CMD ["budge.ingestion.handler.handler"]

@@ -1,4 +1,4 @@
-# The backend builds from the repository root so Git can inspect the complete source tree.
+# The backend builds from the repository root so the rel image's build can read the root `.git` entry.
 # Git history is supplied separately through a read-only named build context.
 **/.git
 # Only the root entry stays, emptied: in a linked worktree it's the file naming that worktree's Git directory.

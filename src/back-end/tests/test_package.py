@@ -24,6 +24,18 @@ SUBPACKAGES: tuple[str, ...] = (
     'budge.storage',
 )
 
+FALLBACK_VERSION: str = '0.0.0'
+"""`fallback-version` in `pyproject.toml`: what a build without Git, or a source tree without a build, reports."""
+
+
+def versions_agree(generated: str, installed: str) -> bool:
+    """Whether two versions name the same build, where either may be the fallback.
+
+    In the `dev` image, the installed metadata comes from a build without Git, while `budge/_version.py` comes from the
+    host through the source mount. Two real versions that differ are always a mismatch.
+    """
+    return generated == installed or FALLBACK_VERSION in {generated, installed}
+
 
 @pytest.mark.parametrize('name', ['budge', *SUBPACKAGES])
 def test_package_imports_with_docstring(name: str) -> None:
@@ -35,16 +47,39 @@ def test_package_imports_with_docstring(name: str) -> None:
     assert module.__doc__.strip()
 
 
+@pytest.mark.parametrize(
+    ('generated', 'installed', 'agree'),
+    [
+        ('1.2.3', '1.2.3', True),
+        ('1.2.3', FALLBACK_VERSION, True),
+        (FALLBACK_VERSION, '1.2.3', True),
+        (FALLBACK_VERSION, FALLBACK_VERSION, True),
+        ('1.2.3', '1.2.4', False),
+    ],
+)
+def test_versions_agree(generated: str, installed: str, agree: bool) -> None:
+    """The fallback agrees with any version, but two different real versions never agree."""
+    assert versions_agree(generated, installed) is agree
+
+
 def test_version_matches_distribution_metadata() -> None:
-    """`budge.__version__` is the installed distribution's version."""
-    assert budge.__version__ == importlib.metadata.version('budge')
+    """`budge.__version__` is the installed distribution's version, unless one of them is the fallback."""
+    assert versions_agree(budge.__version__, importlib.metadata.version('budge'))
 
 
 def test_generated_version_module_matches_distribution_metadata() -> None:
-    """The build hook writes `budge/_version.py` for editable installs too, with the distribution's version."""
+    """The build hook writes `budge/_version.py` for editable installs too, with the distribution's version.
+
+    The module can only be missing from a build without Git: the `dev` image running a mounted source tree that the
+    host hasn't built yet.
+    """
+    installed: str = importlib.metadata.version('budge')
+    if installed == FALLBACK_VERSION:
+        pytest.importorskip('budge._version', reason='the mounted source has no build yet')
+
     version_module: ModuleType = importlib.import_module('budge._version')
 
-    assert version_module.__version__ == importlib.metadata.version('budge')
+    assert versions_agree(version_module.__version__, installed)
 
 
 def test_version_falls_back_without_generated_module(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -61,7 +96,7 @@ def test_version_falls_back_without_generated_module(monkeypatch: pytest.MonkeyP
         monkeypatch.undo()
         importlib.reload(budge)
 
-    assert budge.__version__ == importlib.metadata.version('budge')
+    assert versions_agree(budge.__version__, importlib.metadata.version('budge'))
 
 
 def test_package_is_typed() -> None:
@@ -90,7 +125,8 @@ def built_distributions(pytestconfig: pytest.Config, tmp_path_factory: pytest.Te
             shutil.copy2(path, source / name)
 
     uv: str | None = shutil.which('uv')
-    assert uv is not None, '`uv` must be on PATH to build the distributions'
+    if uv is None:
+        pytest.skip('building the distributions needs `uv`, which only the host and CI have')
     out_dir: Path = tmp_path_factory.mktemp('dist')
     subprocess.run(  # noqa: S603 (trusted: the `uv` executable on PATH and paths this fixture created)
         [uv, 'build', '--offline', '--quiet', '--out-dir', str(out_dir), str(source)],

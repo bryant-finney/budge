@@ -30,5 +30,5 @@ services:
               sys.exit(1)
           open(marker, 'w').close()
 
-  # The image runs its installed wheel, so there's no source to mount.
+  # The image has its own source and entry point, so this target has nothing to add.
   ingestion: {}

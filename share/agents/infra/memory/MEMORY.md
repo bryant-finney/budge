@@ -13,5 +13,5 @@ Index of infra agent memories, one line per entry.
 - [Dependabot docker cooldown](dependabot-docker-cooldown.md) — publication dates come only from Docker Hub; compare digests before moving an image
 - [Full Docker disk stops MinIO](docker-disk-full-minio.md) — "drive path full" means check `df` in a container; never prune the shared daemon
 - [Compose defaults per target](compose-target-extends.md) — interpolated `extends.file` varies defaults; volume sources in it resolve from its own directory
-- [`uv run` needs the Git mount](uv-run-needs-git.md) — without it, the dev container silently writes version 0.0.0 to the checkout
+- [Dev image has no uv or Git](dev-image-no-uv-or-git.md) — owner decision: version comes from the host, dev installs as 0.0.0; run tools directly
 - [Lambda emulator overlap crash](lambda-rie-overlap-crash.md) — overlapping invocations kill the container; handler failures can still return HTTP 200

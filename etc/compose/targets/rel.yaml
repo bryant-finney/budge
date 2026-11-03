@@ -1,4 +1,4 @@
-# compose.yaml and etc/compose/volumes.yaml extend this file when BUDGE_BUILD_TARGET is rel.
+# compose.yaml extends this file when BUDGE_BUILD_TARGET is rel.
 services:
   api:
     command: ${BUDGE_API_COMMAND:-budge.api.handler.handler}
@@ -31,5 +31,5 @@ services:
               sys.exit(1)
           open(marker, 'w').close()
 
-  # The image has no uv or dev server and runs its installed wheel, so the volumes overlay's `api-live` adds nothing.
-  api-live: {}
+  # The image runs its installed wheel, so there's no source to mount.
+  ingestion: {}

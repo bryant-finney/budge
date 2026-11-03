@@ -1,11 +1,17 @@
-# compose.yaml and etc/compose/volumes.yaml extend this file when BUDGE_BUILD_TARGET is dev or unset.
+# compose.yaml extends this file when BUDGE_BUILD_TARGET is dev or unset, so relative sources start from this directory.
 services:
   api:
-    command: ${BUDGE_API_COMMAND:-uvicorn budge.api.app:app --host 0.0.0.0 --port 8080}
-    entrypoint: ${BUDGE_API_ENTRYPOINT:-}
+    command: uvicorn budge.api.app:app --host 0.0.0.0 --port 8080 --reload
     healthcheck:
       test: [CMD, python3, -c, 'import urllib.request; urllib.request.urlopen("http://127.0.0.1:8080/api/health")']
+    volumes:
+      - source: ../../..
+        target: /workspace
+        type: bind
 
-  api-live:
-    command: ${BUDGE_API_COMMAND:-uv run --frozen uvicorn budge.api.app:app --host 0.0.0.0 --port 8080 --reload}
-    working_dir: ${BUDGE_REPO_ROOT:-/workspace}/src/back-end
+  ingestion:
+    volumes:
+      - read_only: true
+        source: ../../../src/back-end
+        target: /workspace/src/back-end
+        type: bind

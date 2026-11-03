@@ -1,25 +1,17 @@
 # Back-end containers
 
-Live source edits need the `etc/compose/volumes.yaml` overlay. `direnv allow` sets
-`COMPOSE_FILE=compose.yaml:etc/compose/volumes.yaml` in `.env` unless `COMPOSE_FILE` is already there, so from the
-repository root these commands start the API and persistent MinIO with that overlay:
+From the repository root, these commands start the API and persistent MinIO. On the default `dev` target, the API
+runs uvicorn with reload against the checkout mounted at `/workspace`:
 
 ```sh
 direnv allow
 docker compose up --build --wait
-docker compose run --rm api uv run --frozen pytest
+docker compose run --rm api pytest
 docker compose down
 ```
 
-To name the overlay on the command line instead, pass both files:
-
-```sh
-docker compose -f compose.yaml -f etc/compose/volumes.yaml up --build --wait
-```
-
-`-f` replaces `COMPOSE_FILE`, so also pass any other overlay you added there.
-
-`.envrc` seeds `.env` from `etc/base.env` and refreshes `BUDGE_VERSION`, `BUDGE_IMAGE_VERSION`, and checkout paths.
+`.envrc` seeds `.env` from `etc/base.env` and refreshes `BUDGE_VERSION`, `BUDGE_IMAGE_VERSION`, and
+`BUDGE_GIT_COMMON_DIR`.
 The root `pyproject.toml` configures `uv-dynamic-versioning`; its CLI resolves the latest matching Git tag
 without installing the back end. Direnv watches Git HEAD, the branch ref, and release tags to refresh the
 version after Git changes; `direnv reload` forces a refresh. With plain Bash, use
@@ -30,8 +22,8 @@ Compose names each stack after its checkout directory, so differently named work
 with separate networks and data volumes. Set `COMPOSE_PROJECT_NAME` in `.env` or pass `docker compose -p <name>`
 to choose a project name explicitly. MinIO data stays in its named volume after `down`.
 
-To expose the API, Lambda emulator, and MinIO on the host and keep live source edits, set
-`COMPOSE_FILE=compose.yaml:etc/compose/volumes.yaml:etc/compose/ports.yaml` in `.env`, then run:
+To expose the API, Lambda emulator, and MinIO on the host, set `COMPOSE_FILE=compose.yaml:etc/compose/ports.yaml` in
+`.env`, then run:
 
 ```sh
 docker compose --profile lambda up --build --wait
@@ -57,23 +49,26 @@ because OCI tags cannot contain `+`. The installed package retains the exact ver
 The image version falls back from `BUDGE_IMAGE_VERSION` to `BUDGE_VERSION`, then `0.0.0`; an explicit
 `BUDGE_IMAGE_VERSION` environment variable overrides the generated value. Existing `.env` files keep local
 settings while `.envrc` replaces the old generated `BUDGE_IMAGE_TAG` with `BUDGE_IMAGE_VERSION`, drops the old
-generated `BUDGE_GIT_DIR`, and updates the volumes overlay's former path in `COMPOSE_FILE`.
+generated `BUDGE_GIT_DIR` and `BUDGE_REPO_ROOT`, and removes the former overlay paths `etc/compose/dev.yaml` and
+`etc/compose/volumes.yaml` from `COMPOSE_FILE`.
 
-The default `dev` image has source, tests, uv, Git, Node, and development tools. `COMPOSE_FILE`, or
-`docker compose -f compose.yaml -f etc/compose/volumes.yaml …`, selects the `etc/compose/volumes.yaml` overlay, which
-mounts the checkout and read-only Git common directory into `api` at their real absolute paths, including linked
-worktrees, and runs uvicorn with reload. It also mounts `src/back-end` read-only into `ingestion`, which picks up
-source edits after `docker compose restart ingestion`. The virtual environment stays at `/opt/budge`. The base
-`docker compose -f compose.yaml …` also runs without this overlay, but then has no source mounts or reload.
+The default `dev` image has source, tests, uv, Git, Node, and development tools, and installs the back end in editable
+mode from `/workspace/src/back-end`. `etc/compose/targets/dev.yaml` mounts the checkout there, so `api` runs the
+checkout's source and uvicorn reloads on an edit. It also mounts `src/back-end` read-only into `ingestion`, which picks
+up source edits after `docker compose restart ingestion`. The virtual environment stays at `/opt/budge`, with its
+tools on `PATH`. `budge.__version__` comes from the checkout's generated `budge/_version.py`, or is `0.0.0` without
+one.
 `podman compose …` uses a compatible Compose provider. No Docker-only runtime attributes are required. The build
 files are `src/back-end/Containerfile` and `src/minio/Containerfile`.
 
 ## Build targets
 
 `BUDGE_BUILD_TARGET` selects the build target and image namespace of both `api` and `ingestion`, which share one image
-per target; unset, it's `dev`. It's the only setting a target needs, with or without the overlays:
+per target; unset, it's `dev`. It's the only setting a target needs, with or without the ports overlay:
 `BUDGE_BUILD_TARGET=rel docker compose up --build --wait` runs the lean image. Compose reads the `api` defaults from
-`etc/compose/targets/<target>.yaml`, so any other value fails with a `no such file or directory` error.
+`etc/compose/targets/<target>.yaml`, so any other value fails with a `no such file or directory` error. Don't list a
+target file in `COMPOSE_FILE`: its settings would apply on every target, and its relative mount sources would resolve
+from the project directory instead of the file's own.
 
 | Service                        | `dev`                                              | `rel`                                               |
 | ------------------------------ | -------------------------------------------------- | --------------------------------------------------- |
@@ -92,16 +87,17 @@ On `rel`:
 
 - Every other path returns 404, including `/api/health`, so the Vite proxy can't reach the API. Use `dev` for front-end
   work.
-- Source edits need a rebuild. There's no reload, and `api` and `ingestion` ignore the overlay's source mounts.
+- Source edits need a rebuild. There's no reload, and nothing is mounted.
 - There's no uv, pytest, or Git, so `docker compose run --rm api uv run …` fails.
 
 The emulator handles one invocation at a time on either target. Overlapping invocations crash it, and the container
 exits with code 2. For that reason, the `rel` health check calls the handler only until it passes, then just checks
 that the emulator is listening.
 
-`BUDGE_API_ENTRYPOINT`, `BUDGE_API_COMMAND`, `BUDGE_INGESTION_ENTRYPOINT`, and `BUDGE_INGESTION_COMMAND` override a
-service's entry point and command. Compose splits each value into words. The health check doesn't change with them, so
-an `api` override still has to pass the target's check.
+`BUDGE_INGESTION_ENTRYPOINT` and `BUDGE_INGESTION_COMMAND` override `ingestion`'s entry point and command on either
+target. `BUDGE_API_ENTRYPOINT` and `BUDGE_API_COMMAND` do the same for `api` on `rel` only, because `dev` sets its
+command in `etc/compose/targets/dev.yaml` and takes its empty entry point from the image. Compose splits each value
+into words. The health check doesn't change with them, so an `api` override still has to pass the target's check.
 
 ## Images
 
@@ -126,8 +122,7 @@ bump: `MINIO_COMMIT` (both `ARG` defaults and the `compose.yaml` default), `MINI
 release named in the MinIO Containerfile's comment, and the `microdnf` package versions. Upstream `minio/minio` is
 archived and the pinned commit is its last release, so there's no newer MinIO release to move to.
 
-The current API/AWS adapters are skeletons: this stack verifies health, source reload (with the
-`etc/compose/volumes.yaml` overlay), and S3 availability; Secrets Manager seeding and application storage wiring remain
-milestone 2 work.
+The current API/AWS adapters are skeletons: this stack verifies health, source reload (on `dev`), and S3 availability;
+Secrets Manager seeding and application storage wiring remain milestone 2 work.
 MinIO enforces conditional writes but ignores `DeleteObject`'s `If-Match`: the future lease adapter must use the
 owner re-check fallback described in design spec §12 for local lease release.

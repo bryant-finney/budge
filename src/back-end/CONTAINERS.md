@@ -123,7 +123,8 @@ docker compose --profile lambda up --build --wait
 targets, and both keep the base image's `LAMBDA_TASK_ROOT`, `/var/task`. In `rel`, that directory holds only the `budge`
 package. It's an editable install, so the system Python has the package's metadata and the code exists once; the tests,
 `pyproject.toml`, and `uv.lock` stay in the build stage. The `rel` image's default handler is
-`budge.ingestion.handler.handler`; the API Lambda selects `budge.api.handler.handler`. No development tools or Git
+`budge.api.handler.handler`, matching `dev`'s default of serving the API; the ingestion Lambda selects
+`budge.ingestion.handler.handler`. No development tools or Git
 metadata are baked into `rel`. MinIO is built from an immutable upstream source commit: the community edition
 is [source-only](https://github.com/minio/minio#source-only-distribution), and historical official image tags are
 unavailable. Its first build downloads Go dependencies and compiles the server; subsequent builds reuse that layer.

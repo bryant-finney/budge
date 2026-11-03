@@ -27,7 +27,7 @@ Decided for issue #1 (2026-10-17): budge gets its version from git tags via `uv-
   appends the path to `build_data["artifacts"]`, so the wheel and sdist ship the gitignored file without an explicit
   `artifacts` entry. Building a wheel from the sdist (no `.git`) still gets the real version, from `PKG-INFO`.
 - `budge/__init__.py` does `from budge._version import __version__` and falls back to `'0.0.0'` on
-  `ModuleNotFoundError` (a copy-only `budge/` in an image). A committed `budge/_version.pyi` types the import for mypy
+  `ModuleNotFoundError` (a fresh clone with no direnv, or an image built from one). A committed `budge/_version.pyi` types the import for mypy
   in a fresh clone. Pyright passes once `_version.py` exists, which is always the case after `uv sync`. In a fresh
   clone before any sync it gives one `reportMissingModuleSource` warning (exit 0). The user accepted that and wants
   no `# pyright: ignore` there, because #2 turns on `reportUnnecessaryTypeIgnoreComment`, which would flag it in

@@ -25,6 +25,6 @@ virtual environment.
 - To test Podman without installing it: `docker run --rm --privileged -v /var/lib/containers -v <writable clone>:/ctx quay.io/podman/stable podman --storage-driver vfs build ...`. With overlay storage, every `RUN` fails on exec with
   `invalid argument`. A read-only context fails on file bind mounts with `read-only file system`. Neither is a problem
   with the Containerfile. That image has no Compose provider, so it can't test `extends.file`.
-- `src/back-end/.dockerignore` keeps the host's `budge/_version.py` out, so a stale one can't reach an image. It can't exclude
-  `tests/`, because `dev`'s in-image pytest needs them.
+- `src/back-end/.dockerignore` lets the host's `budge/_version.py` in, because `budge.__version__` is the images' version
+  (owner's decision on PR #34). It can't exclude `tests/`, because `dev`'s in-image pytest needs them.
 - See [[dev-image-no-uv-or-git]] for the `dev` side.

@@ -1,6 +1,6 @@
 ---
 name: dev-image-no-uv-or-git
-description: Owner decision on PR 34 - the dev image has no uv or Git at runtime and installs as version 0.0.0; the version tests accept 0.0.0 on either side, and the sdist and wheel tests skip without uv
+description: Owner decision on PR 34 - the dev image has no uv or Git at runtime and its metadata says 0.0.0; the version tests accept 0.0.0 on either side, and the sdist and wheel tests skip without uv
 metadata:
   type: project
 ---
@@ -24,5 +24,6 @@ while `budge.__version__` comes from the host's file.
   metadata is the fallback.
 - `built_distributions` skips without `uv` on `PATH`; CI and the host still run the sdist and wheel tests.
 - Host commands stay `uv run`. In the container, run tools directly.
-- `rel` has no Git either. `.envrc` computes `BUDGE_VERSION`, and Compose passes it to the `build` stage as
-  `UV_DYNAMIC_VERSIONING_BYPASS`, a build arg the owner can reject, in which case `rel` reports `0.0.0`.
+- `rel` has no Git either. `.envrc` writes the host's version to `budge/_version.py`, both images copy that file, and
+  `rel`'s build passes `budge.__version__` to its install as `UV_DYNAMIC_VERSIONING_BYPASS`. By the owner's decision,
+  there are no version build args. Without the file, both images report `0.0.0`.

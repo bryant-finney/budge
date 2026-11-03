@@ -1,6 +1,6 @@
 ---
 name: dev-image-no-uv-or-git
-description: Owner decision on PR 34 - the dev image has no uv or Git at runtime and its editable install reports 0.0.0, because uv-dynamic-versioning runs on the host; rel keeps its Git-derived version
+description: Owner decision on PR 34 - the dev image has no uv or Git at runtime and its install's metadata reports 0.0.0, because uv-dynamic-versioning runs on the host
 metadata:
   type: project
 ---
@@ -19,8 +19,7 @@ in the container can.
 **How to apply:**
 
 - `etc/compose/targets/dev.yaml` has no Git mounts, and `dev`'s only uv use is a `RUN --mount=from=uv` layer.
+- `budge.__version__` is still the host's, from `budge/_version.py`. See [[version-source-of-truth]].
 - Run tools directly in the container: `docker compose run --rm api pytest`, not `uv run`.
-- The `git-common` build context and `BUDGE_GIT_COMMON_DIR` stay for `rel`, which still takes its version from Git and
-  must match the host's `uv-dynamic-versioning`.
-- `dev`'s metadata saying `0.0.0` isn't a bug, so don't check it against the host. See [[compose-target-extends]] for how
-  the mount sources resolve.
+- `dev`'s metadata saying `0.0.0` isn't a bug, so don't check it against the host. See [[compose-layering]] for how the
+  mount sources resolve.

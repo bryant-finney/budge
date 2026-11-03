@@ -10,6 +10,7 @@ Shared with every agent; these notes live in `share/agents/_memory/`.
 - [Comments sparingly](_memory/comments-sparingly.md) — readable code/CI over explanatory comments; comment only what code can't say
 - [Commit hook prefix](_memory/git-commit-hook-gotchas.md) — prepare-commit-msg prepends `type(#n):` (amends too); omit it, set `GIT_SKIP_OWNER_NAME=1`
 - [gh:commit skill forks](_memory/gh-commit-skill-forks.md) — skill commits in the background; wait, then verify signature/prefix
+- [Bot-authenticated pushes](_memory/github-push-identity.md) — every push uses the bot token over HTTPS; verify the activity actor separately from commit signing
 - [GitHub stacked PRs](_memory/github-stacked-prs.md) — dependencies API rejects PRs; `Closes` links only once a PR targets `main`
 - [PR review posting](_memory/pr-review-mcp.md) — omit/full-SHA commitID; owner PRs take COMMENT only; `gh api` reviews from a JSON file
 - [Restacking across worktrees](_memory/git-worktree-restack.md) — `--update-refs` can't move a branch checked out in another worktree; use `--onto`

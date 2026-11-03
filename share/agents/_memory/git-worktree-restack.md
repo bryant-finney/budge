@@ -20,9 +20,10 @@ the same refusal propagating a fix up its #20/#23/#26 stack (2026-10-18).
 1. In the lower worktree: note its tip, then `git rebase origin/main`.
 2. In the upper worktree: `git rebase --onto <lower branch> <old lower tip> <upper branch>`. To
    carry a fix up a stack, rebase each worktree onto the *local* branch below it, bottom-up.
-3. `git range-diff` must show every patch as `=`; then push bottom-up with
-   `git push --force-with-lease=<branch>:<old sha> origin <branch>`. A branch that only gained
-   commits can be pushed plainly.
+3. `git range-diff` must show every patch as `=`; then push bottom-up using the
+   [bot-authenticated HTTPS recipe](github-push-identity.md). For a rewritten branch, add
+   `--force-with-lease=refs/heads/BRANCH:OLD_SHA` to its `push` command. A branch that only
+   gained commits uses that recipe without a force flag.
 4. Afterwards each branch's ahead count must be unchanged, and every behind count 0
    (`git rev-list --left-right --count origin/main...<branch>`).
 5. A rebase strands the SHAs that issues and PR threads cite. Map them with

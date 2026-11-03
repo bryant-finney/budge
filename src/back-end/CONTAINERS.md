@@ -104,11 +104,10 @@ The emulator handles one invocation at a time on either target. Overlapping invo
 exits with code 2. For that reason, the `rel` health check calls the handler only until it passes, then just checks
 that the emulator is listening.
 
-`etc/compose/targets/<target>.yaml` hardcodes `api`'s command, and `compose.yaml` hardcodes `ingestion`'s handler. On
-`rel`, both use the Lambda base image's `/lambda-entrypoint.sh`. The `dev` image clears that entry point, so `api` runs
-uvicorn directly, and `etc/compose/targets/dev.yaml` sets it again for `ingestion`, which isn't a long-running service.
-The `dev` image's default command is the same uvicorn command as `api`'s. For a shell, name it:
-`docker compose run --rm api bash`.
+`etc/compose/targets/rel.yaml` hardcodes `api`'s handler, and `compose.yaml` hardcodes `ingestion`'s. On `rel`, both use
+the Lambda base image's `/lambda-entrypoint.sh`. The `dev` image clears that entry point, and its default command is
+uvicorn with reload, so `api` has no command in Compose. `etc/compose/targets/dev.yaml` sets the entry point again for
+`ingestion`, which isn't a long-running service. For a shell, name it: `docker compose run --rm api bash`.
 
 ## Images
 

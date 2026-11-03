@@ -22,8 +22,8 @@ Compose names each stack after its checkout directory, so differently named work
 with separate networks and data volumes. Set `COMPOSE_PROJECT_NAME` in `.env` or pass `docker compose -p <name>`
 to choose a project name explicitly. MinIO data stays in its named volume after `down`.
 
-To expose the API, Lambda emulator, and MinIO on the host, set `COMPOSE_FILE=compose.yaml:etc/compose/ports.yaml` in
-`.env`, then run:
+Compose finds `compose.yaml` by itself, so `etc/base.env` doesn't set `COMPOSE_FILE`. To expose the API, Lambda
+emulator, and MinIO on the host, set `COMPOSE_FILE=compose.yaml:etc/compose/ports.yaml` in `.env`, then run:
 
 ```sh
 docker compose --profile lambda up --build --wait
@@ -50,7 +50,7 @@ The image version falls back from `BUDGE_IMAGE_VERSION` to `BUDGE_VERSION`, then
 `BUDGE_IMAGE_VERSION` environment variable overrides the generated value. Existing `.env` files keep local
 settings while `.envrc` replaces the old generated `BUDGE_IMAGE_TAG` with `BUDGE_IMAGE_VERSION`, drops the old
 generated `BUDGE_GIT_DIR` and `BUDGE_REPO_ROOT`, and removes the former overlay paths `etc/compose/dev.yaml` and
-`etc/compose/volumes.yaml` from `COMPOSE_FILE`.
+`etc/compose/volumes.yaml` from `COMPOSE_FILE`. It also deletes `COMPOSE_FILE` when only `compose.yaml` remains.
 
 The default `dev` image has source, tests, uv, Git, Node, and development tools, and installs the back end in editable
 mode from `/workspace/src/back-end`. `etc/compose/targets/dev.yaml` mounts the checkout there, so `api` runs the

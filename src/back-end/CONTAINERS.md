@@ -95,10 +95,9 @@ The emulator handles one invocation at a time on either target. Overlapping invo
 exits with code 2. For that reason, the `rel` health check calls the handler only until it passes, then just checks
 that the emulator is listening.
 
-`BUDGE_INGESTION_ENTRYPOINT` and `BUDGE_INGESTION_COMMAND` override `ingestion`'s entry point and command on either
-target, and Compose splits each value into words. `api` has no such variables: `etc/compose/targets/<target>.yaml`
-hardcodes its command, and its entry point comes from the image, which is empty on `dev` and the Lambda base image's
-`/lambda-entrypoint.sh` on `rel`.
+`etc/compose/targets/<target>.yaml` hardcodes `api`'s command, and `compose.yaml` hardcodes `ingestion`'s handler. On
+`rel`, both use the Lambda base image's `/lambda-entrypoint.sh`. The `dev` image clears that entry point, so `api` runs
+uvicorn directly, and `etc/compose/targets/dev.yaml` sets it again for `ingestion`.
 
 ## Images
 

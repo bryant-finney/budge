@@ -41,11 +41,10 @@ services:
       target: ${BUDGE_BUILD_TARGET:-dev}
       x-bake:
         output: type=docker
-    command: ${BUDGE_INGESTION_COMMAND:-budge.ingestion.handler.handler}
+    command: budge.ingestion.handler.handler
     depends_on:
       minio:
         condition: service_healthy
-    entrypoint: ${BUDGE_INGESTION_ENTRYPOINT:-/lambda-entrypoint.sh}
     environment: *backend-environment
     extends:
       file: etc/compose/targets/${BUDGE_BUILD_TARGET:-dev}.yaml

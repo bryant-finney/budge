@@ -15,6 +15,8 @@ services:
         type: bind
 
   ingestion:
+    # The dev image clears the Lambda base image's entry point.
+    entrypoint: /lambda-entrypoint.sh
     volumes:
       - read_only: true
         source: ../../../src/back-end

@@ -23,8 +23,8 @@ The front-end role uses `dataviz` when the session provides it; otherwise follow
 accessibility guidance.
 
 Store Superpowers specs in `share/specs/YYYY-MM-DD-<topic>-design.md` and implementation plans in
-`share/plans/YYYY-MM-DD-<feature-name>.md`. Use `share/` instead of Superpowers' default
-`docs/superpowers/` base directory.
+`share/plans/YYYY-MM-DD-<feature-name>.md`. Follow these repository paths even when a Superpowers
+skill recommends its default `docs/superpowers/` locations.
 
 `.codex/config.toml` enables multi-agent tools and native Codex memory generation and recall. Native
 Codex memories remain managed by Codex separately from the shared role memory files. Start a new Codex

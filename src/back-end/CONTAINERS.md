@@ -6,7 +6,7 @@ runs uvicorn with reload against the checkout mounted at `/workspace`:
 ```sh
 direnv allow
 docker compose up --build --wait
-docker compose run --rm api pytest
+docker compose run --rm api uv run --frozen pytest
 docker compose down
 ```
 
@@ -54,10 +54,11 @@ generated `BUDGE_GIT_DIR` and `BUDGE_REPO_ROOT`, and removes the former overlay 
 
 The default `dev` image has source, tests, uv, Git, Node, and development tools, and installs the back end in editable
 mode from `/workspace/src/back-end`. `etc/compose/targets/dev.yaml` mounts the checkout there, so `api` runs the
-checkout's source and uvicorn reloads on an edit. It also mounts `src/back-end` read-only into `ingestion`, which picks
-up source edits after `docker compose restart ingestion`. The virtual environment stays at `/opt/budge`, with its
-tools on `PATH`. `budge.__version__` comes from the checkout's generated `budge/_version.py`, or is `0.0.0` without
-one.
+checkout's source and uvicorn reloads on an edit. It also mounts the Git common directory read-only into `api` at its
+real absolute path, which a linked worktree's `.git` file names. `uv run` rebuilds the editable install from Git's
+version and writes it to `budge/_version.py` in the checkout; without Git, it would write `0.0.0`. `ingestion` gets
+`src/back-end` read-only, and picks up source edits after `docker compose restart ingestion`. The virtual environment
+stays at `/opt/budge`, with its tools on `PATH`.
 `podman compose …` uses a compatible Compose provider. No Docker-only runtime attributes are required. The build
 files are `src/back-end/Containerfile` and `src/minio/Containerfile`.
 

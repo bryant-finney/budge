@@ -8,6 +8,11 @@ services:
       - source: ../../..
         target: /workspace
         type: bind
+      # A linked worktree's `.git` file names this directory. Without Git, `uv run` writes 0.0.0 to the checkout.
+      - read_only: true
+        source: ${BUDGE_GIT_COMMON_DIR:-../../../.git}
+        target: ${BUDGE_GIT_COMMON_DIR:-/workspace/.git}
+        type: bind
 
   ingestion:
     volumes:

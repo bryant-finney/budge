@@ -11,7 +11,8 @@ FROM public.ecr.aws/lambda/python:3.14@sha256:fc4e15a5e09e2c9b6184810ea0fdc87afe
 FROM base AS dependencies
 
 # Everything installs into the system Python. Its packages include the Lambda runtime's awslambdaric, which uv.lock
-# doesn't list, so `uv sync` needs --inexact or it uninstalls them. ARG keeps these settings out of the rel image's config.
+# doesn't list, so `uv sync` needs --inexact or it uninstalls them. Stages built from this one inherit these ARGs, which
+# stay out of the rel image's config.
 ARG UV_COMPILE_BYTECODE=1 \
     UV_LINK_MODE=copy \
     UV_NO_INSTALLER_METADATA=1 \
@@ -25,8 +26,6 @@ RUN --mount=from=uv,source=/uv,target=/bin/uv \
 
 FROM dependencies AS build
 
-ARG UV_LINK_MODE=copy \
-    UV_NO_INSTALLER_METADATA=1
 RUN microdnf install -y git-core-2.50.1-1.amzn2023.0.1 && microdnf clean all
 COPY src/back-end/ ${LAMBDA_TASK_ROOT}/
 # Editable, so the system Python holds the metadata and the code stays in one place, the task root.
@@ -42,10 +41,6 @@ RUN --mount=from=uv,source=/uv,target=/bin/uv \
 
 FROM dependencies AS dev
 
-ARG UV_COMPILE_BYTECODE=1 \
-    UV_LINK_MODE=copy \
-    UV_PROJECT_ENVIRONMENT=/var/lang \
-    UV_PYTHON_DOWNLOADS=never
 RUN microdnf install -y nodejs24-24.20.0-1.amzn2023.0.1 && microdnf clean all
 COPY src/back-end/ ${LAMBDA_TASK_ROOT}/
 # Editable, so the source that etc/compose/targets/dev.yaml mounts over the task root replaces the installed copy.

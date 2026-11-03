@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-# compose.yaml supplies the repository and read-only Git contexts. Only the rel image's build stage uses Git.
+# The build context is src/back-end. Neither image uses Git: the host computes the version.
 
 FROM docker.io/astral/uv:0.13.5@sha256:32a7bb39b496babbd997b0a39a4d66c126bdaf5661b302bf6f06abda8deca6ff AS uv
 
@@ -20,31 +20,27 @@ ARG UV_COMPILE_BYTECODE=1 \
     UV_PYTHON_DOWNLOADS=never
 RUN --mount=from=uv,source=/uv,target=/bin/uv \
     --mount=type=cache,target=/root/.cache/uv \
-    --mount=type=bind,source=src/back-end/pyproject.toml,target=pyproject.toml \
-    --mount=type=bind,source=src/back-end/uv.lock,target=uv.lock \
+    --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
+    --mount=type=bind,source=uv.lock,target=uv.lock \
     uv sync --frozen --inexact --no-dev --no-install-project
 
 FROM dependencies AS build
 
-RUN microdnf install -y git-core-2.50.1-1.amzn2023.0.1 && microdnf clean all
-COPY src/back-end/ ${LAMBDA_TASK_ROOT}/
+# compose.yaml passes the version that the host's .envrc computed. Without it, rel reports the 0.0.0 fallback.
+ARG UV_DYNAMIC_VERSIONING_BYPASS
+COPY . ${LAMBDA_TASK_ROOT}/
 # Editable, so the system Python holds the metadata and the code stays in one place, the task root.
-# In a linked worktree, `.git` is a file naming the worktree's directory under the common Git directory. Elsewhere it's
-# an empty directory that sed can't read, which leaves GIT_DIR at the common directory itself.
 RUN --mount=from=uv,source=/uv,target=/bin/uv \
     --mount=type=cache,target=/root/.cache/uv \
-    --mount=type=bind,source=.git,target=/mnt/.git \
-    --mount=type=bind,from=git-common,target=/git \
-    GIT_DIR="/git$(sed -n 's|^gitdir: .*\(/worktrees/.*\)|\1|p' /mnt/.git 2>/dev/null)" \
     uv pip install --python /var/lang/bin/python --no-deps --editable . \
     && python3 -m compileall -q budge
 
 FROM dependencies AS dev
 
 RUN microdnf install -y nodejs24-24.20.0-1.amzn2023.0.1 && microdnf clean all
-COPY src/back-end/ ${LAMBDA_TASK_ROOT}/
+COPY . ${LAMBDA_TASK_ROOT}/
 # Editable, so the source that etc/compose/targets/dev.yaml mounts over the task root replaces the installed copy.
-# There's no Git here, so the version is the 0.0.0 fallback; the host's uv-dynamic-versioning provides the real one.
+# This stage doesn't take the host's version and has no Git, so the version is the 0.0.0 fallback.
 RUN --mount=from=uv,source=/uv,target=/bin/uv \
     --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --inexact --all-groups

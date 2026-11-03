@@ -545,7 +545,8 @@ required-version = ">=0.13,<0.14"
 # Dunamai's default pattern matches the repo-wide `v*` release tags, so no `pattern`/`pattern-prefix` is set
 [tool.uv-dynamic-versioning]
 bump = true
-# used only when there's no `.git` (e.g. the Docker build context); with no tags, git still yields a 0.0.x dev version
+# used only when there's no `.git`, as in the image builds, where `rel` takes the host's version instead through
+# `UV_DYNAMIC_VERSIONING_BYPASS`; with no tags, git still yields a 0.0.x dev version
 fallback-version = "0.0.0"
 style = "pep440"
 vcs = "git"

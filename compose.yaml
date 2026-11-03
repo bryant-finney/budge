@@ -2,10 +2,10 @@
 services:
   api:
     build:
-      additional_contexts:
-        git-common: ${BUDGE_GIT_COMMON_DIR:-./.git}
-      context: .
-      dockerfile: src/back-end/Containerfile
+      args:
+        UV_DYNAMIC_VERSIONING_BYPASS: ${BUDGE_VERSION:-0.0.0}
+      context: ./src/back-end
+      dockerfile: Containerfile
       platforms: ['${BUDGE_PLATFORM:-linux/arm64}']
       target: ${BUDGE_BUILD_TARGET:-dev}
       x-bake:
@@ -34,10 +34,10 @@ services:
 
   ingestion:
     build:
-      additional_contexts:
-        git-common: ${BUDGE_GIT_COMMON_DIR:-./.git}
-      context: .
-      dockerfile: src/back-end/Containerfile
+      args:
+        UV_DYNAMIC_VERSIONING_BYPASS: ${BUDGE_VERSION:-0.0.0}
+      context: ./src/back-end
+      dockerfile: Containerfile
       platforms: ['${BUDGE_PLATFORM:-linux/arm64}']
       target: ${BUDGE_BUILD_TARGET:-dev}
       x-bake:

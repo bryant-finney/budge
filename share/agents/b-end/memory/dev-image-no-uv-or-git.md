@@ -24,3 +24,5 @@ while `budge.__version__` comes from the host's file.
   metadata is the fallback.
 - `built_distributions` skips without `uv` on `PATH`; CI and the host still run the sdist and wheel tests.
 - Host commands stay `uv run`. In the container, run tools directly.
+- `rel` has no Git either. `.envrc` computes `BUDGE_VERSION`, and Compose passes it to the `build` stage as
+  `UV_DYNAMIC_VERSIONING_BYPASS`, a build arg the owner can reject, in which case `rel` reports `0.0.0`.

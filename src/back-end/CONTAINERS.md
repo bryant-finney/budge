@@ -10,8 +10,7 @@ docker compose run --rm api pytest
 docker compose down
 ```
 
-`.envrc` seeds `.env` from `etc/base.env` and refreshes `BUDGE_VERSION`, `BUDGE_IMAGE_VERSION`, and
-`BUDGE_GIT_COMMON_DIR`.
+`.envrc` seeds `.env` from `etc/base.env` and refreshes `BUDGE_VERSION` and `BUDGE_IMAGE_VERSION`.
 The root `pyproject.toml` configures `uv-dynamic-versioning`; its CLI resolves the latest matching Git tag
 without installing the back end. Direnv watches Git HEAD, the branch ref, and release tags to refresh the
 version after Git changes; `direnv reload` forces a refresh. With plain Bash, use
@@ -36,20 +35,17 @@ MinIO's console is at `http://127.0.0.1:9001`.
 Use `BUDGE_BIND_HOST`, `BUDGE_API_PORT`, `BUDGE_INGESTION_PORT`, `MINIO_API_PORT`, and `MINIO_CONSOLE_PORT`
 in `.env` to configure these bindings; choose different host ports when exposing concurrent stacks.
 
-The `rel` image build runs `uv-dynamic-versioning` against the checkout's Git history without a version override.
-The build context is the repository root; `.dockerignore` excludes local environments, credentials, caches,
-and Git metadata, keeping only an empty root `.git` entry. Compose supplies the common Git directory
-(`BUDGE_GIT_COMMON_DIR`, resolved by `.envrc`) as a read-only named build context, because a linked worktree's `.git`
-is a file pointing outside the build context. The build reads that file to find the worktree's directory under the
-common one, so it versions the worktree's own HEAD. Only that build command mounts these; neither image retains Git
-metadata.
+Neither image build uses Git. `uv-dynamic-versioning` runs on the host, and Compose passes the resulting `BUDGE_VERSION`
+to the `rel` image's build stage as the `UV_DYNAMIC_VERSIONING_BYPASS` build argument. Without a `BUDGE_VERSION`, `rel`
+reports `0.0.0`. The build context is `src/back-end`, and its `.dockerignore` excludes local environments, credentials,
+caches, and the generated `budge/_version.py`, but not the tests, which the `dev` image needs.
 Images are `ghcr.io/bryant-finney/dev/budge:<version>` and `ghcr.io/bryant-finney/rel/budge:<version>`.
 Release versions such as `1.2.3` are unchanged; development versions replace `+` with `-` in the OCI tag only,
 because OCI tags cannot contain `+`. The package in `rel` retains the exact version.
 The image version falls back from `BUDGE_IMAGE_VERSION` to `BUDGE_VERSION`, then `0.0.0`; an explicit
 `BUDGE_IMAGE_VERSION` environment variable overrides the generated value. Existing `.env` files keep local
 settings while `.envrc` replaces the old generated `BUDGE_IMAGE_TAG` with `BUDGE_IMAGE_VERSION`, drops the old
-generated `BUDGE_GIT_DIR` and `BUDGE_REPO_ROOT`, and removes the former overlay paths `etc/compose/dev.yaml` and
+generated `BUDGE_GIT_COMMON_DIR`, `BUDGE_GIT_DIR` and `BUDGE_REPO_ROOT`, and removes the former overlay paths `etc/compose/dev.yaml` and
 `etc/compose/volumes.yaml` from `COMPOSE_FILE`. It also deletes `COMPOSE_FILE` when only `compose.yaml` remains.
 
 The default `dev` image has the back end's source and tests, Node, and development tools, and installs the back end

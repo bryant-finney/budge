@@ -27,6 +27,7 @@ services:
       interval: 5s
       retries: 12
       timeout: 3s
+    # a line break makes the image URI harder to read
     # yamllint disable-line rule:line-length
     image: "${BUDGE_IMAGE_PREFIX:-ghcr.io/bryant-finney}/${BUDGE_BUILD_TARGET:-dev}/budge:${BUDGE_IMAGE_VERSION:-${BUDGE_VERSION:-0.0.0}}"
     platform: ${BUDGE_PLATFORM:-linux/arm64}
@@ -49,6 +50,7 @@ services:
     extends:
       file: etc/compose/targets/${BUDGE_BUILD_TARGET:-dev}.yaml
       service: ingestion
+    # a line break makes the image URI harder to read
     # yamllint disable-line rule:line-length
     image: "${BUDGE_IMAGE_PREFIX:-ghcr.io/bryant-finney}/${BUDGE_BUILD_TARGET:-dev}/budge:${BUDGE_IMAGE_VERSION:-${BUDGE_VERSION:-0.0.0}}"
     platform: ${BUDGE_PLATFORM:-linux/arm64}

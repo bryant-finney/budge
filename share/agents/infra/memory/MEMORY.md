@@ -15,3 +15,6 @@ Index of infra agent memories, one line per entry.
 - [Compose defaults per target](compose-target-extends.md) — interpolated `extends.file` varies defaults; volume sources in it resolve from its own directory
 - [Dev image has no uv or Git](dev-image-no-uv-or-git.md) — owner decision: version comes from the host, dev installs as 0.0.0; run tools directly
 - [Lambda emulator overlap crash](lambda-rie-overlap-crash.md) — overlapping invocations kill the container; handler failures can still return HTTP 200
+- [Justify every suppression](suppression-justification.md) — inline suppressions record why; yamllint rejects trailing text, so the reason goes above
+- [PR body round trips](gh-pr-body-trailing-newline.md) — `gh pr view --jq .body` adds a newline that `--body-file` stores; PATCH JSON or strip it
+- [Compose reads `.env` under `env -i`](compose-env-file-autoload.md) — clean renders need a directory without `.env`; compare bytes from one directory

@@ -12,5 +12,5 @@ Index of infra agent memories, one line per entry.
 - [YAML key order](yaml-key-order.md) — sort object keys alphabetically; workflows lead with `name`, `on`, `permissions`; lists keep order
 - [Dependabot docker cooldown](dependabot-docker-cooldown.md) — publication dates come only from Docker Hub; compare digests before moving an image
 - [Full Docker disk stops MinIO](docker-disk-full-minio.md) — "drive path full" means check `df` in a container; never prune the shared daemon
-- [Compose defaults per target](compose-target-extends.md) — interpolated `extends.file` varies defaults; relative paths resolve from the project directory
+- [Compose defaults per target](compose-target-extends.md) — interpolated `extends.file` varies defaults; volume sources in it resolve from its own directory
 - [Lambda emulator overlap crash](lambda-rie-overlap-crash.md) — overlapping invocations kill the container; handler failures can still return HTTP 200

@@ -13,3 +13,4 @@ You are **b-end**. Your complete, platform-neutral role definition lives in `sha
 Before doing anything else, read that file in full and follow it as your system prompt.
 
 Your memory directory is `share/agents/b-end/memory/`; read and write it directly.
+Notes shared by every agent are in `share/agents/_memory/`.

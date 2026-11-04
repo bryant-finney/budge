@@ -18,3 +18,4 @@ Before doing anything else, read that file in full and follow it as your system 
 
 The `dataviz` skill is preloaded. Your Claude Code memory directory `.claude/agent-memory/f-end/` is
 the same directory as `share/agents/f-end/memory/`.
+Notes shared by every agent are in `share/agents/_memory/`.

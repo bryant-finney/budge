@@ -21,7 +21,11 @@ exit status:
   3   can't fetch main from GitHub
   4   apply refused: this directory differs from the main commit it would apply
   5   a GitHub API call failed, or its result is ambiguous (two rulesets with one name)
+  6   apply refused: the gh account isn't a repo admin
   64  usage
+
+check runs as any account that can read the repo. GitHub shows bypass actors only to admins, so
+for anyone else check skips comparing them and says so in a NOTE.
 EOF
 }
 
@@ -95,16 +99,22 @@ ruleset_id() {
 }
 
 # diff_ruleset PAYLOAD ID: diff a desired ruleset payload against live ruleset ID, comparing only
-# the keys PAYLOAD sets, and print a NOTE for live parameters it doesn't set. Returns 1 when they
-# differ. Exits rather than returns on errors, because callers run it as an `if` condition, where
-# `set -e` is off.
+# the keys PAYLOAD sets, and print a NOTE for live parameters it doesn't set. Unless $admin is
+# true, bypass actors aren't compared, because GitHub returns them empty to non-admins. Returns 1
+# when they differ. Exits rather than returns on errors, because callers run it as an `if`
+# condition, where `set -e` is off.
 diff_ruleset() {
   local name live want got
   name=$(jq -r .name <<<"$1")
   live=$(api "repos/$repo/rulesets/$2") || exit "$?"
-  want=$(jq -eS --argjson want "$1" "$project" <<<"$1") || die 5 "can't project ruleset $name"
-  got=$(jq -eS --argjson want "$1" "$project" <<<"$live") \
+  want=$(jq -eS --argjson want "$1" --argjson admin "$admin" \
+    "$project"' | if $admin then . else del(.bypass_actors) end' <<<"$1") \
+    || die 5 "can't project ruleset $name"
+  got=$(jq -eS --argjson want "$1" --argjson admin "$admin" \
+    "$project"' | if $admin then . else del(.bypass_actors) end' <<<"$live") \
     || die 5 "can't project live ruleset $name ($2)"
+  [[ $admin == true ]] \
+    || echo "NOTE ruleset $name: bypass actors not compared: $login isn't a repo admin, so GitHub hides them"
   jq -r --argjson want "$1" "$unset_params" <<<"$live" \
     | sed "s/^/NOTE ruleset $name: not in rules.md, so not compared: /" \
     || die 5 "can't list the unset parameters of live ruleset $name ($2)"
@@ -228,6 +238,13 @@ else
 fi
 load_desired "$src" "$label"
 
+# Only an admin can see bypass actors or write rulesets and repo settings
+login=$(api user --jq .login) || exit "$?"
+admin=$(api "repos/$repo" --jq '.permissions.admin == true') || exit "$?"
+if [[ $command == apply && $admin != true ]]; then
+  die 6 "refusing to apply: $login isn't an admin of $repo; the owner runs apply"
+fi
+
 # `apply` is pre-approved because merging rules.md is the approval, so it runs only the code that
 # was merged with it. This stops an accidental apply from an edited working tree, not an edited
 # copy of this script, which can drop the check.
@@ -239,4 +256,5 @@ run apply from a checkout of that commit"
 fi
 
 echo "repo:    $repo"
+echo "as:      $login$([[ $admin == true ]] && echo ' (admin)')"
 "$command"

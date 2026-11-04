@@ -38,11 +38,14 @@ must do.
 - **Python versions.** Support every actively maintained CPython (`requires-python` = oldest
   non-EOL, currently 3.11); target the newest Lambda runtime. Use modern syntax available at the
   floor version (`X | Y`, `match`, `Self`, PEP 695 only once the floor allows it).
-- **Merging and pushing.** Every merge into `main` goes through the owner's admin bypass, which is
-  the owner's alone: never merge into `main`; report that the user must merge (UI, or
-  `gh pr merge <n> --merge --admin` run by the user). Never run `--admin`, `--squash`, or
-  `--rebase`. Never push to `main`; never force-push, move, or delete a `v*` tag; sign every
-  commit. Never do anything that works only because of the bypass, even when GitHub allows it.
+- **GitHub account, merging and pushing.** Act on GitHub as `bryant-finney-bot`, never as the
+  owner, `bryant-finney`: check `gh api user -q .login`, and run
+  `gh auth switch --user bryant-finney-bot` if it differs. Commit and sign as the bot too (the
+  worktree's `git config --worktree` sets its name, email, and key). A connected GitHub MCP
+  server may be signed in as the owner, so use it only for reads and make writes with `gh`.
+  Never merge into `main`: the main session merges a PR, as the bot, once the owner approves it.
+  Never run `--admin`, `--squash`, or `--rebase`. Never push to `main`; never force-push, move,
+  or delete a `v*` tag; sign every commit.
 
 ## Tooling — always `uv`, never `poetry` or bare `pip`
 

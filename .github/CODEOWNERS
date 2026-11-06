@@ -1,0 +1,35 @@
+# owner-agent: infra — default for anything not matched below (root tooling, CI/CD)
+*                              @bryant-finney
+
+# owner-agent: b-end
+/src/back-end/                 @bryant-finney
+/share/agents/b-end/           @bryant-finney
+/.claude/agents/b-end.md       @bryant-finney
+
+# owner-agent: f-end
+/src/front-end/                @bryant-finney
+/share/agents/f-end/           @bryant-finney
+/.claude/agents/f-end.md       @bryant-finney
+
+# owner-agent: infra
+/src/infrastructure/           @bryant-finney
+/.github/                      @bryant-finney
+/package.json                  @bryant-finney
+/pnpm-workspace.yaml           @bryant-finney
+/pnpm-lock.yaml                @bryant-finney
+/.node-version                 @bryant-finney
+/tsconfig.base.json            @bryant-finney
+/.prettierrc.json              @bryant-finney
+/.prettierignore               @bryant-finney
+/.pre-commit-config.yaml       @bryant-finney
+/.yamllint.yaml                @bryant-finney
+/.markdownlint-cli2.yaml       @bryant-finney
+/.mdformat.toml                @bryant-finney
+/.gitignore                    @bryant-finney
+/.envrc                        @bryant-finney
+/etc/                          @bryant-finney
+/share/agents/infra/           @bryant-finney
+/.claude/agents/infra.md       @bryant-finney
+
+# owner: user (spec and design decisions)
+/docs/                         @bryant-finney

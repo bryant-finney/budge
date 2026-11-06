@@ -22,6 +22,10 @@ grant permissions in Codex; follow the session's approval policy and the skill's
 The front-end role uses `dataviz` when the session provides it; otherwise follow its shared chart and
 accessibility guidance.
 
+Store Superpowers specs in `share/specs/YYYY-MM-DD-<topic>-design.md` and implementation plans in
+`share/plans/YYYY-MM-DD-<feature-name>.md`. Follow these repository paths even when a Superpowers
+skill recommends its default `docs/superpowers/` locations.
+
 `.codex/config.toml` enables multi-agent tools and native Codex memory generation and recall. Native
 Codex memories remain managed by Codex separately from the shared role memory files. Start a new Codex
 session after changing this setup so agent and skill discovery refreshes. Project config requires a

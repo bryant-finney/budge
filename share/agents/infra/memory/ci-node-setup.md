@@ -29,7 +29,7 @@ metadata:
   - `apply-repo-rules.sh check` sees `bypass_actors: []`, so it reports false drift on `main`
     and `release-tags`.
 
-  `GITHUB_TOKEN` has no `administration` scope either, so `repo-settings.sh` checks
+  `GITHUB_TOKEN` has no `administration` scope either, so `bin/set-repo-settings` checks
   `permissions.admin` and refuses (exit 5). The check is local-only and the owner runs it.
 
 - **The `.node-version` / `packageManager` bump mechanism is still undecided** (the first comment

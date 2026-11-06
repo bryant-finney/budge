@@ -1,5 +1,4 @@
-# Dependabot version updates: keeps the SHA-pinned actions in .github/workflows/ current.
-# npm and uv are deliberately left out for now; b-end and f-end can propose them.
+# Dependabot version updates for GitHub Actions, the pnpm workspace and the uv project.
 #
 # ref: https://docs.github.com/en/code-security/dependabot/working-with-dependabot/dependabot-options-reference
 version: 2
@@ -14,4 +13,22 @@ updates:
     # one PR for every action bump
     groups:
       github-actions:
+        patterns: ["*"]
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    groups:
+      pnpm:
+        patterns: ["*"]
+  - package-ecosystem: uv
+    directory: /src/back-end
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    groups:
+      uv:
         patterns: ["*"]

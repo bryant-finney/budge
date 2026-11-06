@@ -23,5 +23,8 @@ Index of b-end agent memories, one line per entry.
 - [FastAPI app settings](fastapi-app-settings.md) — redirect_slashes=False (Host-derived 307 leaves CloudFront origin); operationId = route.name
 - [FastAPI docs CDN pinning](fastapi-docs-cdn-pinning.md) — exact jsdelivr releases ≥2 weeks old; favicon `data:,` not ''; helpers allow no SRI; redoc stays 2.x
 - [Route gating tests](feedback_route-gating-tests.md) — pin (method, path) pairs; gate by a denial marker, not == 200; real-gate + CSRF route walks
+- [CI runs every hook](feedback_ci-runs-every-hook.md) — no SKIP; back-end hooks: `language: python` + pinned uv, `uv run -q`
+- [Dev image has no uv or Git](dev-image-no-uv-or-git.md) — owner decision: host owns the version; dev installs as 0.0.0; tests accept the fallback
+- [Lambda system Python](lambda-system-python.md) — base image's awslambdaric isn't in uv.lock, so `uv sync --inexact`; rel is an editable install, one copy; child stages inherit ARGs; testing Podman
 - [API auth and errors](api-auth-and-errors.md) — #29: PyJWT JWKS cache, signing key via SecretStore (pre-M2 500), envelope, 415 CSRF; PyJWT test quirks
 - [CloudFront viewer IP](cloudfront-viewer-ip.md) — request.client is the CloudFront edge; read cloudfront-viewer-address for the viewer IP

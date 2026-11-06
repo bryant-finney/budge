@@ -43,17 +43,20 @@ together.
 |     | `include`     | `~DEFAULT_BRANCH`, `refs/heads/main` |
 |     | `exclude`     | none                                 |
 
-|     | Rule                  | Parameter                           | Value       |
-| --- | --------------------- | ----------------------------------- | ----------- |
-|     | `deletion`            |                                     |             |
-|     | `non_fast_forward`    |                                     |             |
-|     | `required_signatures` |                                     |             |
-|     | `pull_request`        | `allowed_merge_methods`             | `["merge"]` |
-| ❌  | `pull_request`        | `dismiss_stale_reviews_on_push`     | `false`     |
-| ✅  | `pull_request`        | `require_code_owner_review`         | `true`      |
-| ✅  | `pull_request`        | `require_last_push_approval`        | `true`      |
-|     | `pull_request`        | `required_approving_review_count`   | `0`         |
-| ✅  | `pull_request`        | `required_review_thread_resolution` | `true`      |
+|     | Rule                     | Parameter                              | Value                                          |
+| --- | ------------------------ | -------------------------------------- | ---------------------------------------------- |
+|     | `deletion`               |                                        |                                                |
+|     | `non_fast_forward`       |                                        |                                                |
+|     | `required_signatures`    |                                        |                                                |
+|     | `pull_request`           | `allowed_merge_methods`                | `["merge"]`                                    |
+| ❌  | `pull_request`           | `dismiss_stale_reviews_on_push`        | `false`                                        |
+| ✅  | `pull_request`           | `require_code_owner_review`            | `true`                                         |
+| ✅  | `pull_request`           | `require_last_push_approval`           | `true`                                         |
+|     | `pull_request`           | `required_approving_review_count`      | `0`                                            |
+| ✅  | `pull_request`           | `required_review_thread_resolution`    | `true`                                         |
+|     | `required_status_checks` | `required_status_checks`               | `[{"context":"ci-ok","integration_id":15368}]` |
+| ✅  | `required_status_checks` | `strict_required_status_checks_policy` | `true`                                         |
+| ❌  | `required_status_checks` | `do_not_enforce_on_create`             | `false`                                        |
 
 |     | Bypass           | Actor ID | Mode     |
 | --- | ---------------- | -------- | -------- |
@@ -61,6 +64,15 @@ together.
 
 Why:
 
+- **Require `ci-ok` only.** The `ci-ok` job in `.github/workflows/ci.yml` needs every other CI
+  job and fails unless each one succeeded, so one context from GitHub Actions (integration
+  `15368`) covers `pre-commit` and every `test` matrix entry. Requiring the matrix contexts
+  directly (`test (python, 3.12)`, ...) would mean editing this table with every matrix change,
+  and a context that no longer reports would leave every PR pending. `ci-ok` runs `if: always()`
+  because GitHub counts a skipped required check as passing; it treats a skipped, cancelled, or
+  failed job as failure. Keep it that way: add new jobs to its `needs`, and never give it a
+  `name:` (that renames the context), a path filter, or a skip condition. Apply these rules only
+  after the workflow and this desired state merge to `main` and `ci-ok` has reported there.
 - **Merge commits only.** Squash or rebase rewrites a parent's commits, so the retargeted child
   shows them again and conflicts. No `required_linear_history`, deliberately: it forbids merge
   commits.

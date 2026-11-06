@@ -5,3 +5,6 @@ rules:
   document-start: disable
   line-length:
     max: 120
+  # `on:` in GitHub workflows is a key, not a boolean
+  truthy:
+    check-keys: false

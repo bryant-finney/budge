@@ -1,0 +1,56 @@
+# Dependabot version updates for GitHub Actions, the pnpm workspace, the uv project and container base images.
+#
+# ref: https://docs.github.com/en/code-security/dependabot/working-with-dependabot/dependabot-options-reference
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    # wait a week after a release before proposing it, like pnpm's minimumReleaseAge gate
+    cooldown:
+      default-days: 7
+    # one PR for every action bump
+    groups:
+      github-actions:
+        patterns: ["*"]
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    groups:
+      pnpm:
+        patterns: ["*"]
+  - package-ecosystem: uv
+    directory: /src/back-end
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    groups:
+      uv:
+        patterns: ["*"]
+  # The docker ecosystem reads Containerfiles' FROM lines only, so it moves each tag and digest together.
+  - package-ecosystem: docker
+    directory: /src/back-end
+    schedule:
+      interval: weekly
+    # Dependabot reads publication dates only from Docker Hub. public.ecr.aws/lambda/python has no multi-platform image
+    # there, so it alone skips the cooldown.
+    cooldown:
+      default-days: 7
+    groups:
+      back-end-images:
+        patterns: ["*"]
+  # MINIO_COMMIT isn't a FROM line, so it stays a manual bump (see src/back-end/CONTAINERS.md)
+  - package-ecosystem: docker
+    directory: /src/minio
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    groups:
+      minio-images:
+        patterns: ["*"]

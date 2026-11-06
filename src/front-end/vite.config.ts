@@ -14,6 +14,7 @@ export default defineConfig({
   plugins: [
     sveltekit({
       // flat layout: routes/, lib/ and app.html sit directly in src/front-end/
+      // eslint-disable-next-line @typescript-eslint/no-deprecated -- Kit 3 deprecates but supports it
       files: { src: '.' },
       // Kit 3 already writes build/index.html under the hash router; `fallback` is kept per spec §10
       // and only adds the cosmetic `adapter_fallback_overwrites` build warning.

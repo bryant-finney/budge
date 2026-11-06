@@ -8,6 +8,7 @@ from fastapi import FastAPI
 from fastapi.routing import APIRoute
 
 import budge
+from budge.api.errors import install_error_handlers
 from budge.api.routes import open_router, protected_router
 
 __all__ = ['app', 'create_app', 'operation_id']
@@ -44,13 +45,13 @@ def create_app() -> FastAPI:
     FastAPI's built-in doc routes are off; `budge.api.routes.docs` serves those four routes on `protected_router`.
 
     Paths are exact: a trailing slash is a `404`, not a redirect. Each operation's `operationId` is its function's name
-    (`operation_id`).
+    (`operation_id`). Every error response uses the `{"error": {"code", "message"}}` envelope (`budge.api.errors`).
 
     Returns:
         A new FastAPI application with every route under `/api`.
 
     >>> sorted(create_app().openapi()['paths'])
-    ['/api/health']
+    ['/api/auth/session', '/api/health']
     """
     app = FastAPI(
         title='budge',
@@ -65,6 +66,7 @@ def create_app() -> FastAPI:
         # leave the app's origin. A trailing slash gets a plain 404 instead.
         redirect_slashes=False,
     )
+    install_error_handlers(app)
     app.include_router(open_router)
     app.include_router(protected_router)
     return app

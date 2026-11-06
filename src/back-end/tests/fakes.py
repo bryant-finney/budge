@@ -17,12 +17,15 @@ from budge.ingestion import IngestionTrigger
 from budge.models import BankConnection, PlaidEnv, Transaction
 from budge.storage import LeaseHeld, Repository, SecretStore
 
+SESSION_SIGNING_KEY = 'test-session-signing-key-0123456789abcdef'
+"""The fake store's default session-signing key: 32+ bytes, as PyJWT expects of an HS256 key."""
+
 SESSION_DENIED = 'session-denied-by-test'
 """The `detail` of the `401` that `deny_session` raises, which no real route can answer with."""
 
 
 def deny_session() -> NoReturn:
-    """Stand in for a failed session check, as the auth PR's `require_session` will fail one (spec §8).
+    """Stand in for a failed session check, as `require_session` fails one (spec §8).
 
     The `401`'s `detail` is `SESSION_DENIED`, so a test can tell this refusal from any other `401`.
     """
@@ -122,10 +125,16 @@ class FakeSecretStore(SecretStore):
     """A dict-backed `budge.storage.SecretStore`."""
 
     tokens: dict[str, str]
+    session_signing_key: str
 
-    def __init__(self) -> None:
-        """Create an empty store."""
+    def __init__(self, session_signing_key: str = SESSION_SIGNING_KEY) -> None:
+        """Create a store with no access tokens.
+
+        Args:
+            session_signing_key: The key `get_session_signing_key` returns.
+        """
         self.tokens = {}
+        self.session_signing_key = session_signing_key
 
     @override
     def get_access_token(self, connection_id: str) -> str | None:
@@ -141,6 +150,11 @@ class FakeSecretStore(SecretStore):
     def delete_access_token(self, connection_id: str) -> None:
         """Drop the token; a missing one is a no-op."""
         self.tokens.pop(connection_id, None)
+
+    @override
+    def get_session_signing_key(self) -> str:
+        """Return the configured key."""
+        return self.session_signing_key
 
 
 class FakeIngestionTrigger(IngestionTrigger):

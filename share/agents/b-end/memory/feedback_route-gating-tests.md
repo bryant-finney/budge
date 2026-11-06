@@ -1,6 +1,6 @@
 ---
 name: route-gating-tests
-description: Pin public/protected route sets as (method, path) pairs; test the session gate by a distinctive denial marker; give a fail-open auth stub a tripwire test
+description: Pin public/protected route sets as (method, path) pairs; test the session gate by a denial marker; real-gate and CSRF walks over every route (tripwire removed in #29)
 metadata:
   type: feedback
 ---
@@ -16,9 +16,13 @@ Rules for tests that guard which API routes need a session (from PR #26 review, 
   ones always must. Open routes may legitimately 422/401 for their own reasons (e.g. `POST /api/auth/session` with
   no body), so `== 200` breaks for reasons unrelated to gating. Match with `in response.text` so the check survives the
   error-envelope change.
-- **A fail-open stub ships with a tripwire.** While `require_session` admits everything,
-  `test_only_docs_are_protected_until_auth` pins the protected set to the four docs routes, so a feature route merged
-  before #29 fails loudly. #29 deletes the tripwire.
+- **A fail-open stub ships with a tripwire.** While `require_session` admitted everything,
+  `test_only_docs_are_protected_until_auth` pinned the protected set to the four docs routes. #29 (PR on
+  `feat/29/google-sign-in`) made `require_session` real and removed the tripwire. The open pin is now
+  `{GET /api/health, POST /api/auth/session}`, and `test_real_session_check_gates_every_route_but_the_open_ones` walks
+  every route with no cookie and expects `401 unauthenticated` off the open router.
+- **Every mutating operation is walked for the CSRF check too:** `tests/api/test_csrf.py` derives the list from the
+  route walk, so a new `POST`/`DELETE` route is covered with no test edit.
 
 **Why:** the reviewer showed the path-only pin and the self-derived `== 200` walk both let a public sign-out route
 through, and the no-op stub silently exposes anything put on `protected_router`.

@@ -1,0 +1,16 @@
+# Local environments, credentials and caches never belong in an image. The dev image needs tests/, so keep it.
+**/.env*
+!**/.envrc
+**/.venv/
+**/.direnv/
+**/.aws/
+**/.cache/
+**/reports/
+**/.coverage*
+**/htmlcov/
+**/.mypy_cache/
+**/.pytest_cache/
+**/.ruff_cache/
+**/__pycache__/
+**/*.pyc
+**/dist/

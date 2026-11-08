@@ -24,4 +24,6 @@ Index of b-end agent memories, one line per entry.
 - [FastAPI docs CDN pinning](fastapi-docs-cdn-pinning.md) — exact jsdelivr releases ≥2 weeks old; favicon `data:,` not ''; helpers allow no SRI; redoc stays 2.x
 - [Route gating tests](feedback_route-gating-tests.md) — pin (method, path) pairs; gate by a denial marker, not == 200; fail-open stub ships a tripwire
 - [CI runs every hook](feedback_ci-runs-every-hook.md) — no SKIP; back-end hooks: `language: python` + pinned uv, `uv run -q`
+- [Dev image has no uv or Git](dev-image-no-uv-or-git.md) — owner decision: host owns the version; dev installs as 0.0.0; tests accept the fallback
+- [Lambda system Python](lambda-system-python.md) — base image's awslambdaric isn't in uv.lock, so `uv sync --inexact`; rel is an editable install, one copy; child stages inherit ARGs; testing Podman
 - [CloudFront viewer IP](cloudfront-viewer-ip.md) — request.client is the CloudFront edge; read cloudfront-viewer-address for the viewer IP

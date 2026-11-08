@@ -1,0 +1,60 @@
+# syntax=docker/dockerfile:1
+
+# The build context is src/back-end. Neither image uses Git: .envrc writes the host's version to budge/_version.py.
+
+FROM docker.io/astral/uv:0.13.5@sha256:32a7bb39b496babbd997b0a39a4d66c126bdaf5661b302bf6f06abda8deca6ff AS uv
+
+# The newest generally available Lambda Python runtime (`python3.15` is Lambda preview-only). The multi-platform tag
+# selects the matching image for `--platform`, while avoiding a stale pinned digest.
+FROM public.ecr.aws/lambda/python:3.14 AS base
+
+FROM base AS dependencies
+
+# Everything installs into the system Python. Its packages include the Lambda runtime's awslambdaric, which uv.lock
+# doesn't list, so `uv sync` needs --inexact or it uninstalls them. Stages built from this one inherit these ARGs, which
+# stay out of the rel image's config.
+ARG UV_COMPILE_BYTECODE=1 \
+    UV_LINK_MODE=copy \
+    UV_NO_INSTALLER_METADATA=1 \
+    UV_PROJECT_ENVIRONMENT=/var/lang \
+    UV_PYTHON_DOWNLOADS=never
+RUN --mount=from=uv,source=/uv,target=/bin/uv \
+    --mount=type=cache,target=/root/.cache/uv \
+    --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
+    --mount=type=bind,source=uv.lock,target=uv.lock \
+    uv sync --frozen --inexact --no-dev --no-install-project
+
+FROM dependencies AS build
+
+COPY . ${LAMBDA_TASK_ROOT}/
+# The install's version hook would otherwise overwrite budge/_version.py with the fallback, because there's no Git here.
+# Without that file, budge.__version__ is the same 0.0.0 fallback. Editable, so the system Python holds the metadata and
+# the code stays in one place, the task root.
+RUN --mount=from=uv,source=/uv,target=/bin/uv \
+    --mount=type=cache,target=/root/.cache/uv \
+    UV_DYNAMIC_VERSIONING_BYPASS="$(python3 -c 'import budge; print(budge.__version__)')" \
+    uv pip install --python /var/lang/bin/python --no-deps --editable . \
+    && python3 -m compileall -q budge
+
+FROM dependencies AS dev
+
+RUN microdnf install -y nodejs24-24.20.0-1.amzn2023.0.1 && microdnf clean all
+COPY . ${LAMBDA_TASK_ROOT}/
+# Editable, so the source that etc/compose/targets/dev.yaml mounts over the task root replaces the installed copy.
+# With no Git here, the install's metadata and its version hook's output are the 0.0.0 fallback.
+RUN --mount=from=uv,source=/uv,target=/bin/uv \
+    --mount=type=cache,target=/root/.cache/uv \
+    uv sync --frozen --inexact --all-groups
+# Restore the host's budge/_version.py over the hook's. With none, the tracked _version.pyi still matches the wildcard.
+COPY budge/_version.py* ${LAMBDA_TASK_ROOT}/budge/
+ENTRYPOINT []
+CMD ["uvicorn", "budge.api.app:app", "--host", "0.0.0.0", "--port", "8080", "--reload"]
+
+# compose.yaml names no target, so this stage has to stay last.
+FROM dependencies AS rel
+
+# Only the package: the tests, uv.lock and the other development files stop at the build stage.
+COPY --from=build ${LAMBDA_TASK_ROOT}/budge ${LAMBDA_TASK_ROOT}/budge
+COPY --from=build --parents /var/lang/lib/python3.*/site-packages/*budge* /
+
+CMD ["budge.api.handler.handler"]

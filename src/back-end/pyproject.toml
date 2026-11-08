@@ -392,12 +392,14 @@ xfail_strict = true
 
 # write the resolved version to the gitignored `budge/_version.py` on every build, editable installs included; the
 # hook also adds it to each target's `artifacts`, so the wheel and sdist ship it although git ignores it. Its `pattern`
-# mode is avoided on purpose: that rewrites a tracked file in the working tree and never reverts it
+# mode is avoided on purpose: that rewrites a tracked file in the working tree and never reverts it. The root `.envrc`
+# runs this hook on the host whenever the file is missing or stale, so the image builds can copy it; its staleness check
+# matches the `__version__` line, so change the two together
 [tool.hatch.build.hooks.version]
 path = "budge/_version.py"
-template = '''"""The `budge` version, written at build time by hatchling's `version` hook. Generated: do not edit or commit."""
+template = '''"""The budge version, written by the hatch version hook (run by .envrc). Do not edit or commit."""
 
-__version__: str = '{version}'
+__version__ = '{version}'
 '''
 
 # hatchling's sdist otherwise ships every file git doesn't ignore: the rootdir `conftest.py`, `tests/`, `.envrc` and
@@ -545,7 +547,8 @@ required-version = ">=0.13,<0.14"
 # Dunamai's default pattern matches the repo-wide `v*` release tags, so no `pattern`/`pattern-prefix` is set
 [tool.uv-dynamic-versioning]
 bump = true
-# used only when there's no `.git` (e.g. the Docker build context); with no tags, git still yields a 0.0.x dev version
+# used only when there's no `.git`, as in the image builds, where `rel` passes `budge.__version__` instead through
+# `UV_DYNAMIC_VERSIONING_BYPASS`; with no tags, git still yields a 0.0.x dev version
 fallback-version = "0.0.0"
 style = "pep440"
 vcs = "git"

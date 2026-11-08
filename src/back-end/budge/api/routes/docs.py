@@ -1,9 +1,10 @@
 """The OpenAPI document, Swagger UI and ReDoc, served by the app's own routes rather than FastAPI's built-in ones (§8).
 
 The routes are the built-in ones rebuilt on an `APIRouter`, which `budge.api.routes.protected_router` includes under
-`/api`, so all four require a session like every other route but `POST /auth/session` and `GET /health` (spec §8).
-`budge.api.auth.require_session` admits every request until the auth PR fills it in, so for now the docs are public.
-None of the routes appear in the OpenAPI document itself.
+`/api`, so all four require a signed-in, allowlisted session (`budge.api.auth.require_session`) like every other route
+but `POST /auth/session` and `GET /health` (spec §8). They are served in every environment, always behind that check.
+None of the routes appear in the OpenAPI document itself; generating the SPA's types reads `app.openapi()` offline, so
+it needs no session.
 
 Swagger UI and ReDoc run third-party JavaScript on the app's own origin, where it can call the API with the signed-in
 user's session cookie, so both pages load it (and Swagger UI its CSS) from exact `swagger-ui-dist` and `redoc` versions
@@ -62,7 +63,7 @@ async def get_openapi_document(request: Request) -> JSONResponse:
     >>> from budge.api.app import create_app
     >>> response = asyncio.run(get_openapi_document(Request({'type': 'http', 'app': create_app()})))
     >>> sorted(json.loads(response.body)['paths'])
-    ['/api/health']
+    ['/api/auth/session', '/api/health']
     """
     app: FastAPI = request.app
     schema = app.openapi()

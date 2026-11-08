@@ -1,5 +1,8 @@
 """Shared pytest fixtures: the API test clients, recorded Lambda events, and a Lambda context double.
 
+The API clients get their auth dependencies from `tests.auth.configure`: test settings, a fake secret store and a
+self-signed Google key set, so nothing reads the environment or the network.
+
 Mangum's import-time event loop (`MANGUM_LOOP`, the `current_event_loop` fixture) is set up in the rootdir
 `conftest.py`, so `pytest budge` doctest-only runs get it too.
 """
@@ -15,6 +18,7 @@ from mangum.types import LambdaCognitoIdentity, LambdaContext, LambdaMobileClien
 
 from budge.api.app import create_app
 from budge.api.auth import require_session
+from tests.auth import OTHER_SUB, client_for, configure, session_token
 from tests.fakes import deny_session
 
 EVENTS_DIR = Path(__file__).parent / 'events'
@@ -48,16 +52,31 @@ class FakeLambdaContext:
 
 @pytest.fixture
 def client() -> Iterator[TestClient]:
-    """FastAPI's in-process `TestClient` for a fresh app (spec §12), entered so the app's lifespan runs as on uvicorn.
+    """FastAPI's in-process `TestClient` for a fresh app, signed in as an allowlisted user (`tests.auth.ALLOWED_SUB`).
 
-    The lifespan never runs on Lambda: `budge.api.handler` wraps the app with `lifespan='off'`. Keep per-process setup
-    (signing keys, the JWKS cache) at module scope, as spec §8 caches the JWKS "at Lambda module scope", not in a
-    lifespan hook: a route that relied on one would pass here and under uvicorn but fail once deployed.
+    It is entered, so the app's lifespan runs as on uvicorn. The lifespan never runs on Lambda: `budge.api.handler`
+    wraps the app with `lifespan='off'`. Keep per-process setup (signing keys, the JWKS cache) at module scope, as spec
+    §8 caches the JWKS "at Lambda module scope", not in a lifespan hook: a route that relied on one would pass here and
+    under uvicorn but fail once deployed.
 
     It needs the `httpx2` dev dependency: Starlette 1.8's test client is built on `httpx2` and warns (fatal under
     `filterwarnings = error`) if only `httpx` is installed.
     """
-    with TestClient(create_app()) as test_client:
+    with client_for(configure(create_app()), token=session_token()) as test_client:
+        yield test_client
+
+
+@pytest.fixture
+def anonymous_client() -> Iterator[TestClient]:
+    """A client for a fresh, test-configured app, with no session cookie."""
+    with client_for(configure(create_app())) as test_client:
+        yield test_client
+
+
+@pytest.fixture
+def outsider_client() -> Iterator[TestClient]:
+    """A client for a fresh, test-configured app, with a valid session for a `sub` that isn't allowlisted."""
+    with client_for(configure(create_app()), token=session_token(OTHER_SUB)) as test_client:
         yield test_client
 
 

@@ -5,25 +5,26 @@ Index of b-end agent memories, one line per entry.
 - [Stack rebase checks](feedback_stack-rebase-checks.md) — run checks on git-archive exports per tip; zsh doesn't word-split `$cmd`
 - [PR review via gh MCP](feedback_pr-review-mcp.md) — omit/full-SHA commitID on create; owner PRs take COMMENT only
 - [uv-dynamic-versioning quirks](uv-dynamic-versioning-quirks.md) — hatchling not uv_build; fallback only for no .git; cache-keys; gitignored `_version.py`; sdist `only-include`
-- [Commit hook prefix](commit-msg-hook-prefix.md) — prepare-commit-msg prepends `type(#N):` from the branch; write bare subjects
+- [Commit hook prefix](commit-msg-hook-prefix.md) — prepare-commit-msg prepends `type(#N):` from the branch, merges too; write bare subjects
 - [coverage sysmon vs contexts](coverage-sysmon-contexts.md) — keep `core = "ctrace"`; 3.14+ sysmon breaks `--cov-context=test`
 - [ruff nested config first-party](ruff-nested-config-first-party.md) — `tests/ruff.toml` moves project root; keep `known-first-party`
-- [local Python matrix](local-python-matrix.md) — 3.11–3.15 locally; uv 3.13.7 SIGKILL (137) history, fixed 2026-10-25; worktree Bash limits; taplo
+- [local Python matrix](local-python-matrix.md) — 3.11–3.15 locally; worktree sandbox limits; `--no-cov` doctest runs; warm cache for offline build
 - [gh:commit skill forks](gh-commit-skill-forks.md) — skill commits in the background; wait, then verify signature/prefix
 - [GitHub stacked PRs](github-stacked-prs.md) — dependencies API rejects PRs; `Closes` links only once a PR targets `main`
 - [pyright gotchas](pyright-gotchas.md) — `@contextmanager` needs `Generator`; nodenv; silent hang = pyright not in `.venv`; private-import from repo root; `__all__`
 - [Explicit over implicit](feedback_explicit-over-implicit.md) — protocol impls subclass with `@override`; complete `__all__` (`tests/test_exports.py`), loggers exempt
 - [Strict and rigorous](feedback_strict-and-rigorous.md) — strict types/lint/format; fix data to fit strict types, never loosen them
 - [Three type checkers](project_type-checkers.md) — mypy, pyright and ty all run strict (user, 2026-10-20); a change passes all three
-- [Starlette TestClient and httpx2](starlette-testclient-httpx2.md) — TestClient needs `httpx2`; list routes with `iter_route_contexts`; overrides per app
+- [Starlette TestClient and httpx2](starlette-testclient-httpx2.md) — `httpx2`; `iter_route_contexts`; overrides per app; https for Secure cookies; jar path `/`
 - [Mangum event loop](mangum-event-loop.md) — rootdir conftest.py owns Mangum's import-time loop (doctests too); async tests unset it; run the full matrix
 - [Pydantic model notes](pydantic-model-notes.md) — field and route docstrings become OpenAPI text (routes pass `description=`); leaf models.py; FiniteFloat; strict
 - [ruff over pylint](feedback_ruff-over-pylint.md) — ruff owns any check it has a rule for (preview by code); pylint keeps the rest; naming in ruff; tests W0621 via plugin
 - [Lambda logging format](lambda-logging-format.md) — text vs JSON format; run summary logs `extra` `summary`/`failed_connections`; test via `vars(record)`
 - [FastAPI app settings](fastapi-app-settings.md) — redirect_slashes=False (Host-derived 307 leaves CloudFront origin); operationId = route.name
 - [FastAPI docs CDN pinning](fastapi-docs-cdn-pinning.md) — exact jsdelivr releases ≥2 weeks old; favicon `data:,` not ''; helpers allow no SRI; redoc stays 2.x
-- [Route gating tests](feedback_route-gating-tests.md) — pin (method, path) pairs; gate by a denial marker, not == 200; fail-open stub ships a tripwire
+- [Route gating tests](feedback_route-gating-tests.md) — pin (method, path) pairs; gate by a denial marker, not == 200; real-gate + CSRF route walks
 - [CI runs every hook](feedback_ci-runs-every-hook.md) — no SKIP; back-end hooks: `language: python` + pinned uv, `uv run -q`
 - [Dev image has no uv or Git](dev-image-no-uv-or-git.md) — owner decision: host owns the version; dev installs as 0.0.0; tests accept the fallback
 - [Lambda system Python](lambda-system-python.md) — base image's awslambdaric isn't in uv.lock, so `uv sync --inexact`; rel is an editable install, one copy; child stages inherit ARGs; testing Podman
+- [API auth and errors](api-auth-and-errors.md) — #29: PyJWT JWKS cache, signing key via SecretStore (pre-M2 500), envelope, 415 CSRF; PyJWT test quirks
 - [CloudFront viewer IP](cloudfront-viewer-ip.md) — request.client is the CloudFront edge; read cloudfront-viewer-address for the viewer IP

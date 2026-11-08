@@ -10,7 +10,7 @@ docker compose run --rm api pytest
 docker compose down
 ```
 
-`.envrc` seeds `.env` from `etc/base.env`, refreshes `BUDGE_VERSION` and `BUDGE_IMAGE_VERSION`, and writes the
+`.envrc` seeds `.env` from `etc/base.env`, refreshes `BUDGE_VERSION`, the image tag, and writes the
 version to `src/back-end/budge/_version.py`. The root `pyproject.toml` configures `uv-dynamic-versioning`; its CLI
 resolves the latest matching Git tag without installing the back end. Direnv watches Git HEAD, the branch ref, and
 release tags to refresh the version after Git changes; `direnv reload` forces a refresh. With plain Bash, use
@@ -45,10 +45,11 @@ Without the module, as in a fresh clone with no direnv, both images build and re
 needs `.envrc` to have run first, or the image gets the old version. The build context is `src/back-end`, and its
 `.dockerignore` excludes local environments, credentials, and caches, but not the tests, which the `dev` image needs.
 Images are `ghcr.io/bryant-finney/dev/budge:<version>` and `ghcr.io/bryant-finney/rel/budge:<version>`.
-Release versions such as `1.2.3` are unchanged; development versions replace `+` with `-` in the OCI tag only,
-because OCI tags cannot contain `+`. The package in `rel` retains the exact version.
-The image version falls back from `BUDGE_IMAGE_VERSION` to `BUDGE_VERSION`, then `0.0.0`; an explicit
-`BUDGE_IMAGE_VERSION` environment variable overrides the generated value.
+Release versions such as `1.2.3` are unchanged; development versions drop their `+` local segment in the OCI tag only,
+because OCI tags cannot contain `+`, so `0.0.1.dev213+677a6e3` is tagged `0.0.1.dev213`. The package in `rel` retains
+the exact version.
+The tag is `BUDGE_VERSION`, or `0.0.0` when it is unset; setting it for one command, such as
+`BUDGE_VERSION=1.2.3 docker compose build`, overrides the generated value in `.env`.
 
 The default `dev` image has the back end's source and tests, Node, and development tools, and installs the back end
 in editable mode from `/var/task`. `etc/compose/targets/dev.yaml` mounts `src/back-end` there, so `api` runs the

@@ -48,7 +48,7 @@ services:
               sys.exit(1)
           open(marker, 'w').close()
       timeout: 3s
-    image: "${BUDGE_IMAGE_PREFIX:-ghcr.io/bryant-finney}/rel/budge:${BUDGE_IMAGE_VERSION:-${BUDGE_VERSION:-0.0.0}}"
+    image: "${BUDGE_IMAGE_PREFIX:-ghcr.io/bryant-finney}/rel/budge:${BUDGE_VERSION:-0.0.0}"
     platform: ${BUDGE_PLATFORM:-linux/arm64}
 
   ingestion:
@@ -63,7 +63,7 @@ services:
       minio:
         condition: service_healthy
     environment: *backend-environment
-    image: "${BUDGE_IMAGE_PREFIX:-ghcr.io/bryant-finney}/rel/budge:${BUDGE_IMAGE_VERSION:-${BUDGE_VERSION:-0.0.0}}"
+    image: "${BUDGE_IMAGE_PREFIX:-ghcr.io/bryant-finney}/rel/budge:${BUDGE_VERSION:-0.0.0}"
     platform: ${BUDGE_PLATFORM:-linux/arm64}
     profiles: [lambda]
 

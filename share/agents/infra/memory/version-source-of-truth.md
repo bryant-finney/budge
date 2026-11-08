@@ -16,7 +16,8 @@ host has to supply it.
 
 **How to apply:**
 
-- `.envrc` runs `uv-dynamic-versioning`, updates `BUDGE_VERSION` and `BUDGE_IMAGE_VERSION` in `.env`, and writes
+- `.envrc` runs `uv-dynamic-versioning`, updates `BUDGE_VERSION` (the image tag, without the `+` local segment) in
+  `.env`, and writes
   `src/back-end/budge/_version.py` in the same text as the hatch hook's template in `src/back-end/pyproject.toml`. Change
   them together. `.dockerignore` must not exclude that file.
 - The hatch hook rewrites `_version.py` on every build, and without Git it writes `0.0.0`. So deleting the build arg alone

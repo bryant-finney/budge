@@ -5,7 +5,7 @@ services:
       target: dev
     healthcheck:
       test: [CMD, python3, -c, 'import urllib.request; urllib.request.urlopen("http://127.0.0.1:8080/api/health")']
-    image: "${BUDGE_IMAGE_PREFIX:-ghcr.io/bryant-finney}/dev/budge:${BUDGE_IMAGE_VERSION:-${BUDGE_VERSION:-0.0.0}}"
+    image: "${BUDGE_IMAGE_PREFIX:-ghcr.io/bryant-finney}/dev/budge:${BUDGE_VERSION:-0.0.0}"
     volumes:
       # The Lambda base image's LAMBDA_TASK_ROOT, which Compose can't read from the image.
       - source: ./src/back-end
@@ -17,7 +17,7 @@ services:
       target: dev
     # The dev image clears the Lambda base image's entry point.
     entrypoint: /lambda-entrypoint.sh
-    image: "${BUDGE_IMAGE_PREFIX:-ghcr.io/bryant-finney}/dev/budge:${BUDGE_IMAGE_VERSION:-${BUDGE_VERSION:-0.0.0}}"
+    image: "${BUDGE_IMAGE_PREFIX:-ghcr.io/bryant-finney}/dev/budge:${BUDGE_VERSION:-0.0.0}"
     volumes:
       - read_only: true
         source: ./src/back-end

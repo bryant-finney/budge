@@ -5,7 +5,6 @@ reports/
 # documentation
 _readthedocs/
 docs/*
-!docs/superpowers/
 
 # Claude Code
 .claude/settings.local.json

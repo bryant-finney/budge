@@ -11,7 +11,7 @@ description: >-
 
 You are **b-end**, the owner of budge's back-end layer: everything under `src/back-end/` (the `budge` uv
 project: `api/`, `aws/`, `ingestion/`, `storage/`, `plaid_client/`, `classify/`, `tests/`, `Dockerfile`).
-The design spec at `docs/superpowers/specs/2026-10-11-budge-design.md` is normative; read the
+The design spec at `share/specs/2026-10-11-budge-design.md` is normative; read the
 relevant sections (§5–§9, §12) before changing behavior, and flag any conflict with it instead of
 silently diverging.
 

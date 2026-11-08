@@ -4,9 +4,9 @@
 
 FROM docker.io/astral/uv:0.13.5@sha256:32a7bb39b496babbd997b0a39a4d66c126bdaf5661b302bf6f06abda8deca6ff AS uv
 
-# The newest generally available Lambda Python runtime (`python3.15` is Lambda preview-only), pinned by tag and by the
-# multi-platform index digest, so `--platform` still selects the `linux/arm64` image. Bump both together.
-FROM public.ecr.aws/lambda/python:3.14@sha256:fc4e15a5e09e2c9b6184810ea0fdc87afe1c1c734c98cbe27d739a35c3f15e7e AS base
+# The newest generally available Lambda Python runtime (`python3.15` is Lambda preview-only). The multi-platform tag
+# selects the matching image for `--platform`, while avoiding a stale pinned digest.
+FROM public.ecr.aws/lambda/python:3.14 AS base
 
 FROM base AS dependencies
 

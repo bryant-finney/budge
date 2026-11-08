@@ -1,6 +1,6 @@
 ---
 name: version-source-of-truth
-description: Owner design decision - budge.__version__ from the generated budge._version module is the version's source of truth, direnv sets BUDGE_VERSION and writes _version.py, and there are no version build args
+description: Owner design decision - budge.__version__ from the generated budge._version module is the version's source of truth, direnv sets BUDGE_VERSION and makes the hatch hook write _version.py, and there are no version build args
 metadata:
   type: project
 ---
@@ -17,9 +17,9 @@ host has to supply it.
 **How to apply:**
 
 - `.envrc` runs `uv-dynamic-versioning`, updates `BUDGE_VERSION` (the image tag, without the `+` local segment) in
-  `.env`, and writes
-  `src/back-end/budge/_version.py` in the same text as the hatch hook's template in `src/back-end/pyproject.toml`. Change
-  them together. `.dockerignore` must not exclude that file.
+  `.env`, and, when `src/back-end/budge/_version.py` is missing or doesn't hold that version, runs
+  `hatch build --hooks-only` in `src/back-end` so the hatch hook (the file's only writer) rewrites it. The check greps
+  for the hook template's `__version__` line, so change them together. `.dockerignore` must not exclude that file.
 - The hatch hook rewrites `_version.py` on every build, and without Git it writes `0.0.0`. So deleting the build arg alone
   would lose the version. The `build` stage derives `UV_DYNAMIC_VERSIONING_BYPASS` inside its `RUN` from
   `import budge; print(budge.__version__)`, and `dev` copies the file again after its `uv sync`.

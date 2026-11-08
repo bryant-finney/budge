@@ -24,6 +24,6 @@ while `budge.__version__` comes from the host's file.
   metadata is the fallback.
 - `built_distributions` skips without `uv` on `PATH`; CI and the host still run the sdist and wheel tests.
 - Host commands stay `uv run`. In the container, run tools directly.
-- `rel` has no Git either. `.envrc` writes the host's version to `budge/_version.py`, both images copy that file, and
+- `rel` has no Git either. `.envrc` has the hatch hook write the host's version to `budge/_version.py`, both images copy that file, and
   `rel`'s build passes `budge.__version__` to its install as `UV_DYNAMIC_VERSIONING_BYPASS`. By the owner's decision,
   there are no version build args. Without the file, both images report `0.0.0`.

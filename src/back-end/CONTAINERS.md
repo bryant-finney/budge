@@ -10,9 +10,10 @@ docker compose run --rm api pytest
 docker compose down
 ```
 
-`.envrc` seeds `.env` from `etc/base.env`, refreshes `BUDGE_VERSION`, the image tag, and writes the
-version to `src/back-end/budge/_version.py`. The root `pyproject.toml` configures `uv-dynamic-versioning`; its CLI
-resolves the latest matching Git tag without installing the back end. Direnv watches Git HEAD, the branch ref, and
+`.envrc` seeds `.env` from `etc/base.env`, refreshes `BUDGE_VERSION`, the image tag, and
+has the back end's hatch version hook write `src/back-end/budge/_version.py` when it's missing or stale. The root
+`pyproject.toml` configures `uv-dynamic-versioning`; its CLI resolves the latest matching Git tag without installing the
+back end. Direnv watches Git HEAD, the branch ref, and
 release tags to refresh the version after Git changes; `direnv reload` forces a refresh. With plain Bash, use
 `source .envrc` instead. `.env` stays ignored, and other local values are preserved. Change local ports,
 image prefix, architecture, or MinIO development credentials there. Endpoints stay in Compose service

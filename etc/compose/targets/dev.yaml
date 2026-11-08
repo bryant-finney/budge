@@ -1,0 +1,25 @@
+# Dev mode: COMPOSE_FILE lists this after compose.yaml, so its relative sources start from compose.yaml's directory.
+services:
+  api:
+    build:
+      target: dev
+    healthcheck:
+      test: [CMD, python3, -c, 'import urllib.request; urllib.request.urlopen("http://127.0.0.1:8080/api/health")']
+    image: "${BUDGE_IMAGE_PREFIX:-ghcr.io/bryant-finney}/dev/budge:${BUDGE_VERSION:-0.0.0}"
+    volumes:
+      # The Lambda base image's LAMBDA_TASK_ROOT, which Compose can't read from the image.
+      - source: ./src/back-end
+        target: /var/task
+        type: bind
+
+  ingestion:
+    build:
+      target: dev
+    # The dev image clears the Lambda base image's entry point.
+    entrypoint: /lambda-entrypoint.sh
+    image: "${BUDGE_IMAGE_PREFIX:-ghcr.io/bryant-finney}/dev/budge:${BUDGE_VERSION:-0.0.0}"
+    volumes:
+      - read_only: true
+        source: ./src/back-end
+        target: /var/task
+        type: bind

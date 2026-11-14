@@ -9,7 +9,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@pulumi/pulumi": "3.269.0"
+    "@pulumi/pulumi": "3.274.1"
   },
   "devDependencies": {
     "@types/node": "catalog:",
